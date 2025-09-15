@@ -1,0 +1,145 @@
+@charset "utf-8";
+
+// Define defaults
+$base-font-family: "Space Mono", monospace !default;
+$base-font-size:   16px !default;
+$base-font-weight: 400 !default;
+$small-font-size:  $base-font-size * 0.875 !default;
+$base-line-height: 1.5 !default;
+
+$spacing-unit:     30px !default;
+
+$text-color:       #111 !default;
+$background-color: #fdfdfd !default;
+$brand-color:      #2a7ae4 !default;
+
+$grey-color:       #828282 !default;
+$grey-color-light: lighten($grey-color, 40%) !default;
+$grey-color-dark:  darken($grey-color, 25%) !default;
+
+$table-text-align: left !default;
+
+// Width of the content area
+$content-width:    800px !default;
+
+$on-palm:          600px !default;
+$on-laptop:        800px !default;
+
+@mixin media-query($device) {
+  @media screen and (max-width: $device) {
+    @content;
+  }
+}
+
+@mixin relative-font-size($ratio) {
+  font-size: $base-font-size * $ratio;
+}
+
+// Override Bulma defaults
+body {
+  font-family: $base-font-family !important;
+}
+
+.navbar {
+  background-color: $background-color !important;
+  border-bottom: 1px solid $grey-color-light;
+  font-family: $base-font-family !important;
+}
+
+.navbar-item {
+  color: $text-color !important;
+  font-family: $base-font-family !important;
+  
+  &:hover {
+    color: $brand-color !important;
+    background-color: transparent !important;
+  }
+}
+
+.site-logo {
+  height: 32px !important;
+  width: auto !important;
+}
+
+// Custom post card styling
+.post-card {
+  padding: 2rem;
+  background-color: $background-color;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: $grey-color;
+}
+
+.post-title a {
+  color: $text-color !important;
+  text-decoration: none !important;
+  
+  &:hover {
+    color: $brand-color !important;
+  }
+}
+
+.post-excerpt {
+  color: $grey-color;
+  line-height: 1.6;
+}
+
+// Author box styling
+.author-box {
+  background-color: lighten($grey-color-light, 35%);
+  border: 1px solid $grey-color-light;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+}
+
+.author-avatar {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.author-name {
+  margin-bottom: 0.5rem !important;
+  color: $text-color !important;
+}
+
+.author-bio {
+  color: $grey-color;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.author-social {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  
+  .button {
+    font-family: $base-font-family !important;
+    border-color: $grey-color-light !important;
+    color: $text-color !important;
+    
+    &:hover {
+      border-color: $brand-color !important;
+      color: $brand-color !important;
+    }
+  }
+}
+
+// Import partials
+@import
+  "minima/base",
+  "minima/layout",
+  "minima/syntax-highlighting"
+;

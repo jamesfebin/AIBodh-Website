@@ -1,0 +1,52 @@
+# Site settings
+title: AIBodh
+email: your-email@example.com
+description: >- # this means to ignore newlines until "baseurl:"
+  AIBodh explores solutions to the challenges developers face when building intelligent systems. 
+  We focus on better teaching methods, foundational skills in systems engineering, building knowledge graphs, 
+  industry-relevant projects, and developer tools to reduce cognitive overload in system design.
+
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://aibodh.com" # the base hostname & protocol for your site
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - README.md
+
+# Collections
+collections:
+  posts:
+    output: true
+    permalink: /posts/:categories/:title/
+
+# Pagination
+paginate: 5
+paginate_path: "/page:num/"
+
+# Social links
+github_username: yourusername
+twitter_username: yourusername
+
+# Google Fonts - Space Mono
+google_fonts:
+  - "Space+Mono:400,700"

@@ -1,0 +1,34 @@
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Custom title override -->
+  <title>{{ site.title }}</title>
+  
+  <!-- Custom SVG favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ "/assets/logo.svg" | relative_url }}">
+  <!-- Fallback for older browsers -->
+  <link rel="alternate icon" href="{{ "/assets/logo.png" | relative_url }}">
+  
+  {%- seo -%}
+  
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
+  
+  <!-- Google Fonts - Space Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  
+  {%- feed_meta -%}
+  {%- if jekyll.environment == 'production' and site.google_analytics -%}
+    {%- include google-analytics.html -%}
+  {%- endif -%}
+  
+  <!-- Bulma JavaScript -->
+  <script src="{{ "/assets/js/bulma.js" | relative_url }}"></script>
+</head>

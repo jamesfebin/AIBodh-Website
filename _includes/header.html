@@ -1,0 +1,20 @@
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="{{ "/" | relative_url }}">
+      <img src="{{ "/assets/logo.png" | relative_url }}" alt="{{ site.title }}" class="site-logo">
+    </a>
+
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div id="navbarMenu" class="navbar-menu">
+    <div class="navbar-end">
+      <a class="navbar-item" href="/about/">About</a>
+      <a class="navbar-item" href="https://discord.com/invite/cD9qEsSjUH" target="_blank">Community</a>
+    </div>
+  </div>
+</nav>

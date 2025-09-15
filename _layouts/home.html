@@ -1,0 +1,29 @@
+---
+layout: default
+---
+
+<div class="container">
+  <div class="section">
+    {%- if site.posts.size > 0 -%}
+      <div class="columns is-multiline is-centered">
+        {%- for post in site.posts -%}
+        <div class="column is-8-desktop is-10-tablet is-full-mobile">
+          <article class="post-card">
+            <div class="post-meta">
+              {%- assign date_format = "%b %-d, %Y" -%}
+              <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: date_format }}</time>
+              <span class="post-category tag is-light">{{ post.categories | first | upcase }}</span>
+            </div>
+            <h3 class="post-title title is-4">
+              <a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a>
+            </h3>
+            {%- if post.excerpt -%}
+              <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
+            {%- endif -%}
+          </article>
+        </div>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>

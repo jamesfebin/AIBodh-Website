@@ -1,0 +1,27 @@
+---
+layout: default
+---
+
+<div class="container">
+  <div class="section">
+    <div class="columns is-centered">
+      <div class="column is-8-desktop is-10-tablet is-full-mobile">
+        <article class="post">
+
+          <header class="post-header">
+            <h1 class="post-title title is-2">{{ page.title | escape }}</h1>
+          </header>
+
+          <div class="post-content content">
+            {{ content }}
+          </div>
+
+          {%- if page.show_author_box != false -%}
+            {%- include author-box.html -%}
+          {%- endif -%}
+
+        </article>
+      </div>
+    </div>
+  </div>
+</div>
