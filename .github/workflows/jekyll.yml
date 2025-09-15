@@ -1,4 +1,5 @@
 # GitHub Actions workflow for building and deploying a Jekyll site to GitHub Pages
+# This workflow works with private repositories - only the built site will be public
 name: Deploy Jekyll site to Pages
 
 on:
