@@ -6,13 +6,12 @@
   <!-- Custom title override -->
   <title>{{ site.title }}</title>
   
-  <!-- Favicons for all browsers -->
-  <link rel="icon" href="{{ "/assets/favicon.ico" | relative_url }}" type="image/x-icon">
+  <!-- Favicons -->
+  <link rel="icon" href="{{ "/assets/favicon.ico" | relative_url }}" type="image/x-icon" sizes="any">
   <link rel="shortcut icon" href="{{ "/assets/favicon.ico" | relative_url }}" type="image/x-icon">
   <link rel="icon" type="image/svg+xml" href="{{ "/assets/logo.svg" | relative_url }}">
-  <!-- Safari-specific favicons -->
   <link rel="mask-icon" href="{{ "/assets/logo.svg" | relative_url }}" color="#000000">
-  <link rel="apple-touch-icon" href="{{ "/assets/logo.png" | relative_url }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ "/assets/logo.png" | relative_url }}">
   
   {%- seo -%}
   
