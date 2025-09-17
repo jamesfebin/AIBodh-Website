@@ -13,7 +13,7 @@ dl, dd, ol, ul, figure {
  */
 body {
   font: $base-font-weight #{$base-font-size}/#{$base-line-height} $base-font-family;
-  color: $text-color;
+  color: $text-color !important; /* Force consistent text color */
   background-color: $background-color;
   -webkit-text-size-adjust: 100%;
   -webkit-font-feature-settings: "kern" 1;
@@ -24,6 +24,21 @@ body {
   display: flex;
   min-height: 100vh;
   flex-direction: column;
+}
+
+/**
+ * Bold text styling
+ */
+strong, b {
+  font-weight: 600 !important;
+  color: $text-color !important; /* Force dark color for bold text */
+}
+
+/**
+ * Paragraph styling  
+ */
+p {
+  color: $text-color !important; /* Ensure consistent paragraph color */
 }
 
 /**
@@ -80,7 +95,8 @@ li {
  * Headings
  */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: $base-font-weight;
+  font-weight: 600; /* Bolder for better visibility */
+  color: $text-color !important; /* Force consistent color across devices */
 }
 
 /**
