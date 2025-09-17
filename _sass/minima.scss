@@ -70,12 +70,40 @@ body {
 }
 
 .post-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-size: 0.9rem;
   color: $grey-color;
+}
+
+.post-category {
+  color: $text-color;
+  font-weight: 500;
+}
+
+// Clean tag styling
+.post-tags {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.post-tags .tag {
+  background-color: lighten($grey-color-light, 20%);
+  color: $grey-color-dark;
+  font-family: $base-font-family;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 15px;
+  border: 1px solid $grey-color-light;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: lighten($brand-color, 40%);
+    color: darken($brand-color, 10%);
+    border-color: lighten($brand-color, 20%);
+  }
 }
 
 .post-title a {

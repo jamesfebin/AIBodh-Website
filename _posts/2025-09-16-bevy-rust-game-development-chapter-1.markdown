@@ -1,6 +1,22 @@
+---
+layout: post
+title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 1 - Let There Be a Player"
+date: 2025-09-16 10:00:00 +0000
+category: rust
+tags: [rust, bevy, game development, tutorial]
+excerpt: "Learn to build a video game from scratch using Rust and Bevy. This first chapter covers setting up your game world, creating a player character, and implementing movement and animations."
+---
+
+
 This is chapter 1 of the rust bevy tutorial series "The Impatient Programmer's Guide to Bevy and Rust: Build a Video Game from Scratch". I will be going in-depth into bevy and game development in this series, also cover NPCs powered by AI Agents. [Join our community](https://discord.com/invite/cD9qEsSjUH) to be updated on new releases on this series.
 
-#### Setup Instruction
+Here's what you will be able to achieve by the end of this tutorial.
+
+![Final Chapter Result]({{ "/assets/book_assets/chapter-final.gif" | relative_url }})
+
+
+<br>
+**Setup Instructions**
 
 If you haven't setup rust yet, please follow the [official guide](https://www.rust-lang.org/tools/install) to set it up. 
 
@@ -15,14 +31,16 @@ If you haven't setup rust yet, please follow the [official guide](https://www.ru
    [dependencies]
    bevy = "0.16.1"
    ```
+<br>
 
-I am going to assume you have programming experience in any one language like javascript or python.  
 
-Let's think in systems, what do we need to build a game?
+I am going to assume you have programming experience in any one language like javascript or python.  <br><br>
+
+#### Let's think in systems, what do we need to build a game?
 - We need to make our game world with the player.
 - We need to monitor keyboard input and then apply it on the player.
-
-First let's focus on our game world. You are the creator and the world awaits your commands.
+<br>
+<br>
 
 Let's imagine a function called setup, that gives you "commands" as an argument, and it give you spawn ability to create or spawn anything you want. 
 
@@ -34,7 +52,10 @@ fn setup(mut commands: Commands) {
 }
 ```
 
+
+
 **What's mut?**
+
 `mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value.
 
 **And what's this :Commands?**
@@ -49,12 +70,15 @@ A type tells Rust what kind of value you are handling—numbers, text, timers, B
 
 It pays off almost immediately. It prevents mistakes, ex: If you try to add a string to a number, the compiler stops you before the game runs. On top of that, knowing the exact type lets Rust pack data tightly. A `Vec2` is just two numbers, so Rust stores exactly two numbers—no surprise extra space—which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
 
+
+<br>
+
 #### A lens to see the game world
 
 We need a camera because nothing shows on screen without one. The world can exist in data, but the camera decides what actually gets drawn.
 
 ```rust 
-//Pseudo code, doesn't compile
+//Pseudo code, don't use this yet
 fn setup(mut commands: Commands) {
 	commands.spawn(Camera2d)
 }
@@ -62,6 +86,7 @@ fn setup(mut commands: Commands) {
 ```
 
 **What's Camera2d?**
+
 `Camera2d` is Bevy's built-in 2D camera bundle. Spawn it and you get a ready-to-go view of your 2D scene.
 
 **What's a bundle?**
@@ -89,9 +114,11 @@ fn setup(mut commands: Commands) {
 ```
 
 **What's bevy::prelude?**
+
 `bevy::prelude` is like a starter kit, things you reach for constantly when building a game—`App`, `Commands`, components, math helpers, etc.
 
 **What's App::new()...?**
+
 `App::new()` creates the game application, `add_plugins(DefaultPlugins)` loads rendering, input, audio, and other systems, `add_systems(Startup, setup)` registers our startup function, and `run()` hands control to Bevy's main loop.
 
 **Why register a startup function? What does it do?**
@@ -108,9 +135,11 @@ Let's run it
 cargo run
 ```
 
-![image](/Users/febinjohnjames/AIBodh/bevyrogueliketutorial/chapters/chapter_files/simple-world.png)
+![Simple World Setup]({{ "/assets/book_assets/simple-world.png" | relative_url }})
 
 A blank screen? Yup, we have only setup the camera, now let's add our player. 
+
+<br>
 
 #### Defining the player
 
@@ -176,7 +205,9 @@ An entity is the unique ID Bevy uses to tie components together. By itself it ho
 | #42 | `Camera2d` |
 | #43 | `Text2d("@")`, `TextFont`, `TextColor`, `Transform`, `Player` |
 
-Once the queue flushes, those entities live in the world, ready for systems to discover them by the tags (components) they carry. We will be using this later when we want to do things like moving them, or making them attack enemies, etc.
+Once the queue flushes, those entities live in the world, ready for systems to discover them by the tags (components) they carry. We will be using this later when we want to do things like moving or animating them, or making them attack enemies, etc.
+
+![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
 
 #### Moving the player
 
@@ -219,7 +250,7 @@ Bevy looks at the parameters of your system function and automatically hands you
 
 `Res<T>` is a read-only handle to shared data of type `T`. Resources are pieces of game-wide information that are not tied to any single entity. For example, `Res<Time>` gives you the game's master clock, so every system reads the same "time since last frame" value.
 
-**Explain Single<&mut Transform, With<Player>>?**
+<b> Explain Single<&mut Transform, With<Player>>? <b>
 
 `Single<&mut Transform, With<Player>>` asks Bevy for exactly one entity that has a `Transform` component and also carries the `Player` tag. The `&mut Transform` part means we intend to modify that transform (Remember, we added transform component in the setup function). If more than one player existed, this extractor would complain, which is perfect for a single-hero game.
 
@@ -256,7 +287,7 @@ Exactly. A system is just a Rust function you hand to Bevy with a sticky note th
 
 Let's run it.
 
-![image](/Users/febinjohnjames/AIBodh/bevyrogueliketutorial/chapters/chapter_files/simple-player-movement.gif)
+![Player Movement Demo]({{ "/assets/book_assets/simple-player-movement.gif" | relative_url }})
 
 #### Time to bring in our hero
 
@@ -264,7 +295,7 @@ We'll use the Universal LPC SpriteSheet Generator to give our character some per
 
 For this project the spritesheet is already included in the repo. Drop the provided image files into `src/assets` so Bevy can find them when the game runs. You will need to create the `assets` directory inside the src folder.
 
-![image](/Users/febinjohnjames/AIBodh/bevyrogueliketutorial/chapters/chapter_files/universal-sprite-sheet-generator.png)
+![Universal LPC Spritesheet Generator]({{ "/assets/book_assets/universal-sprite-sheet-generator.png" | relative_url }})
 
 **Let's refactor our code, make the main.rs file lean**
 
@@ -633,4 +664,4 @@ Let's run it.
 cargo run
 ```
 
-![image](/Users/febinjohnjames/AIBodh/bevyrogueliketutorial/chapters/chapter_files/chapter-final.gif)
+![Final Chapter Result]({{ "/assets/book_assets/chapter-final.gif" | relative_url }})
