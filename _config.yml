@@ -37,7 +37,7 @@ exclude:
 collections:
   posts:
     output: true
-    permalink: /posts/:category/:title/
+    permalink: /posts/:title/
 
 # Pagination
 paginate: 5

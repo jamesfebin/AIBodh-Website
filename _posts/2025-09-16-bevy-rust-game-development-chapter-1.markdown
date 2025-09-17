@@ -58,6 +58,9 @@ fn setup(mut commands: Commands) {
 
 `mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value.
 
+![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }})
+
+
 **And what's this :Commands?**
 
 It's from bevy library, that allows you to add entities to your game world. Rust likes explicit types, so `:Commands` lets the compiler know this parameter is Bevy's command interface. Skip the hint and Rust can't be sure what shows up, so it blocks the build.
@@ -129,6 +132,9 @@ Startup systems run once before the first frame. We use them to set up cameras, 
 
 After startup, Bevy enters its main loop: it polls input, runs your systems, updates the world, and renders a frame. That loop repeats until you quit the game.
 
+![Struct Comic]({{ "/assets/book_assets/chapter1-comic-4.png" | relative_url }})
+
+
 Let's run it
 
 ```
@@ -138,6 +144,9 @@ cargo run
 ![Simple World Setup]({{ "/assets/book_assets/simple-world.png" | relative_url }})
 
 A blank screen? Yup, we have only setup the camera, now let's add our player. 
+
+![Void Comic]({{ "/assets/book_assets/chapter1-comic-2.png" | relative_url }})
+
 
 <br>
 
@@ -150,6 +159,9 @@ struct Player;
 ```
 
 `struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
+
+![Struct Comic]({{ "/assets/book_assets/chapter1-comic-3.png" | relative_url }})
+
 
 **Why tag?**
 
@@ -209,6 +221,8 @@ Once the queue flushes, those entities live in the world, ready for systems to d
 
 ![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
 
+<br>
+
 #### Moving the player
 
 Moving the player is simple, listen to keyboard events and apply it on the player.
@@ -264,7 +278,7 @@ Bevy looks at the parameters of your system function and automatically hands you
 
 We ignore zero direction so the player stands still when no keys are pressed. Once we have input, `normalize()` converts the vector to length 1 so diagonal movement isn't faster than straight movement. `speed` says how many pixels per second to move, and `time.delta_secs()` returns the frame time—the number of seconds since the previous frame—so multiplying them gives the distance we should travel this update. Finally we add that delta to the player's transform translation to move the sprite on screen.
 
-**Asking bevy to including our move player system**
+**Asking bevy to include our move player system**
 
 ```rust
 // Update main function
@@ -285,9 +299,14 @@ fn main() {
 
 Exactly. A system is just a Rust function you hand to Bevy with a sticky note that says "run me during Startup" or "execute me on every Update," and the engine dutifully obeys.
 
+![Bevy Architecture]({{ "/assets/book_assets/chapter1-systems.png" | relative_url }})
+
+
 Let's run it.
 
 ![Player Movement Demo]({{ "/assets/book_assets/simple-player-movement.gif" | relative_url }})
+
+<br>
 
 #### Time to bring in our hero
 
@@ -296,6 +315,8 @@ We'll use the Universal LPC SpriteSheet Generator to give our character some per
 For this project the spritesheet is already included in the repo. Drop the provided image files into `src/assets` so Bevy can find them when the game runs. You will need to create the `assets` directory inside the src folder.
 
 ![Universal LPC Spritesheet Generator]({{ "/assets/book_assets/universal-sprite-sheet-generator.png" | relative_url }})
+
+<br>
 
 **Let's refactor our code, make the main.rs file lean**
 
@@ -395,6 +416,8 @@ When you assign most values in Rust, the old variable stops owning it or in othe
 
 Rust enforces that each value has a single owner so memory can be freed safely. We'll unpack the ownership rules and borrowing in later chapters.
 
+<br>
+
 #### Tracking player animations
 
 ```rust
@@ -416,7 +439,7 @@ struct AnimationState {
 
 `Deref` lets our wrapper pretend to be the inner `Timer` when we read from it, and `DerefMut` does the same for writes. That means we can just call `timer.tick(time.delta())` on `AnimationTimer` without manually pulling out the inner value first.
 
-**So we are renaming the Timer to AnimationTimer? **
+**So we are renaming the Timer to AnimationTimer?**
 
 We're wrapping the timer, not renaming it. Think of `AnimationTimer` as a little box that holds a `Timer`, plus a label that says "this one belongs to the player animation." When we spawn a player we create a fresh `Timer` and tuck it into that box, so each player could have its own timer if we needed multiple heroes.
 
@@ -426,7 +449,7 @@ Yes—`AnimationTimer` is a tuple struct that contains a `Timer`. We build one w
 
 `AnimationState` remembers which way the player points, whether they are moving, and whether they just started or stopped. Systems read this to choose animation rows and reset frames when movement changes.
 
-### Spawing player
+#### Spawing player
 
 ```rust
 // Append these lines of code to player.rs
@@ -469,6 +492,9 @@ fn spawn_player(
 We load the spritesheet through the `AssetServer`, create a texture atlas layout so Bevy knows the grid, and pick the starting frame for a hero facing down. Then we spawn an entity with the sprite, transform at the origin, our marker components, and the timer that will drive animation.
 
 `AnimationState { facing, moving: false, was_moving: false }` sets the starting direction and flags that the character is idle right now and was idle last frame. `AnimationTimer(Timer::from_seconds(ANIM_DT, TimerMode::Repeating))` creates a repeating stopwatch that fires every `ANIM_DT` seconds to advance the spritesheet.
+
+<br>
+
 
 #### Updating move player function
 
@@ -516,6 +542,9 @@ fn move_player(
 ```
 
 The query asks Bevy for the single entity tagged `Player`, giving us mutable access to its `Transform` and `AnimationState`. We build a direction vector from the pressed keys, normalize it so diagonal input isn't faster, and move the player by speed × frame time. The facing logic compares horizontal vs vertical strength to decide which way the sprite should look. We record whether the player is moving now so later systems can detect when motion starts or stops.
+
+<br>
+
 
 #### Animating player movement
 
@@ -602,6 +631,12 @@ After that we `match` on an `Option`, which is Rust’s "maybe there is a value"
 
 `animate_player` pulls the animation state, timer, and sprite handle for the player. It figures out which row of the atlas matches the current facing, snaps to that row when direction changes, and uses the timer to step through columns at a steady pace. When movement stops we reset the timer so the animation rests on the last frame shown. The helper functions map a facing to the correct row and frame index so the math stays readable.
 
+<br>
+
+![Player Movement]({{ "/assets/book_assets/chapter1-player-movement.png" | relative_url }})
+
+<br>
+
 #### Integrating our player system to bevy
 
 ```rust
@@ -627,6 +662,8 @@ Yes. The `Plugin` trait says "any plugin must provide a `build(&self, app: &mut 
 **What's a trait?**
 
 A trait is a contract describing what methods a type must provide. Bevy’s `Plugin` trait says "give me a `build` function so I can register your systems." By implementing that trait for `PlayerPlugin`, we hook into Bevy’s startup process and inject our own setup code. Traits let different types share behavior, `PlayerPlugin` behaves like any other Bevy plugin, but it installs our player-specific systems.
+
+
 
 **Final step to add our player system**
 

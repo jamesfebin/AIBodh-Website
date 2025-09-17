@@ -20,7 +20,7 @@ Here are the issues I faced:
 - AI can help, but they can also be highly confusing and contradictory.
 - Poor prompting instructions, your unknown unknowns, and lack of context can cause AI to misguide you.
 
-**Content and Skills Gap:**
+**Educational Content Gap:**
 - Navigating noise to curate knowledge for what you want to build is extremely difficult.
 - Many taught skills focus on educational toy projects rather than industry-standard ones.
 - Content on foundational skills in system design and mathematics is raw and difficult to consume.

@@ -132,12 +132,15 @@ code {
   @include relative-font-size(0.9375);
   border: 1px solid $grey-color-light;
   border-radius: 3px;
-  background-color: #eef;
+  background-color: #f5f5f5;
   font-family: $base-font-family;
+  color: #24292e; /* Dark gray instead of red */
 }
 
 code {
   padding: 1px 5px;
+  color: #427b58; /* Gruvbox green - readable but not intimidating */
+  font-weight: 500; /* Slightly bolder for better visibility */
 }
 
 pre {
