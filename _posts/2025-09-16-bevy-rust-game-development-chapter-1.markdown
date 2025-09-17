@@ -305,8 +305,6 @@ fn main() {
 
 Exactly. A system is just a Rust function you hand to Bevy with a sticky note that says "run me during Startup" or "execute me on every Update," and the engine dutifully obeys.
 
-![Bevy Architecture]({{ "/assets/book_assets/chapter1-systems.png" | relative_url }})
-
 
 Let's run it.
 
@@ -502,7 +500,7 @@ We load the spritesheet through the `AssetServer`, create a texture atlas layout
 <br>
 
 
-### Enhanced Movement System
+### Movement System
 
 ```rust
 // Append these lines of code to player.rs
