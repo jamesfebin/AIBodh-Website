@@ -37,4 +37,4 @@ These core challenges motivated me to start AIBodh. I want to explore following 
 - **Industry Relevance:** Focusing on industry-standard projects rather than toy projects.
 - **Developer Tools:** Exploring tools to reduce cognitive overload and prevent mistakes in system design.
 
-If you relate to these problems and would love to explore or contribute to these solutions, please join my community here.
+If you relate to these problems and would love to explore or contribute to these solutions, please [join our community here](https://discord.com/invite/cD9qEsSjUH).
