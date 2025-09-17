@@ -16,7 +16,7 @@ Here's what you will be able to achieve by the end of this tutorial.
 
 
 <br>
-**Setup Instructions**
+## Setup Instructions
 
 If you haven't setup rust yet, please follow the [official guide](https://www.rust-lang.org/tools/install) to set it up. 
 
@@ -36,7 +36,7 @@ If you haven't setup rust yet, please follow the [official guide](https://www.ru
 
 I am going to assume you have programming experience in any one language like javascript or python.  <br><br>
 
-#### Let's think in systems, what do we need to build a game?
+## Building a Game: Systems Thinking
 - We need to make our game world with the player.
 - We need to monitor keyboard input and then apply it on the player.
 <br>
@@ -76,7 +76,7 @@ It pays off almost immediately. It prevents mistakes, ex: If you try to add a st
 
 <br>
 
-#### A lens to see the game world
+### Adding a Camera
 
 We need a camera because nothing shows on screen without one. The world can exist in data, but the camera decides what actually gets drawn.
 
@@ -96,7 +96,7 @@ fn setup(mut commands: Commands) {
 
 A bundle is just a group of components you often spawn together. For example, Bevy ships a `SpriteBundle` that packs position, texture, color tint, and visibility; spawning that bundle gives a sprite entity in one call. 
 
-**Now let's put everything together**
+### Putting Everything Together
 
 Update your `src/main.rs` with the following code.
 
@@ -150,7 +150,7 @@ A blank screen? Yup, we have only setup the camera, now let's add our player.
 
 <br>
 
-#### Defining the player
+## Creating the Player
 
 ```rust
 // Place this before main function in main.rs
@@ -223,7 +223,7 @@ Once the queue flushes, those entities live in the world, ready for systems to d
 
 <br>
 
-#### Moving the player
+### Implementing Player Movement
 
 Moving the player is simple, listen to keyboard events and apply it on the player.
 
@@ -278,7 +278,7 @@ Bevy looks at the parameters of your system function and automatically hands you
 
 We ignore zero direction so the player stands still when no keys are pressed. Once we have input, `normalize()` converts the vector to length 1 so diagonal movement isn't faster than straight movement. `speed` says how many pixels per second to move, and `time.delta_secs()` returns the frame time—the number of seconds since the previous frame—so multiplying them gives the distance we should travel this update. Finally we add that delta to the player's transform translation to move the sprite on screen.
 
-**Asking bevy to include our move player system**
+### Registering the Movement System
 
 ```rust
 // Update main function
@@ -308,7 +308,7 @@ Let's run it.
 
 <br>
 
-#### Time to bring in our hero
+## Adding Sprite Graphics
 
 We'll use the Universal LPC SpriteSheet Generator to give our character some personality. You can remix body parts, clothes, and colors at [this link](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#?body=Body_color_light&head=Human_male_light) and export a full spritesheet.
 
@@ -318,7 +318,7 @@ For this project the spritesheet is already included in the [repo](https://githu
 
 <br>
 
-**Let's refactor our code, make the main.rs file lean**
+### Refactoring: Code Organization
 
 Update your main.rs file to the following, also create another file player.rs
 
@@ -354,7 +354,7 @@ fn setup_camera(mut commands: Commands) {
 
 `AssetPlugin` is Bevy's loader for textures, audio, and other assets. We tweak its `file_path` so it looks inside `src/assets`, which is where our sprites live.
 
-**Now let's work on the players module**
+### Building the Player Module
 
 Add following lines of code in player.rs
 
@@ -375,7 +375,7 @@ struct Player; // Moved from main.rs to here
 
 These constants give names to the numbers we reuse for the spritesheet and movement math: tile size, frames per row, walk speed, and how fast the animation advances. Moving the `Player` marker here keeps all player-specific types in one module.
 
-**Adding different possible directions of player**
+### Defining Player Directions
 
 ```rust
 // Append these lines of code to player.rs
@@ -418,7 +418,7 @@ Rust enforces that each value has a single owner so memory can be freed safely. 
 
 <br>
 
-#### Tracking player animations
+### Animation System Components
 
 ```rust
 // Append these lines of code to player.rs
@@ -449,7 +449,7 @@ Yes—`AnimationTimer` is a tuple struct that contains a `Timer`. We build one w
 
 `AnimationState` remembers which way the player points, whether they are moving, and whether they just started or stopped. Systems read this to choose animation rows and reset frames when movement changes.
 
-#### Spawing player
+### Spawning the Player
 
 ```rust
 // Append these lines of code to player.rs
@@ -496,7 +496,7 @@ We load the spritesheet through the `AssetServer`, create a texture atlas layout
 <br>
 
 
-#### Updating move player function
+### Enhanced Movement System
 
 ```rust
 // Append these lines of code to player.rs
@@ -546,7 +546,7 @@ The query asks Bevy for the single entity tagged `Player`, giving us mutable acc
 <br>
 
 
-#### Animating player movement
+### Animation Implementation
 
 ```rust
 // Append these lines of code to player.rs
@@ -637,7 +637,7 @@ After that we `match` on an `Option`, which is Rust’s "maybe there is a value"
 
 <br>
 
-#### Integrating our player system to bevy
+### Creating the Player Plugin
 
 ```rust
 // Append these lines of code to player.rs
@@ -665,7 +665,7 @@ A trait is a contract describing what methods a type must provide. Bevy’s `Plu
 
 
 
-**Final step to add our player system**
+### Final Integration
 
 ```rust
 // Update the main function in main.rs
