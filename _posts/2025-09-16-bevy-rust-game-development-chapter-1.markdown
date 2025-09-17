@@ -37,6 +37,8 @@ If you haven't setup rust yet, please follow the [official guide](https://www.ru
 I am going to assume you have programming experience in any one language like javascript or python.  <br><br>
 
 ## Building a Game: Systems Thinking
+
+What do we need to build a simple game that allows player to move from keyboard input?
 - We need to make our game world with the player.
 - We need to monitor keyboard input and then apply it on the player.
 <br>
