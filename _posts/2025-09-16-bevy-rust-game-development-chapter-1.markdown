@@ -100,7 +100,7 @@ A bundle is just a group of components you often spawn together. For example, Be
 
 ### Putting Everything Together
 
-Update your `src/main.rs` with the following code.
+Now we need to handover the responsiblity to bevy from main function. Update your `src/main.rs` with the following code.
 
 ```rust
 // Replace your main.rs with the following code.
@@ -125,6 +125,27 @@ fn setup(mut commands: Commands) {
 **What's App::new()...?**
 
 `App::new()` creates the game application, `add_plugins(DefaultPlugins)` loads rendering, input, audio, and other systems, `add_systems(Startup, setup)` registers our startup function, and `run()` hands control to Bevy's main loop.
+
+**Visualizing that flow**
+
+```d2
+title: App Startup Flow
+direction: right
+
+AppNew: { label: "App::new()" }
+Plugins: { label: "add_plugins(DefaultPlugins)" }
+StartupSchedule: { label: "add_systems(Startup, setup)" }
+RunLoop: { label: "run()" }
+
+SetupSystem: {
+  label: "setup(mut commands)"
+  spawn_camera: "commands.spawn(Camera2d)"
+}
+
+AppNew -> Plugins -> StartupSchedule -> RunLoop: "build the app"
+StartupSchedule -> SetupSystem: "Startup runs setup"
+SetupSystem.spawn_camera -> RunLoop: "camera exists before the loop"
+```
 
 **Why register a startup function? What does it do?**
 
@@ -210,6 +231,8 @@ A tuple is an ordered list of values written in parentheses. Rust keeps track of
 
 **Whats an entity?**
 
+![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
+
 An entity is the unique ID Bevy uses to tie components together. By itself it holds no data, but once you attach components to it, that ID represents something in your game world.
 
  Each bundle produces a new entity with a unique ID and the listed components, which you can picture like this:
@@ -221,7 +244,7 @@ An entity is the unique ID Bevy uses to tie components together. By itself it ho
 
 Once the queue flushes, those entities live in the world, ready for systems to discover them by the tags (components) they carry. We will be using this later when we want to do things like moving or animating them, or making them attack enemies, etc.
 
-![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
+
 
 <br>
 
@@ -266,7 +289,30 @@ Bevy looks at the parameters of your system function and automatically hands you
 
 `Res<T>` is a read-only handle to shared data of type `T`. Resources are pieces of game-wide information that are not tied to any single entity. For example, `Res<Time>` gives you the game's master clock, so every system reads the same "time since last frame" value.
 
-<b> Explain Single<&mut Transform, With<Player>>? <b>
+**Explain `Single<&mut Transform, With<Player>>`?**
+
+```d2
+title: Single Query in Action
+direction: right
+
+QueryNode: {
+  label: "Single<&mut Transform, With<Player>>"
+}
+
+World: {
+  camera: { label: "Entity #42\nCamera2d" }
+  player: { label: "Entity #43\nTransform + Player" }
+}
+
+QueryNode -> World.player: "match: With<Player>"
+QueryNode -> World.camera: "skipped" {
+  style: {
+    stroke: gray
+    opacity: 0.4
+    stroke-dash: 6
+  }
+}
+```
 
 `Single<&mut Transform, With<Player>>` asks Bevy for exactly one entity that has a `Transform` component and also carries the `Player` tag. The `&mut Transform` part means we intend to modify that transform (Remember, we added transform component in the setup function). If more than one player existed, this extractor would complain, which is perfect for a single-hero game.
 
@@ -491,6 +537,37 @@ fn spawn_player(
 
 ```
 
+```d2
+title: Player Spawn Pipeline
+direction: right
+
+AssetServer: {
+  label: "asset_server.load(\"male_spritesheet.png\")"
+}
+
+AtlasLayouts: {
+  label: "atlas_layouts.add(...)"
+}
+
+Commands: {
+  label: "commands.spawn(...)"
+}
+
+PlayerEntity: {
+  label: "New Player Entity"
+  sprite: "Sprite::from_atlas_image(...)"
+  transform: "Transform::from_translation(Vec3::ZERO)"
+  marker: "Player"
+  state: "AnimationState { facing, moving, was_moving }"
+  timer: "AnimationTimer(Timer::from_seconds(...))"
+}
+
+AssetServer -> AtlasLayouts: "build TextureAtlasLayout"
+AssetServer -> Commands: "provide texture handle"
+AtlasLayouts -> Commands: "provide atlas layout"
+Commands -> PlayerEntity: "bundle of components"
+```
+
 We load the spritesheet through the `AssetServer`, create a texture atlas layout so Bevy knows the grid, and pick the starting frame for a hero facing down. Then we spawn an entity with the sprite, transform at the origin, our marker components, and the timer that will drive animation.
 
 `AnimationState { facing, moving: false, was_moving: false }` sets the starting direction and flags that the character is idle right now and was idle last frame. `AnimationTimer(Timer::from_seconds(ANIM_DT, TimerMode::Repeating))` creates a repeating stopwatch that fires every `ANIM_DT` seconds to advance the spritesheet.
@@ -542,6 +619,46 @@ fn move_player(
     }
 }
 ```
+
+```d2
+title: Movement System Data Flow
+direction: right
+
+Input: {
+  label: "Res<ButtonInput<KeyCode>>"
+}
+
+TimeRes: {
+  label: "Res<Time>"
+}
+
+PlayerQuery: {
+  label: "Query<Transform, AnimationState>"
+  transform: "Transform (position)"
+  state: "AnimationState (facing, moving)"
+}
+
+Direction: {
+  label: "Vec2 direction"
+}
+
+Delta: {
+  label: "delta = normalize(direction) * MOVE_SPEED * time.delta_secs()"
+}
+
+Facing: {
+  label: "Update Facing"
+}
+
+Input -> Direction: "pressed arrows"
+TimeRes -> Delta: "frame time"
+Direction -> Delta
+Delta -> PlayerQuery.transform: "translate"
+Direction -> Facing: "dominant axis"
+Facing -> PlayerQuery.state: "anim.facing"
+Delta -> PlayerQuery.state: "anim.moving = true/false"
+```
+
 
 The query asks Bevy for the single entity tagged `Player`, giving us mutable access to its `Transform` and `AnimationState`. We build a direction vector from the pressed keys, normalize it so diagonal input isn't faster, and move the player by speed × frame time. The facing logic compares horizontal vs vertical strength to decide which way the sprite should look. We record whether the player is moving now so later systems can detect when motion starts or stops.
 
@@ -627,17 +744,19 @@ fn row_zero_based(facing: Facing) -> usize {
 }
 ```
 
+<br>
+
+![Player Movement]({{ "/assets/book_assets/chapter1-player-movement.png" | relative_url }})
+
+<br>
+
 `let Ok((mut anim, mut timer, mut sprite)) = query.single_mut() else { return; };` both checks the result and names the pieces we need. If the query succeeds, the code binds `anim`, `timer`, and `sprite` so we can use them later. If it fails (no player, or more than one), we hit the `else` branch and exit immediately. Rust uses the `Result` type for this: `Ok` means "query returned exactly one result," `Err` means "something about that query didn't match."
 
 After that we `match` on an `Option`, which is Rust’s "maybe there is a value" type. `Some(atlas)` means the texture atlas exists and we can tweak it; `None` means it hasn’t loaded yet, so we skip and let the next frame try again. It’s the same pattern you’d use when checking a map or cache: only use the value when the lookup returns something.
 
 `animate_player` pulls the animation state, timer, and sprite handle for the player. It figures out which row of the atlas matches the current facing, snaps to that row when direction changes, and uses the timer to step through columns at a steady pace. When movement stops we reset the timer so the animation rests on the last frame shown. The helper functions map a facing to the correct row and frame index so the math stays readable.
 
-<br>
 
-![Player Movement]({{ "/assets/book_assets/chapter1-player-movement.png" | relative_url }})
-
-<br>
 
 ### Creating the Player Plugin
 
@@ -652,6 +771,27 @@ impl Plugin for PlayerPlugin {
     }
 }
 ```
+
+```d2
+title: PlayerPlugin Wiring
+direction: right
+
+App: { label: "App::new()" }
+Plugin: { label: "PlayerPlugin" }
+StartupSchedule: { label: "Startup" }
+UpdateSchedule: { label: "Update" }
+SpawnPlayer: { label: "spawn_player" }
+MovePlayer: { label: "move_player" }
+AnimatePlayer: { label: "animate_player" }
+
+App -> Plugin: "add_plugins(PlayerPlugin)"
+Plugin -> StartupSchedule: "register"
+Plugin -> UpdateSchedule: "register"
+StartupSchedule -> SpawnPlayer: "run once"
+UpdateSchedule -> MovePlayer: "each frame"
+UpdateSchedule -> AnimatePlayer: "each frame"
+```
+
 
 `PlayerPlugin` is our "player module" in plug form. In Bevy, a plugin is just a struct that knows how to register systems, resources, and assets. By implementing `Plugin` for `PlayerPlugin`, we give Bevy a checklist: whenever this plugin is added to the app, run the code inside to set up everything the player feature needs. This keeps `main.rs` from becoming a tangle of player-specific calls.
 
@@ -695,7 +835,7 @@ fn main() {
 
 **So when could I just write `player::PlayerPlugin`?**
 
-Only from inside a module that can already see `player` as a sibling. For example, code inside `src/player/mod.rs` or a child of `player` can refer to `PlayerPlugin` without the `crate::` prefix because the path is relative to that module. When you are in `main.rs`or any other file at the crate root`crate::` makes the intent explicit and keeps paths consistent even as the project grows.
+Only from inside a module that can already see `player` as a sibling. For example, code inside `src/player/mod.rs` or a child of `player` can refer to `PlayerPlugin` without the `crate::` prefix because the path is relative to that module. When you are in `main.rs` or any other file at the crate root, `crate::` makes the intent explicit and keeps paths consistent even as the project grows.
 
 Let's run it.
 
