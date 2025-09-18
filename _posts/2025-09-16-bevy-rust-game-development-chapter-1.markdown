@@ -44,7 +44,7 @@ What do we need to build a simple game that allows player to move from keyboard 
 <br>
 <br>
 
-Let's imagine a function called setup, that gives you "commands" as an argument, and it give you spawn ability to create or spawn anything you want. 
+Let's imagine a function called setup, that gives you "commands" as an argument, and it give you spawn ability to create or spawn anything you want. Well, bevy gives you exactly that.
 
 ```rust
 // Pseudo code, doesn't compile
@@ -63,7 +63,7 @@ fn setup(mut commands: Commands) {
 ![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }})
 
 
-**And what's this :Commands?**
+**And what's this `mut commands: Commands`?**
 
 It's from bevy library, that allows you to add entities to your game world. Rust likes explicit types, so `:Commands` lets the compiler know this parameter is Bevy's command interface. Skip the hint and Rust can't be sure what shows up, so it blocks the build.
 
@@ -75,6 +75,19 @@ A type tells Rust what kind of value you are handling—numbers, text, timers, B
 
 It pays off almost immediately. It prevents mistakes, ex: If you try to add a string to a number, the compiler stops you before the game runs. On top of that, knowing the exact type lets Rust pack data tightly. A `Vec2` is just two numbers, so Rust stores exactly two numbers—no surprise extra space—which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
 
+When you create a Vec2 object in JavaScript or Python, you're not just storing two numbers. The runtime adds type metadata, property information, and prototype references - turning your simple 8-byte data structure into ~48 bytes of memory.
+
+![image](/assets/book_assets/chapter1-memory_layout.png)
+
+Rust's type system works at compile time. When you declare a Vec2 struct with two f32 fields, that's exactly what gets stored - just 8 bytes, no extra metadata. The compiler already knows the types, so no runtime type information is needed.
+
+With 1000 game entities, this difference becomes dramatic:
+
+Dynamic language: ~48KB+ (6x overhead)
+Rust: 8KB (just the data)
+
+This isn't just about memory usage - it's about performance. Smaller, predictable memory layouts mean better CPU cache utilization, which directly translates to faster frame rates in games where you're processing thousands of entities every frame.
+The compiler catches type errors before your game runs, and the tight memory packing keeps it running fast.
 
 <br>
 
@@ -95,6 +108,8 @@ fn setup(mut commands: Commands) {
 `Camera2d` is Bevy's built-in 2D camera bundle. Spawn it and you get a ready-to-go view of your 2D scene.
 
 **What's a bundle?**
+
+![images](/assets/book_assets/chapter1-bundle.svg)
 
 A bundle is just a group of components you often spawn together. For example, Bevy ships a `SpriteBundle` that packs position, texture, color tint, and visibility; spawning that bundle gives a sprite entity in one call. 
 
@@ -117,6 +132,8 @@ fn setup(mut commands: Commands) {
 	commands.spawn(Camera2d);
 }
 ```
+
+![images](/assets/book_assets/chapter1-gameloop.svg)
 
 **What's bevy::prelude?**
 
@@ -212,7 +229,6 @@ A tuple is an ordered list of values written in parentheses. Rust keeps track of
 
 ![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
 
-
 An entity is the unique ID Bevy uses to tie components together. By itself it holds no data, but once you attach components to it, that ID represents something in your game world.
 
  Each bundle produces a new entity with a unique ID and the listed components, which you can picture like this:
@@ -224,8 +240,6 @@ An entity is the unique ID Bevy uses to tie components together. By itself it ho
 
 Once the queue flushes, those entities live in the world, ready for systems to discover them by the tags (components) they carry. We will be using this later when we want to do things like moving or animating them, or making them attack enemies, etc.
 
-
-<br>
 
 ### Implementing Player Movement
 
@@ -296,6 +310,8 @@ fn main() {
         .run();
 }
 ```
+
+![image](/assets/book_assets/chapter1-system-registration.svg)
 
 **What's move_player added as Update? What's Update?**
 
