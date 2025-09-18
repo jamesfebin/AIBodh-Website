@@ -21,10 +21,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
   
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
+  <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
   
   <!-- Syntax highlighting CSS -->
-  <link rel="stylesheet" href="{{ "/assets/css/syntax.css" | relative_url }}">
+  <link rel="stylesheet" href="{{ "/assets/css/syntax.css" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}">
   
   <!-- Google Fonts - Space Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,10 +37,10 @@
   {%- endif -%}
   
   <!-- Bulma JavaScript -->
-  <script src="{{ "/assets/js/bulma.js" | relative_url }}"></script>
+  <script src="{{ "/assets/js/bulma.js" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>
   
   <!-- Image Popup JavaScript -->
-  <script src="{{ "/assets/js/image-popup.js" | relative_url }}"></script>
+  <script src="{{ "/assets/js/image-popup.js" | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>
   
   <!-- PostHog Analytics -->
   <script>
