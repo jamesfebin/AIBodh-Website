@@ -24,8 +24,10 @@ module Jekyll
       page.content = page.content.gsub(comic_pattern) do |match|
         comic_content = $1.strip
         
-        # Generate a unique filename based on content hash
-        content_hash = Digest::MD5.hexdigest(comic_content)
+        # Generate a unique filename based on content hash AND settings
+        settings_string = "panelWidth:1024,panelHeight:900,spriteScale:0.7,fontSize:36,margin:120,dialogueAreaHeight:500"
+        combined_content = "#{comic_content}||#{settings_string}"
+        content_hash = Digest::MD5.hexdigest(combined_content)
         image_filename = "comic_#{content_hash}.svg"
         image_path = File.join(assets_dir, image_filename)
         
