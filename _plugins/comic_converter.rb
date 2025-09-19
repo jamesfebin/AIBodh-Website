@@ -69,14 +69,18 @@ module Jekyll
       temp_file = Tempfile.new(['comic_storyboard', '.md'])
 
       begin
-        temp_file.write(build_comic_markdown(comic_content, site_source, settings))
+        comic_markdown = build_comic_markdown(comic_content, site_source, settings)
+        Jekyll.logger.debug("comic", "Generated markdown:\n#{comic_markdown}")
+        temp_file.write(comic_markdown)
         temp_file.close
 
         comic_cli_path = File.join(site_source, 'custom', 'comic', 'comic-panel-cli.js')
         temp_output_dir  = Dir.mktmpdir
         temp_output_path = File.join(temp_output_dir, "comic_output")
 
+        Jekyll.logger.debug("comic", "Running: node #{comic_cli_path} #{temp_file.path} #{temp_output_path}")
         success = system("node", comic_cli_path, temp_file.path, temp_output_path)
+        Jekyll.logger.debug("comic", "Comic CLI exit code: #{$?.exitstatus}")
 
         if success
           generated_files = Dir.glob(File.join(temp_output_path, "panel-*.svg")).sort
