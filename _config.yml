@@ -34,6 +34,7 @@ exclude:
   - README.md
   - DEPLOYMENT.md
   - D2-INTEGRATION.md
+  - COMIC_DOCS.md
   - .github/
 
 # Collections

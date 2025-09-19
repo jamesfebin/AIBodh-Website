@@ -101,7 +101,7 @@ module Jekyll
         "panelWidth: 1024",
         "panelHeight: 768", 
         "spriteScale: 0.92",
-        "fontSize: 30",
+        "fontSize: 36",
         "background: #ffffff",
         "margin: 48",
         "dialogueAreaHeight: 240"
