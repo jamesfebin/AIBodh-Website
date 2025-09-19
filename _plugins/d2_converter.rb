@@ -56,15 +56,26 @@ module Jekyll
         
         # Run D2 CLI to generate SVG with Space Mono fonts
         font_dir = File.join(site_source, 'assets', 'fonts')
-        command = [
-          "d2", 
-          "--theme=3",
-          "--font-regular=#{File.join(font_dir, 'SpaceMono-Regular.ttf')}",
-          "--font-bold=#{File.join(font_dir, 'SpaceMono-Bold.ttf')}",
-          "--font-italic=#{File.join(font_dir, 'SpaceMono-Italic.ttf')}",
-          temp_file.path, 
-          output_path
-        ]
+        
+        # Check if font files exist, fallback to no custom fonts if not
+        regular_font = File.join(font_dir, 'SpaceMono-Regular.ttf')
+        bold_font = File.join(font_dir, 'SpaceMono-Bold.ttf')
+        italic_font = File.join(font_dir, 'SpaceMono-Italic.ttf')
+        
+        command = ["d2", "--theme=3"]
+        
+        if File.exist?(regular_font) && File.exist?(bold_font) && File.exist?(italic_font)
+          command += [
+            "--font-regular=#{regular_font}",
+            "--font-bold=#{bold_font}",
+            "--font-italic=#{italic_font}"
+          ]
+          puts "Using Space Mono fonts for D2 diagram"
+        else
+          puts "Space Mono fonts not found, using default D2 fonts"
+        end
+        
+        command += [temp_file.path, output_path]
         success = system(*command)
         
         unless success
