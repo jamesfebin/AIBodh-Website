@@ -290,7 +290,10 @@ Startup systems run once before the first frame. We use them to set up cameras, 
 
 After startup, Bevy enters its main loop: it polls input, runs your systems, updates the world, and renders a frame. That loop repeats until you quit the game.
 
-![Struct Comic]({{ "/assets/book_assets/chapter1-comic-4.png" | relative_url }})
+```comic 
+left_guy_anxious: So the game loops forever?
+right_girl_laugh: Like your dating life but with no crying!
+```
 
 
 Let's run it
