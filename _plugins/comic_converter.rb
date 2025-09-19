@@ -25,7 +25,7 @@ module Jekyll
         comic_content = $1.strip
         
         # Generate a unique filename based on content hash AND settings
-        settings_string = "panelWidth:1200,panelHeight:1200,spriteScale:0.5,fontSize:30,margin:180,dialogueAreaHeight:700"
+        settings_string = "panelWidth:1200,panelHeight:1400,spriteScale:0.4,fontSize:28,margin:300,dialogueAreaHeight:800"
         combined_content = "#{comic_content}||#{settings_string}"
         content_hash = Digest::MD5.hexdigest(combined_content)
         image_filename = "comic_#{content_hash}.svg"
@@ -98,12 +98,12 @@ module Jekyll
       
       defaults = [
         "panelWidth: 1200",
-        "panelHeight: 1200", 
-        "spriteScale: 0.5",
-        "fontSize: 30",
+        "panelHeight: 1400", 
+        "spriteScale: 0.4",
+        "fontSize: 28",
         "background: #ffffff",
-        "margin: 180",
-        "dialogueAreaHeight: 700"
+        "margin: 300",
+        "dialogueAreaHeight: 800"
       ]
       
       # Add font path if it exists
