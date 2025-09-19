@@ -31,7 +31,7 @@ module Jekyll
         
         # Generate SVG if it doesn't exist or content has changed
         unless File.exist?(svg_path)
-          generate_d2_svg(d2_content, svg_path)
+          generate_d2_svg(d2_content, svg_path, page.site.source)
         end
         
         # Return HTML img tag with relative path
@@ -45,7 +45,7 @@ module Jekyll
       end
     end
 
-    def self.generate_d2_svg(d2_content, output_path)
+    def self.generate_d2_svg(d2_content, output_path, site_source)
       # Create a temporary D2 file
       temp_file = Tempfile.new(['diagram', '.d2'])
       
@@ -54,8 +54,17 @@ module Jekyll
         temp_file.write(d2_content)
         temp_file.close
         
-        # Run D2 CLI to generate SVG
-        command = ["d2", "--theme=3", temp_file.path, output_path]
+        # Run D2 CLI to generate SVG with Space Mono fonts
+        font_dir = File.join(site_source, 'assets', 'fonts')
+        command = [
+          "d2", 
+          "--theme=3",
+          "--font-regular=#{File.join(font_dir, 'SpaceMono-Regular.ttf')}",
+          "--font-bold=#{File.join(font_dir, 'SpaceMono-Bold.ttf')}",
+          "--font-italic=#{File.join(font_dir, 'SpaceMono-Italic.ttf')}",
+          temp_file.path, 
+          output_path
+        ]
         success = system(*command)
         
         unless success

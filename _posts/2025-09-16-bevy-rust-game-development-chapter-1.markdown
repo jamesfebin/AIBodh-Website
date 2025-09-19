@@ -78,14 +78,12 @@ It pays off almost immediately. It prevents mistakes, ex: If you try to add a st
 When you create a Vec2 object in JavaScript or Python, you're not just storing two numbers. The runtime adds type metadata, property information, and prototype references - turning your simple 8-byte data structure into ~48 bytes of memory.
 
 ```d2
+
+
 # JavaScript Vec2 container
 js_vec2: JavaScript Vec2 {
   shape: rectangle
-  style: {
-    stroke: "#4A90E2"
-    stroke-width: 2
-    fill: "#E6F3FF"
-  }
+
 
   # JavaScript Vec2 fields
   type_metadata: "type metadata"
@@ -98,11 +96,6 @@ js_vec2: JavaScript Vec2 {
 # Rust Vec2 container  
 rust_vec2: Rust Vec2 {
   shape: rectangle
-  style: {
-    stroke: "#4A90E2"
-    stroke-width: 2
-    fill: "#E6F3FF"
-  }
 
   # Rust Vec2 fields
   val_5_0_f32: "5.0 (f32)"
@@ -113,11 +106,6 @@ rust_vec2: Rust Vec2 {
 # Game entities container
 game_entities: 1000 Game Entities {
   shape: rectangle
-  style: {
-    stroke: "#4A90E2"
-    stroke-width: 2
-    fill: "#F0F8FF"
-  }
 
   # JavaScript overhead
   js_overhead: "~48KB + overhead"
@@ -165,9 +153,53 @@ fn setup(mut commands: Commands) {
 
 **What's a bundle?**
 
-![images](/assets/book_assets/chapter1-bundle.svg)
-
 A bundle is just a group of components you often spawn together. For example, Bevy ships a `SpriteBundle` that packs position, texture, color tint, and visibility; spawning that bundle gives a sprite entity in one call. 
+
+```d2
+
+
+# Components container
+components: Components {
+  shape: rectangle
+
+  
+  # Individual components
+  transform: Transform
+  sprite: Sprite
+  color: Color
+  visibility: Visibility
+}
+
+# SpriteBundle container
+sprite_bundle: SpriteBundle {
+  shape: rectangle
+
+  
+  # Combined components
+  combined: "Transform + Sprite + Color + Visibility"
+}
+
+# Spawn Bundle container
+spawn_bundle: Spawn Bundle {
+  shape: rectangle
+ 
+  
+  # Spawn call
+  spawn_call: "entity.spawn(SpriteBundle)"
+}
+
+# Connections with labels
+components -> sprite_bundle: "grouped into" {
+
+}
+
+sprite_bundle -> spawn_bundle: "spawn in one call" {
+
+}
+
+# Layout
+direction: down
+```
 
 ### Putting Everything Together
 
@@ -189,7 +221,53 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-![images](/assets/book_assets/chapter1-gameloop.svg)
+```d2
+# Overall layout
+direction: down
+
+# -------- main function --------
+main_fn: "Main Function" {
+  # lay children left->right inside this container
+  direction: right
+
+  app_new: "App::new()"
+  add_plugins: "add_plugins(DefaultPlugins)"
+  add_systems: "add_systems(Startup, setup)"
+  run: "run()"
+}
+
+# connector note
+main_fn -> startup: "hands control to Bevy"
+
+# -------- startup phase --------
+startup: "Startup Phase" {
+  direction: right
+  setup_once: "setup() runs once"
+  camera2d: "spawns Camera2d"
+  first_frame: "world ready for first frame"
+}
+
+startup -> mainloop: "enters main loop"
+
+# -------- bevy main loop --------
+mainloop: "Bevy Main Loop" {
+  direction: down
+
+  s1: "1. Poll input"
+  s2: "2. Run systems"
+  s3: "3. Update world"
+  s4: "4. Render frame"
+  s5: "5. Repeat until quit"
+
+  # straight vertical flow
+  s1 -> s2
+  s2 -> s3
+  s3 -> s4
+  s4 -> s5
+
+}
+
+```
 
 **What's bevy::prelude?**
 
@@ -281,7 +359,74 @@ A tuple is an ordered list of values written in parentheses. Rust keeps track of
 
 **Whats an entity?**
 
-![Player Entity]({{ "assets/book_assets/chapter1-player-entity.png" | relative_url }})
+```d2
+# Player Entity at the top
+player_entity: "Player Entity 43" {
+  shape: rectangle
+
+}
+
+# Text2d component on the left
+
+# Main components container
+components: components {
+  shape: rectangle
+
+
+  text2d: "Text2D" {
+    shape: rectangle
+
+    text: "Text2D(\"@\")"
+  }
+
+  # TextFont component
+  textfont: TextFont {
+    shape: rectangle
+
+    val_12: "12.0"
+    white: "WHITE"
+  }
+
+  # Transform component  
+  transform: Transform {
+    shape: rectangle
+
+    vec_zero: "Vec3::ZERO"
+  }
+
+  # Player component
+  player: Player {
+    shape: rectangle
+ 
+    marker: "Marker component"
+  }
+
+  # AnimationState component
+  animation_state: AnimationState {
+    shape: rectangle
+
+    facing: "Facing::Down"
+    false_val: "false"
+  }
+
+  # AnimationTimer component
+  animation_timer: AnimationTimer {
+    shape: rectangle
+
+    timer: "Timer(0.1s)"
+  }
+}
+
+# Connections from Player Entity to components
+player_entity -> components.textfont
+player_entity -> components.transform
+player_entity -> components.player
+player_entity -> components.animation_state
+player_entity -> components.animation_timer
+player_entity -> components.text2d
+# Layout direction
+direction: down
+```
 
 An entity is the unique ID Bevy uses to tie components together. By itself it holds no data, but once you attach components to it, that ID represents something in your game world.
 
@@ -338,7 +483,42 @@ Bevy looks at the parameters of your system function and automatically hands you
 
 <b> Explain Single<&mut Transform, With<Player>>? <b>
 
-![Player Entity]({{ "assets/book_assets/chapter1-ResMut.png" | relative_url }})
+```d2
+direction: right
+query_type: "Single<&mut Transform, With<Player>>" {
+  shape: rectangle
+
+}
+
+# Right side - World container
+world: World {
+  shape: rectangle
+
+
+  entity_42: "Entity #42\nCamera2d" {
+    shape: rectangle
+ 
+  }
+
+  entity_43: "Entity #43\nTransform + Player" {
+    shape: rectangle
+  
+  }
+}
+
+# Connections
+query_type -> world.entity_42: "skipped" {
+
+    style {
+          stroke-dash: 5
+    }
+
+}
+
+query_type -> world.entity_43: "match: With<Player>" {
+
+}
+```
 
 `Single<&mut Transform, With<Player>>` asks Bevy for exactly one entity that has a `Transform` component and also carries the `Player` tag. The `&mut Transform` part means we intend to modify that transform (Remember, we added transform component in the setup function). If more than one player existed, this extractor would complain, which is perfect for a single-hero game.
 
@@ -365,7 +545,40 @@ fn main() {
 }
 ```
 
-![image](/assets/book_assets/chapter1-system-registration.svg)
+```d2
+# App Registration at the top
+app_registration: App Registration {
+  startup_system: "add_systems(Startup, setup)"
+  update_system: "add_systems(Update, move_player)"
+}
+
+# Startup Schedule on the left
+startup_schedule: Startup Schedule {
+  runs_once: "Runs once before first frame"
+  setup_desc: "setup() - spawn camera, player"
+}
+
+# Update Schedule on the right  
+update_schedule: Update Schedule {
+  runs_every_frame: "Runs every frame"
+  move_player_desc: "move_player() - handle input, move entities"
+}
+
+# System Execution at the bottom
+system_execution: System Execution {
+  setup_exec: "setup() ← runs once"
+  move_player_exec: "move_player() ← every frame"
+}
+
+# Connections
+app_registration.startup_system -> startup_schedule
+app_registration.update_system -> update_schedule
+
+startup_schedule -> system_execution: "registers"
+update_schedule -> system_execution: "registers"
+
+direction: down
+```
 
 **What's move_player added as Update? What's Update?**
 

@@ -79,7 +79,11 @@ The plugin registers a pre-render hook that:
 
 The plugin executes D2 CLI with these parameters:
 ```bash
-d2 --theme=3 [temp_file].d2 [output].svg
+d2 --theme=3 \
+   --font-regular=assets/fonts/SpaceMono-Regular.ttf \
+   --font-bold=assets/fonts/SpaceMono-Bold.ttf \
+   --font-italic=assets/fonts/SpaceMono-Italic.ttf \
+   [temp_file].d2 [output].svg
 ```
 
 ### 3. CSS Styling
@@ -106,6 +110,11 @@ The generated diagrams are styled with CSS classes in `assets/main.scss`:
 ├── _plugins/
 │   └── d2_converter.rb          # Jekyll plugin for D2 conversion
 ├── assets/
+│   ├── fonts/                   # Space Mono font files
+│   │   ├── SpaceMono-Regular.ttf
+│   │   ├── SpaceMono-Bold.ttf
+│   │   ├── SpaceMono-Italic.ttf
+│   │   └── SpaceMono-BoldItalic.ttf
 │   ├── generated/
 │   │   └── d2/                  # Generated SVG files (auto-created)
 │   │       ├── d2_[hash1].svg
@@ -122,6 +131,7 @@ The generated diagrams are styled with CSS classes in `assets/main.scss`:
 3. **Caching**: SVGs are cached and only regenerated when content changes
 4. **Performance**: Static SVG files load faster than client-side rendering
 5. **SEO-friendly**: Diagrams are actual SVG elements, not dynamic content
+6. **Custom Typography**: Uses Space Mono font for consistent, modern appearance
 
 ## Development vs Production
 
