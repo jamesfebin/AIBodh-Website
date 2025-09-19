@@ -58,16 +58,17 @@ module Jekyll
         # Path to the comic CLI
         comic_cli_path = File.join(site_source, 'custom', 'comic', 'comic-panel-cli.js')
         
-        # Create temporary output directory
+        # Create temporary output directory (comic CLI will create panel files inside this)
         temp_output_dir = Dir.mktmpdir
+        temp_output_path = File.join(temp_output_dir, "comic_output")
         
         # Run comic CLI to generate SVG
-        command = ["node", comic_cli_path, temp_file.path, temp_output_dir]
+        command = ["node", comic_cli_path, temp_file.path, temp_output_path]
         success = system(*command)
         
         if success
           # Find the generated SVG file and copy it to the output path
-          generated_files = Dir.glob(File.join(temp_output_dir, "panel-*.svg"))
+          generated_files = Dir.glob(File.join(temp_output_path, "panel-*.svg"))
           if generated_files.any?
             # For single panels, use the first generated file
             FileUtils.cp(generated_files.first, output_path)
@@ -99,8 +100,8 @@ module Jekyll
         "spriteScale: 0.92",
         "fontSize: 36",
         "background: #ffffff",
-        "margin: 48",
-        "dialogueAreaHeight: 240"
+        "margin: 60",
+        "dialogueAreaHeight: 300"
       ]
       
       # Add font path if it exists

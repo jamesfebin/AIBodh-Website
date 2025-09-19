@@ -62,7 +62,7 @@ fn setup(mut commands: Commands) {
 
 ![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }})
 
-```comic
+```comic 
 left_guy_smile: Why do I need to tell Rust I'm going to change something?
 right_girl_laugh: It's like Rust is that friend who asks 'Are you sure you want to do that?' before you make any life decisions.
 ```
