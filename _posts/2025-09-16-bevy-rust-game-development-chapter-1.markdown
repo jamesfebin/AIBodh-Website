@@ -77,7 +77,63 @@ It pays off almost immediately. It prevents mistakes, ex: If you try to add a st
 
 When you create a Vec2 object in JavaScript or Python, you're not just storing two numbers. The runtime adds type metadata, property information, and prototype references - turning your simple 8-byte data structure into ~48 bytes of memory.
 
-![image](/assets/book_assets/chapter1-memory_layout.png)
+```d2
+# JavaScript Vec2 container
+js_vec2: JavaScript Vec2 {
+  shape: rectangle
+  style: {
+    stroke: "#4A90E2"
+    stroke-width: 2
+    fill: "#E6F3FF"
+  }
+
+  # JavaScript Vec2 fields
+  type_metadata: "type metadata"
+  val_5_0: "5.0"
+  val_3_2: "3.2"
+  prototype_ref: "prototype ref"
+  minus_48_bytes: "~48 bytes"
+}
+
+# Rust Vec2 container  
+rust_vec2: Rust Vec2 {
+  shape: rectangle
+  style: {
+    stroke: "#4A90E2"
+    stroke-width: 2
+    fill: "#E6F3FF"
+  }
+
+  # Rust Vec2 fields
+  val_5_0_f32: "5.0 (f32)"
+  val_3_2_f32: "3.2 (f32)"
+  eight_bytes: "8 bytes"
+}
+
+# Game entities container
+game_entities: 1000 Game Entities {
+  shape: rectangle
+  style: {
+    stroke: "#4A90E2"
+    stroke-width: 2
+    fill: "#F0F8FF"
+  }
+
+  # JavaScript overhead
+  js_overhead: "~48KB + overhead"
+
+  # Rust exact memory
+  rust_exact: "8KB exactly"
+}
+
+# Connections
+js_vec2 -> game_entities.js_overhead
+rust_vec2 -> game_entities.rust_exact
+
+# Layout
+direction: down
+```
+
 
 Rust's type system works at compile time. When you declare a Vec2 struct with two f32 fields, that's exactly what gets stored - just 8 bytes, no extra metadata. The compiler already knows the types, so no runtime type information is needed.
 

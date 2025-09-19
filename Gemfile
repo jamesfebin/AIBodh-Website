@@ -1,14 +1,19 @@
 source "https://rubygems.org"
 
-# Use GitHub Pages gem which includes Jekyll and compatible plugins
-gem "github-pages", group: :jekyll_plugins
+# Use Jekyll directly for local development with custom plugins
+gem "jekyll", "~> 3.9"
+gem "minima", "~> 2.5"
 
-# Additional plugins not included in github-pages
+# Plugins
 group :jekyll_plugins do
   gem "jekyll-feed", "~> 0.12"
   gem "jekyll-sitemap"
   gem "jekyll-seo-tag"
+  gem "kramdown-parser-gfm"
 end
+
+# Optional: Use GitHub Pages gem for compatibility (commented out for local dev)
+# gem "github-pages", group: :jekyll_plugins
 
 # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
 # and associated library.
