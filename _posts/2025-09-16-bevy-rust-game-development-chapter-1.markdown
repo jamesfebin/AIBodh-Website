@@ -320,7 +320,7 @@ struct Player;
 `struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
 
 ```comic 
-left_girl_sad: So the struct is empty... does that mean my player is invisible?
+left_girl_sad: So the struct is empty.. does that mean my player is invisible?
 right_guy_laugh: No, it means he exist in spirit. You've made a philosophical protagonist.
 ```
 
