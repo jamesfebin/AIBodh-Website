@@ -8,19 +8,10 @@ The comic system allows you to create dialogue-based comic panels directly in ma
 
 ## Basic Usage
 
-### Simple Comic Block
+### Comic Block
 
 ````markdown
 ```comic
-left_guy_smile: Ready for the briefing?
-right_girl_angry: Only if you finally updated the sprites.
-```
-````
-
-### Comic with Title
-
-````markdown
-```comic Briefing Scene
 left_guy_smile: Ready for the briefing?
 right_girl_angry: Only if you finally updated the sprites.
 left_guy_smile: All polished. Let's deploy.
@@ -88,7 +79,7 @@ Available expressions for each character type:
 ### Emotional Conversation
 
 ````markdown
-```comic Emotional Range Demo
+```comic
 left_guy_angry: This is getting frustrating!
 right_girl_anxious: Maybe we should take a break?
 left_guy_sad: You're right, I'm sorry.
@@ -99,7 +90,7 @@ right_girl_smile: No worries, let's continue!
 ### Technical Discussion
 
 ````markdown
-```comic Code Review
+```comic
 left_guy_smile: How's the new feature looking?
 right_girl_surprised: Wait, did you see the test results?
 left_guy_anxious: Oh no, what happened?
@@ -110,7 +101,7 @@ right_girl_laugh: They're all passing! Great job!
 ### Multiple Expression Changes
 
 ````markdown
-```comic Character Development
+```comic
 left_guy_smile: Everything is going perfectly.
 left_guy_surprised: Wait, what's that error message?
 left_guy_anxious: This doesn't look good...
@@ -126,7 +117,7 @@ right_girl_smile: There, all done!
 You can override default settings within a comic block:
 
 ````markdown
-```comic Custom Settings
+```comic
 background = #f0f8ff
 fontSize = 32
 spriteScale = 1.0

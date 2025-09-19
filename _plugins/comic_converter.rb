@@ -18,12 +18,11 @@ module Jekyll
       assets_dir = File.join(page.site.source, 'assets', 'generated', 'comic')
       FileUtils.mkdir_p(assets_dir)
 
-      # Pattern to match Comic code blocks with optional title
-      comic_pattern = /```comic\s*(.*?)\s*\n(.*?)\n```/m
+      # Pattern to match Comic code blocks
+      comic_pattern = /```comic\s*\n(.*?)\n```/m
 
       page.content = page.content.gsub(comic_pattern) do |match|
-        comic_title = $1.strip
-        comic_content = $2.strip
+        comic_content = $1.strip
         
         # Generate a unique filename based on content hash
         content_hash = Digest::MD5.hexdigest(comic_content)
@@ -32,30 +31,27 @@ module Jekyll
         
         # Generate image if it doesn't exist or content has changed
         unless File.exist?(image_path)
-          generate_comic_image(comic_content, image_path, page.site.source, comic_title)
+          generate_comic_image(comic_content, image_path, page.site.source)
         end
         
         # Return HTML img tag with relative path
         relative_image_path = "/assets/generated/comic/#{image_filename}"
         
-        title_html = comic_title.empty? ? "" : "<h4 class=\"comic-title\">#{comic_title}</h4>"
-        
         <<~HTML
           <div class="comic-panel">
-            #{title_html}
-            <img src="#{relative_image_path}" alt="Comic Panel#{comic_title.empty? ? '' : ': ' + comic_title}" class="comic-image" />
+            <img src="#{relative_image_path}" alt="Comic Panel" class="comic-image" />
           </div>
         HTML
       end
     end
 
-    def self.generate_comic_image(comic_content, output_path, site_source, title = "")
+    def self.generate_comic_image(comic_content, output_path, site_source)
       # Create a temporary markdown file with the comic content
       temp_file = Tempfile.new(['comic_storyboard', '.md'])
       
       begin
         # Write comic content with global defaults to temporary file
-        comic_markdown = build_comic_markdown(comic_content, title, site_source)
+        comic_markdown = build_comic_markdown(comic_content, site_source)
         temp_file.write(comic_markdown)
         temp_file.close
         
@@ -92,7 +88,7 @@ module Jekyll
       end
     end
 
-    def self.build_comic_markdown(comic_content, title, site_source)
+    def self.build_comic_markdown(comic_content, site_source)
       # Global defaults for comic generation
       font_path = File.join(site_source, 'assets', 'fonts', 'SpaceMono-Regular.ttf')
       sprite_root = File.join(site_source, 'custom', 'comic', 'output')
@@ -117,13 +113,7 @@ module Jekyll
       
       # Build the complete markdown
       markdown_content = defaults.join("\n") + "\n\n"
-      
-      if title.empty?
-        markdown_content += "```comic\n"
-      else
-        markdown_content += "```comic #{title}\n"
-      end
-      
+      markdown_content += "```comic\n"
       markdown_content += comic_content + "\n```"
       
       markdown_content

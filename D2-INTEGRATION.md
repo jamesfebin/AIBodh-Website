@@ -79,7 +79,7 @@ During build, this will be automatically converted to:
 Add comic code blocks to your markdown files:
 
 ````markdown
-```comic Briefing
+```comic
 left_guy_smile: Ready for the briefing?
 right_girl_angry: Only if you finally updated the sprites.
 left_guy_smile: All polished. Let's deploy.
@@ -90,8 +90,7 @@ During build, this will be automatically converted to:
 
 ```html
 <div class="comic-panel">
-  <h4 class="comic-title">Briefing</h4>
-  <img src="/assets/generated/comic/comic_[hash].svg" alt="Comic Panel: Briefing" class="comic-image" />
+  <img src="/assets/generated/comic/comic_[hash].svg" alt="Comic Panel" class="comic-image" />
 </div>
 ```
 
