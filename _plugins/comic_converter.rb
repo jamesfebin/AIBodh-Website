@@ -84,6 +84,7 @@ module Jekyll
 
         if success
           generated_files = Dir.glob(File.join(temp_output_path, "panel-*.svg")).sort
+          Jekyll.logger.debug("comic", "Generated files: #{generated_files}")
           if generated_files.any?
             FileUtils.mkdir_p(File.dirname(output_path))
             source_panel = generated_files.first
@@ -107,7 +108,9 @@ module Jekyll
             create_error_svg(output_path, "No comic panel generated")
           end
         else
-          create_error_svg(output_path, "Comic generation failed")
+          error_msg = "Comic generation failed (exit code: #{$?.exitstatus})"
+          Jekyll.logger.error("comic", error_msg)
+          create_error_svg(output_path, error_msg)
         end
       rescue => e
         create_error_svg(output_path, "Comic generation error: #{e.message}")
