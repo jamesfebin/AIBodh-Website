@@ -28,6 +28,11 @@ jobs:
         export PATH="$HOME/.local/bin:$PATH"
         d2 --version
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -42,6 +47,8 @@ jobs:
       run: |
         echo "D2 CLI location: $(which d2)"
         d2 --version
+        echo "Node.js version: $(node --version)"
+        echo "Comic CLI location: $(ls -la custom/comic/comic-panel-cli.js)"
         bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}" --verbose
       env:
         JEKYLL_ENV: production

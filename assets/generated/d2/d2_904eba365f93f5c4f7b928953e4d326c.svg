@@ -1,7 +1,0 @@
-<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
-  <rect width="400" height="100" fill="#ffebee" stroke="#f44336" stroke-width="2"/>
-  <text x="200" y="50" text-anchor="middle" dominant-baseline="middle" 
-        font-family="Arial, sans-serif" font-size="12" fill="#d32f2f">
-    D2 conversion failed
-  </text>
-</svg>

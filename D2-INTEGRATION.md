@@ -1,12 +1,20 @@
-# D2 Diagram Integration for Jekyll
+# D2 Diagram & Comic Integration for Jekyll
 
-This document explains the D2 diagram integration setup for this Jekyll blog, which automatically converts D2 code blocks to SVG during build time.
+This document explains the D2 diagram and Comic panel integration setup for this Jekyll blog, which automatically converts D2 and Comic code blocks to SVG during build time.
 
 ## Overview
 
-The integration uses a custom Jekyll plugin that:
+The integration uses custom Jekyll plugins that:
+
+### D2 Diagrams:
 - Processes D2 code blocks in markdown files during build
 - Converts them to SVG using the D2 CLI
+- Replaces the code blocks with HTML img tags pointing to the generated SVGs
+- Caches generated SVGs to avoid regeneration on subsequent builds
+
+### Comic Panels:
+- Processes Comic code blocks in markdown files during build
+- Converts them to SVG using the custom comic CLI (Node.js)
 - Replaces the code blocks with HTML img tags pointing to the generated SVGs
 - Caches generated SVGs to avoid regeneration on subsequent builds
 
@@ -45,6 +53,8 @@ end
 
 ## Usage
 
+### D2 Diagrams
+
 Simply add D2 code blocks to your markdown files:
 
 ````markdown
@@ -63,6 +73,36 @@ During build, this will be automatically converted to:
   <img src="/assets/generated/d2/d2_[hash].svg" alt="D2 Diagram" class="d2-svg" />
 </div>
 ```
+
+### Comic Panels
+
+Add comic code blocks to your markdown files:
+
+````markdown
+```comic Briefing
+left_guy_smile: Ready for the briefing?
+right_girl_angry: Only if you finally updated the sprites.
+left_guy_smile: All polished. Let's deploy.
+```
+````
+
+During build, this will be automatically converted to:
+
+```html
+<div class="comic-panel">
+  <h4 class="comic-title">Briefing</h4>
+  <img src="/assets/generated/comic/comic_[hash].svg" alt="Comic Panel: Briefing" class="comic-image" />
+</div>
+```
+
+**Available expressions:**
+- **Male:** angry, anxious, laugh, more_angry, more_sand, sad, smile, surprised
+- **Female:** angry, anxious, laugh, sad, smile, surprised
+
+**Usage pattern:** `side_persona_expression: dialogue`
+- `side`: left/right (or l/r)
+- `persona`: guy/male/man/boy/dude/bro (male) or girl/female/woman/lady/gal (female)
+- `expression`: one of the available expressions above
 
 ## How It Works
 
@@ -108,7 +148,15 @@ The generated diagrams are styled with CSS classes in `assets/main.scss`:
 
 ```
 ├── _plugins/
-│   └── d2_converter.rb          # Jekyll plugin for D2 conversion
+│   ├── d2_converter.rb          # Jekyll plugin for D2 conversion
+│   └── comic_converter.rb       # Jekyll plugin for Comic conversion
+├── custom/
+│   └── comic/                   # Comic generation system
+│       ├── comic-panel-cli.js   # Node.js CLI for generating comic panels
+│       ├── output/              # Sprite assets
+│       │   ├── male/           # Male character sprites
+│       │   └── female/         # Female character sprites
+│       └── README.md
 ├── assets/
 │   ├── fonts/                   # Space Mono font files
 │   │   ├── SpaceMono-Regular.ttf
@@ -116,12 +164,14 @@ The generated diagrams are styled with CSS classes in `assets/main.scss`:
 │   │   ├── SpaceMono-Italic.ttf
 │   │   └── SpaceMono-BoldItalic.ttf
 │   ├── generated/
-│   │   └── d2/                  # Generated SVG files (auto-created)
-│   │       ├── d2_[hash1].svg
-│   │       ├── d2_[hash2].svg
+│   │   ├── d2/                  # Generated D2 SVG files (auto-created)
+│   │   │   ├── d2_[hash1].svg
+│   │   │   └── ...
+│   │   └── comic/               # Generated Comic SVG files (auto-created)
+│   │       ├── comic_[hash1].svg
 │   │       └── ...
-│   └── main.scss                # CSS with D2 diagram styling
-└── [markdown files]             # Your posts/pages with D2 code blocks
+│   └── main.scss                # CSS with D2 & Comic styling
+└── [markdown files]             # Your posts/pages with D2/Comic code blocks
 ```
 
 ## Benefits
