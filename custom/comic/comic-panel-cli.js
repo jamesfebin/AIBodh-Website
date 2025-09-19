@@ -115,7 +115,7 @@ function parseStoryboard(filePath) {
   fontColor: '#111111',
   fontPath: null,
   background: '#ffffff',
-    margin: 48,
+    margin: 30,
     dialogueAreaHeight: 240,
     outputExtension: 'svg',
     spriteRoot: 'output'
