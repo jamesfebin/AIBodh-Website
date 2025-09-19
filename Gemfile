@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-# Use Jekyll directly for local development with custom plugins
+# Use Jekyll directly for local development and GitHub Actions
 gem "jekyll", "~> 3.9"
 gem "minima", "~> 2.5"
 
@@ -12,7 +12,7 @@ group :jekyll_plugins do
   gem "kramdown-parser-gfm"
 end
 
-# Optional: Use GitHub Pages gem for compatibility (commented out for local dev)
+# GitHub Pages compatibility (for reference only - not used with custom plugins)
 # gem "github-pages", group: :jekyll_plugins
 
 # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem

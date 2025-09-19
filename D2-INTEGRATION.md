@@ -140,11 +140,21 @@ The generated diagrams are styled with CSS classes in `assets/main.scss`:
 - Run: `bundle exec jekyll serve`
 
 ### GitHub Pages Deployment
-For GitHub Pages deployment, you'll need to either:
-1. Use GitHub Actions to build the site with the custom plugin, or
-2. Build locally and push the `_site` directory to a `gh-pages` branch
+**Important**: GitHub Pages doesn't support custom plugins in safe mode.
 
-The `github-pages` gem doesn't support custom plugins for security reasons.
+**Solution**: Use the included GitHub Actions workflow (`.github/workflows/deploy.yml`):
+1. Go to Repository Settings → Pages
+2. Set Source to "GitHub Actions"
+3. Push to main branch - the workflow will:
+   - Install D2 CLI
+   - Build Jekyll with custom plugins
+   - Deploy to GitHub Pages
+
+See `DEPLOYMENT.md` for detailed deployment instructions.
+
+### Alternative Hosting
+- **Netlify/Vercel**: Support custom Jekyll plugins and D2 CLI
+- **Manual Deploy**: Build locally and upload `_site` folder
 
 ## Troubleshooting
 

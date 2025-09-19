@@ -32,6 +32,9 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - README.md
+  - DEPLOYMENT.md
+  - D2-INTEGRATION.md
+  - .github/
 
 # Collections
 collections:
