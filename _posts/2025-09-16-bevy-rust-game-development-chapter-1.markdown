@@ -306,8 +306,6 @@ cargo run
 
 A blank screen? Yup, we have only setup the camera, now let's add our player. 
 
-![Void Comic]({{ "/assets/book_assets/chapter1-comic-2.png" | relative_url }})
-
 
 <br>
 
@@ -321,7 +319,10 @@ struct Player;
 
 `struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
 
-![Struct Comic]({{ "/assets/book_assets/chapter1-comic-3.png" | relative_url }})
+```comic 
+left_girl_sad: So the struct is empty... does that mean my player is invisible?
+right_guy_laugh: No, it means he exist in spirit. You've made a philosophical protagonist.
+```
 
 
 **Why tag?**
