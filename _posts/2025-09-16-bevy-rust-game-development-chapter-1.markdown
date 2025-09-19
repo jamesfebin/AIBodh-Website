@@ -60,11 +60,11 @@ fn setup(mut commands: Commands) {
 
 `mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value.
 
-![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }})
+<!-- ![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }}) -->
 
 ```comic 
 left_girl_sad: Why do I need to tell Rust I'm going to change something?
-right_guy_smile: It's like Rust is that friend who asks 'Are you sure you want to do that?' before you make any life decisions.
+right_guy_smile: It's like Rust is that friend who asks 'Are you sure you want to do that?' 
 ```
 
 

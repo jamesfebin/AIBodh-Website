@@ -54,3 +54,12 @@ twitter_username: yourusername
 # Google Fonts - Space Mono
 google_fonts:
   - "Space+Mono:400,700"
+
+# Comic settings - single source of truth
+comic:
+  panelWidth: 1600
+  panelHeight: 1400
+  spriteScale: 1.0
+  fontSize: 48
+  margin: 260
+  dialogueAreaHeight: 520

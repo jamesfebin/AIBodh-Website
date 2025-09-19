@@ -656,29 +656,37 @@ function renderSprite({ x, y, display, encoded, flip }) {
 
 function buildDialogue(dialogue, opts) {
   const { panelWidth, margin, fontSize, dialogueTop } = opts;
-  const maxTextWidth = panelWidth * 0.38;
   const charWidthEstimate = fontSize * 0.6;
-  const maxCharsPerLine = Math.max(12, Math.floor(maxTextWidth / charWidthEstimate));
+  const availableWidth = Math.max(0, panelWidth - margin * 2);
+  const gutter = Math.max(80, availableWidth * 0.08);
+  const columnWidth = Math.max(160, (availableWidth - gutter) / 2);
+  const maxCharsPerLine = Math.max(12, Math.floor(columnWidth / charWidthEstimate));
   const lineHeight = fontSize * 1.35;
+  const columnSpacing = fontSize * 0.8;
 
-  let currentY = dialogueTop + fontSize;
+  const cursors = {
+    left: dialogueTop + fontSize,
+    right: dialogueTop + fontSize
+  };
+
   const fragments = [];
 
   for (const line of dialogue) {
+    const speaker = line.speaker === 'right' ? 'right' : 'left';
+    const baseX = speaker === 'left' ? margin : panelWidth - margin;
+    const textAnchor = speaker === 'left' ? 'start' : 'end';
     const lines = wrapText(line.text || '', maxCharsPerLine);
     const blockHeight = lines.length * lineHeight;
-    const anchor = line.speaker;
-    const baseX = anchor === 'left' ? margin : panelWidth - margin;
-    const textAnchor = anchor === 'left' ? 'start' : 'end';
+    const startY = cursors[speaker];
 
     const tspans = lines.map((segment, idx) => {
       const dy = idx === 0 ? 0 : lineHeight;
       return `<tspan x="${baseX}" dy="${dy}">${escapeXml(segment)}</tspan>`;
     }).join('');
 
-    fragments.push(`<text class="dialogue" x="${baseX}" y="${currentY}" text-anchor="${textAnchor}">${tspans}</text>`);
+    fragments.push(`<text class="dialogue" x="${baseX}" y="${startY}" text-anchor="${textAnchor}">${tspans}</text>`);
 
-    currentY += blockHeight + fontSize * 0.8;
+    cursors[speaker] = startY + blockHeight + columnSpacing;
   }
 
   return fragments;
