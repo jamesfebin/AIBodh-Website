@@ -210,10 +210,10 @@ fn setup(mut commands: Commands) {
 			font_size: 12.0,	
 			font: default(),
 			..default()
-	},
-	TextColor(Color::WHITE),
-	Transform::from_translation(Vec3::ZERO),
-	Player,
+        },
+        TextColor(Color::WHITE),
+        Transform::from_translation(Vec3::ZERO),
+        Player,
 	));
 
 }
