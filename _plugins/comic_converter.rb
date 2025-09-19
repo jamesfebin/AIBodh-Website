@@ -97,11 +97,11 @@ module Jekyll
       defaults = [
         "panelWidth: 1024",
         "panelHeight: 900", 
-        "spriteScale: 0.8",
+        "spriteScale: 0.7",
         "fontSize: 36",
         "background: #ffffff",
-        "margin: 60",
-        "dialogueAreaHeight: 400"
+        "margin: 120",
+        "dialogueAreaHeight: 500"
       ]
       
       # Add font path if it exists
