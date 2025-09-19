@@ -113,7 +113,7 @@ module Jekyll
       
       # Build the complete markdown
       markdown_content = defaults.join("\n") + "\n\n"
-      markdown_content += "```comic\n"
+      markdown_content += "```comic Panel\n"
       markdown_content += comic_content + "\n```"
       
       markdown_content

@@ -10,13 +10,13 @@ The comic system allows you to create dialogue-based comic panels directly in ma
 
 ### Comic Block
 
-````markdown
+
 ```comic
 left_guy_smile: Ready for the briefing?
 right_girl_angry: Only if you finally updated the sprites.
 left_guy_smile: All polished. Let's deploy.
 ```
-````
+
 
 ## Token Structure
 
@@ -78,29 +78,29 @@ Available expressions for each character type:
 
 ### Emotional Conversation
 
-````markdown
+
 ```comic
 left_guy_angry: This is getting frustrating!
 right_girl_anxious: Maybe we should take a break?
 left_guy_sad: You're right, I'm sorry.
 right_girl_smile: No worries, let's continue!
 ```
-````
+
 
 ### Technical Discussion
 
-````markdown
+
 ```comic
 left_guy_smile: How's the new feature looking?
 right_girl_surprised: Wait, did you see the test results?
 left_guy_anxious: Oh no, what happened?
 right_girl_laugh: They're all passing! Great job!
 ```
-````
+
 
 ### Multiple Expression Changes
 
-````markdown
+
 ```comic
 left_guy_smile: Everything is going perfectly.
 left_guy_surprised: Wait, what's that error message?
@@ -108,7 +108,7 @@ left_guy_anxious: This doesn't look good...
 right_girl_laugh: Don't worry, I'll fix it!
 right_girl_smile: There, all done!
 ```
-````
+
 
 ## Advanced Usage
 
@@ -116,7 +116,7 @@ right_girl_smile: There, all done!
 
 You can override default settings within a comic block:
 
-````markdown
+
 ```comic
 background = #f0f8ff
 fontSize = 32
@@ -124,7 +124,7 @@ spriteScale = 1.0
 left_guy_smile: This panel has custom settings!
 right_girl_laugh: The background is blue!
 ```
-````
+
 
 ### Available Panel Settings
 
