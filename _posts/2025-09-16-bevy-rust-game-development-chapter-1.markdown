@@ -199,23 +199,21 @@ For now we will represent our character on screen using the "@" symbol. Modify t
 ```rust
 // Replace existing setup function in main.rs with the following code
 fn setup(mut commands: Commands) {
-
-	commands.spawn(Camera2d);	
-	
-  // Code Update Alert
-  // Append the following lines to your setup function.
-	commands.spawn((
-		Text2d::new("@"),
-		TextFont {
-			font_size: 12.0,	
-			font: default(),
-			..default()
+    commands.spawn(Camera2d);	
+    
+    // Code Update Alert
+    // Append the following lines to your setup function.
+    commands.spawn((
+        Text2d::new("@"),
+        TextFont {
+            font_size: 12.0,	
+            font: default(),
+            ..default()
         },
         TextColor(Color::WHITE),
         Transform::from_translation(Vec3::ZERO),
         Player,
-	));
-
+    ));
 }
 ```
 
