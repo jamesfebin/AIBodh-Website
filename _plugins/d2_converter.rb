@@ -14,9 +14,11 @@ module Jekyll
     def self.process_d2_blocks(page)
       return unless page.content
 
-      # Create assets directory for generated SVGs
-      assets_dir = File.join(page.site.source, 'assets', 'generated', 'd2')
-      FileUtils.mkdir_p(assets_dir)
+      # Create directories inside both the built site (_site) and the source tree
+      built_assets_dir  = File.join(page.site.dest,   'assets', 'generated', 'd2')
+      source_assets_dir = File.join(page.site.source, 'assets', 'generated', 'd2')
+      FileUtils.mkdir_p(built_assets_dir)
+      FileUtils.mkdir_p(source_assets_dir)
 
       # Pattern to match D2 code blocks
       d2_pattern = /```d2\s*\n(.*?)\n```/m
@@ -26,16 +28,22 @@ module Jekyll
         
         # Generate a unique filename based on content hash
         content_hash = Digest::MD5.hexdigest(d2_content)
-        svg_filename = "d2_#{content_hash}.svg"
-        svg_path = File.join(assets_dir, svg_filename)
-        
-        # Generate SVG if it doesn't exist or content has changed
-        unless File.exist?(svg_path)
-          generate_d2_svg(d2_content, svg_path, page.site.source)
+        svg_filename      = "d2_#{content_hash}.svg"
+        built_svg_path    = File.join(built_assets_dir, svg_filename)
+        source_svg_path   = File.join(source_assets_dir, svg_filename)
+
+        unless File.exist?(built_svg_path)
+          if File.exist?(source_svg_path)
+            FileUtils.cp(source_svg_path, built_svg_path)
+          else
+            generate_d2_svg(d2_content, built_svg_path, page.site.source, source_svg_path)
+          end
         end
-        
+
         # Return HTML img tag with relative path
-        relative_svg_path = "/assets/generated/d2/#{svg_filename}"
+        baseurl = page.site.config["baseurl"].to_s
+        baseurl = "" if baseurl == "/"
+        relative_svg_path = "#{baseurl}/assets/generated/d2/#{svg_filename}"
         
         <<~HTML
           <div class="d2-diagram">
@@ -45,7 +53,8 @@ module Jekyll
       end
     end
 
-    def self.generate_d2_svg(d2_content, output_path, site_source)
+    def self.generate_d2_svg(d2_content, output_path, site_source, mirror_path = nil)
+      FileUtils.mkdir_p(File.dirname(output_path))
       # Create a temporary D2 file
       temp_file = Tempfile.new(['diagram', '.d2'])
       
@@ -77,21 +86,19 @@ module Jekyll
         
         command += [temp_file.path, output_path]
         success = system(*command)
-        
-        unless success
-          # Create a fallback error SVG
-          create_error_svg(output_path, "D2 conversion failed")
-        end
-        
+
+        create_error_svg(output_path, "D2 conversion failed") unless success
       rescue => e
         create_error_svg(output_path, "D2 conversion error: #{e.message}")
       ensure
         # Clean up temporary files
         temp_file.unlink if temp_file
+        mirror_file(output_path, mirror_path)
       end
     end
 
     def self.create_error_svg(output_path, error_message)
+      FileUtils.mkdir_p(File.dirname(output_path))
       error_svg = <<~SVG
         <svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
           <rect width="400" height="100" fill="#ffebee" stroke="#f44336" stroke-width="2"/>
@@ -103,6 +110,14 @@ module Jekyll
       SVG
       
       File.write(output_path, error_svg)
+    end
+
+    def self.mirror_file(source_path, mirror_path)
+      return unless mirror_path
+      return unless File.exist?(source_path)
+
+      FileUtils.mkdir_p(File.dirname(mirror_path))
+      FileUtils.cp(source_path, mirror_path)
     end
   end
 end
