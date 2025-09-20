@@ -32,7 +32,7 @@ $spacing-unit:     30px !default;
 
 // Clean color palette from code theme
 $text-color:       #2d3748 !default; // Clean dark gray
-$background-color: #f8fafc !default; // Clean light gray
+$background-color: #ffffff !default; // Clean white
 $brand-color:      #805ad5 !default; // Clean purple
 
 $grey-color:       #718096 !default; // Muted gray
@@ -71,9 +71,7 @@ body {
 
 .navbar {
   background-color: #ffffff !important; // Clean white navbar
-  border-bottom: 1px solid $grey-color-light;
   font-family: $base-font-family !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-item {
@@ -93,18 +91,50 @@ body {
 }
 
 // Custom post card styling - Clean Modern Theme
+.post-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  
+  &:hover {
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
 .post-card {
-  padding: 2rem;
+  padding: 0;
   background-color: #ffffff; // Clean white cards
   border-radius: 12px; // More rounded corners
   margin-bottom: 2rem;
   border: 1px solid $grey-color-light;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease;
+  overflow: hidden; // Ensure images don't overflow rounded corners
   
   &:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   }
+}
+
+.post-featured-image {
+  width: 100%;
+  border-radius: 12px 12px 0 0; // Rounded top corners only
+  
+  img {
+    width: 100%;
+    height: auto; // Maintain aspect ratio
+    display: block; // Remove any inline spacing
+    transition: transform 0.3s ease;
+  }
+  
+  .post-card:hover & img {
+    transform: scale(1.02); // Slight zoom on hover
+  }
+}
+
+.post-card-content {
+  padding: 2rem;
 }
 
 .post-meta {

@@ -8,19 +8,41 @@ layout: default
       <div class="columns is-multiline is-centered">
         {%- for post in site.posts -%}
         <div class="column is-8-desktop is-10-tablet is-full-mobile">
-          <article class="post-card">
-            <div class="post-meta">
-              {%- assign date_format = "%b %-d, %Y" -%}
-              <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: date_format }}</time>
-              <span class="post-category tag is-light">{{ post.categories | first | upcase }}</span>
-            </div>
-            <h3 class="post-title title is-4">
-              <a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a>
-            </h3>
-            {%- if post.excerpt -%}
-              <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
-            {%- endif -%}
-          </article>
+          <a href="{{ post.url | relative_url }}" class="post-card-link">
+            <article class="post-card">
+              {%- comment -%} Extract first image from post content {%- endcomment -%}
+              {%- assign first_image = nil -%}
+              {%- assign content_images = post.content | split: '<img' -%}
+              {%- if content_images.size > 1 -%}
+                {%- assign first_img_tag = content_images[1] | split: '>' | first -%}
+                {%- assign src_match = first_img_tag | split: 'src="' -%}
+                {%- if src_match.size > 1 -%}
+                  {%- assign src_value = src_match[1] | split: '"' | first -%}
+                  {%- assign first_image = src_value -%}
+                {%- endif -%}
+              {%- endif -%}
+              
+              {%- if first_image -%}
+                <div class="post-featured-image">
+                  <img src="{{ first_image }}" alt="{{ post.title | escape }}" />
+                </div>
+              {%- endif -%}
+              
+              <div class="post-card-content">
+                <div class="post-meta">
+                  {%- assign date_format = "%b %-d, %Y" -%}
+                  <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: date_format }}</time>
+                  <span class="post-category tag is-light">{{ post.categories | first | upcase }}</span>
+                </div>
+                <h3 class="post-title title is-4">
+                  {{ post.title | escape }}
+                </h3>
+                {%- if post.excerpt -%}
+                  <p class="post-excerpt">{{ post.excerpt | strip_html | truncatewords: 30 }}</p>
+                {%- endif -%}
+              </div>
+            </article>
+          </a>
         </div>
         {%- endfor -%}
       </div>
