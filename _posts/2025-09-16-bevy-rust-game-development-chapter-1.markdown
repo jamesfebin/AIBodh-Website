@@ -321,7 +321,7 @@ struct Player;
 
 ```comic 
 left_girl_sad: So the struct is empty... does that mean my player is invisible?
-right_guy_laugh: No, it means he exist in spirit. You've made a philosophical protagonist!
+right_guy_laugh: No, it means he exist in spirit. You've made a philosophical protagonist
 ```
 
 
