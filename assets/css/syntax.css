@@ -2,12 +2,13 @@
 .highlight table pre { margin: 0; }
 .highlight, .highlight .w {
   color: #2d3748; /* Clean dark gray text */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
   font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace !important;
+  font-weight: normal !important; /* Normal weight for code blocks */
 }
 .highlight .err {
   color: #e53e3e; /* Clean red for errors */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
   font-weight: bold;
 }
 .highlight .c, .highlight .ch, .highlight .cd, .highlight .cm, .highlight .cpf, .highlight .c1, .highlight .cs {
@@ -28,11 +29,11 @@
 }
 .highlight .gi {
   color: #38a169; /* Clean green for git insertions */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
 }
 .highlight .gd {
   color: #e53e3e; /* Clean red for git deletions */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
 }
 .highlight .gh {
   color: #38a169; /* Clean green for git headers */

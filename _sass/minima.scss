@@ -21,7 +21,7 @@ body {
   max-width: 100vw;
 }
 
-// Define defaults
+// Define defaults - Clean Modern Theme
 $base-font-family: "Space Mono", monospace !default;
 $base-font-size:   16px !default;
 $base-font-weight: 400 !default;
@@ -30,13 +30,20 @@ $base-line-height: 1.5 !default;
 
 $spacing-unit:     30px !default;
 
-$text-color:       #111 !default;
-$background-color: #fdfdfd !default;
-$brand-color:      #2a7ae4 !default;
+// Clean color palette from code theme
+$text-color:       #2d3748 !default; // Clean dark gray
+$background-color: #f8fafc !default; // Clean light gray
+$brand-color:      #805ad5 !default; // Clean purple
 
-$grey-color:       #828282 !default;
-$grey-color-light: lighten($grey-color, 40%) !default;
-$grey-color-dark:  darken($grey-color, 25%) !default;
+$grey-color:       #718096 !default; // Muted gray
+$grey-color-light: #e2e8f0 !default; // Light gray
+$grey-color-dark:  #4a5568 !default; // Dark gray
+
+// Accent colors from palette
+$accent-purple:    #805ad5 !default;
+$accent-cyan:      #20c997 !default;
+$accent-orange:    #d69e2e !default;
+$accent-red:       #e53e3e !default;
 
 $table-text-align: left !default;
 
@@ -56,20 +63,23 @@ $on-laptop:        800px !default;
   font-size: $base-font-size * $ratio;
 }
 
-// Override Bulma defaults
+// Override Bulma defaults - Clean Modern Theme
 body {
   font-family: $base-font-family !important;
+  background-color: $background-color !important;
 }
 
 .navbar {
-  background-color: $background-color !important;
+  background-color: #ffffff !important; // Clean white navbar
   border-bottom: 1px solid $grey-color-light;
   font-family: $base-font-family !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-item {
   color: $text-color !important;
   font-family: $base-font-family !important;
+  font-weight: 500;
   
   &:hover {
     color: $brand-color !important;
@@ -82,26 +92,34 @@ body {
   width: auto !important;
 }
 
-// Custom post card styling
+// Custom post card styling - Clean Modern Theme
 .post-card {
   padding: 2rem;
-  background-color: $background-color;
-  border-radius: 8px;
+  background-color: #ffffff; // Clean white cards
+  border-radius: 12px; // More rounded corners
   margin-bottom: 2rem;
+  border: 1px solid $grey-color-light;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
 }
 
 .post-meta {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
   color: $grey-color;
-}
-
-.post-category {
-  color: $text-color;
   font-weight: 500;
 }
 
-// Clean tag styling
+.post-category {
+  color: $brand-color;
+  font-weight: 600;
+}
+
+// Clean tag styling - Modern Theme
 .post-tags {
   margin-bottom: 1.5rem;
   display: flex;
@@ -110,20 +128,22 @@ body {
 }
 
 .post-tags .tag {
-  background-color: lighten($grey-color-light, 20%);
-  color: $grey-color-dark;
+  background-color: $grey-color-light;
+  color: $text-color;
   font-family: $base-font-family;
   font-size: 0.8rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: 15px;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
   border: 1px solid $grey-color-light;
   text-decoration: none;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: lighten($brand-color, 40%);
-    color: darken($brand-color, 10%);
-    border-color: lighten($brand-color, 20%);
+    background-color: $brand-color;
+    color: #ffffff;
+    border-color: $brand-color;
+    transform: translateY(-1px);
   }
 }
 
@@ -141,14 +161,15 @@ body {
   line-height: 1.6;
 }
 
-// Author box styling
+// Author box styling - Clean Modern Theme
 .author-box {
-  background-color: lighten($grey-color-light, 35%);
+  background-color: #ffffff;
   border: 1px solid $grey-color-light;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 2rem;
   margin-top: 3rem;
   margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .author-avatar {
@@ -156,17 +177,20 @@ body {
   height: 96px;
   object-fit: cover;
   border-radius: 50%;
+  border: 3px solid $grey-color-light;
 }
 
 .author-name {
   margin-bottom: 0.5rem !important;
   color: $text-color !important;
+  font-weight: 600;
 }
 
 .author-bio {
   color: $grey-color;
   margin-bottom: 1rem;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .author-social {
@@ -178,10 +202,15 @@ body {
     font-family: $base-font-family !important;
     border-color: $grey-color-light !important;
     color: $text-color !important;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
     
     &:hover {
       border-color: $brand-color !important;
       color: $brand-color !important;
+      background-color: lighten($brand-color, 45%) !important;
+      transform: translateY(-1px);
     }
   }
 }

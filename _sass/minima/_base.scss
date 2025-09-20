@@ -148,22 +148,23 @@ code {
   @include relative-font-size(0.9375);
   border: 1px solid #e2e8f0; /* Clean light border */
   border-radius: 8px; /* Rounded corners */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
   font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace !important;
   color: #2d3748; /* Clean dark gray text */
+  font-weight: normal !important; /* Normal weight for code blocks */
 }
 
 code {
   padding: 1px 5px;
   color: #805ad5; /* Clean purple for inline code */
   font-weight: 500; /* Slightly bolder for better visibility */
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
 }
 
 pre {
   padding: 8px 12px;
   overflow-x: auto;
-  background-color: #f8fafc; /* Clean light gray background */
+  background-color: #f1f5f9; /* Distinct light blue-gray background */
 
   > code {
     border: 0;

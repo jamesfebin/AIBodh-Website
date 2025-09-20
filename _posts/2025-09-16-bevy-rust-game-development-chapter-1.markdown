@@ -64,7 +64,7 @@ fn setup(mut commands: Commands) {
 
 ```comic 
 left_girl_sad: Why do I need to tell Rust I'm going to change something?
-right_guy_smile: It's like Rust is that friend who asks 'Are you sure you want to do that?'
+right_guy_smile: It's like Rust is that friend who asks 'Are you sure you want to do that'?
 ```
 
 

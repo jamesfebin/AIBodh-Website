@@ -59,10 +59,23 @@
         popupImage.alt = img.alt || 'Blog image';
         
         // Reset image styles to ensure full size display
-        popupImage.style.maxWidth = '95vw';
-        popupImage.style.maxHeight = '95vh';
+        popupImage.style.maxWidth = '90vw';
+        popupImage.style.maxHeight = '90vh';
         popupImage.style.width = 'auto';
         popupImage.style.height = 'auto';
+        
+        // Special handling for D2 images
+        if (img.classList.contains('d2-svg')) {
+            popupImage.style.minWidth = '500px';
+            popupImage.style.minHeight = '375px';
+            popupImage.style.maxWidth = '80vw';
+            popupImage.style.maxHeight = '80vh';
+            popupImage.style.padding = '20px';
+            popupImage.style.backgroundColor = '#ffffff';
+            popupImage.style.border = '2px solid #e2e8f0';
+            popupImage.style.borderRadius = '8px';
+            popupImage.style.transform = 'scale(1.2)';
+        }
         
         // Show popup
         popup.style.display = 'flex';
