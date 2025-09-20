@@ -35,10 +35,14 @@ module Jekyll
         unless File.exist?(built_svg_path)
           if File.exist?(source_svg_path)
             FileUtils.cp(source_svg_path, built_svg_path)
+            Jekyll.logger.info("d2", "Copied cached #{svg_filename} for #{page.path}")
           else
+            Jekyll.logger.info("d2", "Rendering #{svg_filename} for #{page.path}")
             generate_d2_svg(d2_content, built_svg_path, page.site.source, source_svg_path)
           end
         end
+
+        register_static_file(page.site, 'assets/generated/d2', svg_filename)
 
         # Return HTML img tag with relative path
         baseurl = page.site.config["baseurl"].to_s
@@ -87,7 +91,11 @@ module Jekyll
         command += [temp_file.path, output_path]
         success = system(*command)
 
-        create_error_svg(output_path, "D2 conversion failed") unless success
+        unless success
+          create_error_svg(output_path, "D2 conversion failed")
+        else
+          Jekyll.logger.info("d2", "Generated #{File.basename(output_path)}")
+        end
       rescue => e
         create_error_svg(output_path, "D2 conversion error: #{e.message}")
       ensure
@@ -118,6 +126,15 @@ module Jekyll
 
       FileUtils.mkdir_p(File.dirname(mirror_path))
       FileUtils.cp(source_path, mirror_path)
+    end
+
+    def self.register_static_file(site, relative_dir, filename)
+      existing = site.static_files.any? do |static_file|
+        static_file.relative_path == File.join('/', relative_dir, filename)
+      end
+      return if existing
+
+      site.static_files << Jekyll::StaticFile.new(site, site.source, relative_dir, filename)
     end
   end
 end

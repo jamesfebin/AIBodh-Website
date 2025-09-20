@@ -47,7 +47,14 @@ module Jekyll
         image_filename = "comic_#{content_hash}.svg"
         image_path     = File.join(assets_dir, image_filename)
 
-        generate_comic_image(comic_content, image_path, page.site.source, settings) unless File.exist?(image_path)
+        Jekyll.logger.info("comic", "Rendering #{image_filename} for #{page.path}") unless File.exist?(image_path)
+
+        unless File.exist?(image_path)
+          generate_comic_image(comic_content, image_path, page.site.source, settings)
+          register_static_file(page.site, 'assets/generated/comic', image_filename)
+        else
+          register_static_file(page.site, 'assets/generated/comic', image_filename)
+        end
 
         baseurl = page.site.config["baseurl"].to_s
         baseurl = "" if baseurl == "/"
@@ -98,6 +105,8 @@ module Jekyll
             Jekyll.logger.debug("comic", "Copying #{source_panel} -> #{source_target}")
             FileUtils.cp(source_panel, source_target)
 
+            Jekyll.logger.info("comic", "Generated #{File.basename(output_path)}")
+
             # Optional: stamp settings into the SVG as a comment for sanity checks
             stamp = "<!-- comic-settings: #{fingerprint(settings)} -->\n"
             svg = File.read(output_path)
@@ -147,6 +156,15 @@ module Jekyll
         </svg>
       SVG
       File.write(output_path, svg)
+    end
+
+    def self.register_static_file(site, relative_dir, filename)
+      existing = site.static_files.any? do |static_file|
+        static_file.relative_path == File.join('/', relative_dir, filename)
+      end
+      return if existing
+
+      site.static_files << Jekyll::StaticFile.new(site, site.source, relative_dir, filename)
     end
 
     # ----- helpers -----
