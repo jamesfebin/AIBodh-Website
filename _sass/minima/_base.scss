@@ -141,7 +141,7 @@ blockquote {
 }
 
 /**
- * Code formatting - Clean modern theme
+ * Code formatting - Clean modern theme with JetBrains Mono
  */
 pre,
 code {
@@ -149,7 +149,7 @@ code {
   border: 1px solid #e2e8f0; /* Clean light border */
   border-radius: 8px; /* Rounded corners */
   background-color: #f8fafc; /* Clean light gray background */
-  font-family: $base-font-family;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace !important;
   color: #2d3748; /* Clean dark gray text */
 }
 

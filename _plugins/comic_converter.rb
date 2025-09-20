@@ -130,11 +130,11 @@ module Jekyll
     end
 
     def self.build_comic_markdown(comic_content, site_source, settings)
-      font_path   = File.join(site_source, 'assets', 'fonts', 'SpaceMono-Regular.ttf')
+      # Don't use local font file to allow web fonts (Komika Axis) to work
       sprite_root = File.join(site_source, 'custom', 'comic', 'output')
 
       lines = settings.map { |k, v| "#{k}: #{v}" }
-      lines << "fontPath: #{font_path}" if File.exist?(font_path)
+      # Skip fontPath to use web fonts instead of local TTF
       lines << "spriteRoot: #{sprite_root}"
 
       <<~MD

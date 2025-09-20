@@ -51,9 +51,11 @@ paginate_path: "/page:num/"
 github_username: yourusername
 twitter_username: yourusername
 
-# Google Fonts - Space Mono
+# Google Fonts - Space Mono for body text, JetBrains Mono for code, Komika Axis for comics
 google_fonts:
   - "Space+Mono:400,700"
+  - "JetBrains+Mono:400,500,700"
+  - "Komika+Axis:400,700"
 
 # Comic settings - single source of truth
 comic:
