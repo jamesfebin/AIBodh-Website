@@ -141,32 +141,35 @@ blockquote {
 }
 
 /**
- * Code formatting
+ * Code formatting - Clean modern theme
  */
 pre,
 code {
   @include relative-font-size(0.9375);
-  border: 1px solid $grey-color-light;
-  border-radius: 3px;
-  background-color: #f5f5f5;
+  border: 1px solid #e2e8f0; /* Clean light border */
+  border-radius: 8px; /* Rounded corners */
+  background-color: #f8fafc; /* Clean light gray background */
   font-family: $base-font-family;
-  color: #24292e; /* Dark gray instead of red */
+  color: #2d3748; /* Clean dark gray text */
 }
 
 code {
   padding: 1px 5px;
-  color: #427b58; /* Gruvbox green - readable but not intimidating */
+  color: #805ad5; /* Clean purple for inline code */
   font-weight: 500; /* Slightly bolder for better visibility */
+  background-color: #f8fafc; /* Clean light gray background */
 }
 
 pre {
   padding: 8px 12px;
   overflow-x: auto;
+  background-color: #f8fafc; /* Clean light gray background */
 
   > code {
     border: 0;
     padding-right: 0;
     padding-left: 0;
+    background-color: transparent; /* Inherit pre background */
   }
 }
 

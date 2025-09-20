@@ -3,10 +3,12 @@
  * Using Rouge GitHub theme - see assets/css/syntax.css
  */
 .highlight {
-  background: #fff;
+  background: #f8fafc; /* Clean light gray background */
+  border-radius: 8px; /* Rounded corners */
   @extend %vertical-rhythm;
 
   .highlighter-rouge & {
-    background: #f5f5f5;
+    background: #f8fafc; /* Clean light gray background */
+    border-radius: 8px; /* Rounded corners */
   }
 }

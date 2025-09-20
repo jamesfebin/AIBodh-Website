@@ -1,87 +1,87 @@
 .highlight table td { padding: 5px; }
 .highlight table pre { margin: 0; }
 .highlight, .highlight .w {
-  color: #282828;
-  background-color: #fbf1c7;
+  color: #2d3748; /* Clean dark gray text */
+  background-color: #f8fafc; /* Clean light gray background */
 }
 .highlight .err {
-  color: #9d0006;
-  background-color: #fbf1c7;
+  color: #e53e3e; /* Clean red for errors */
+  background-color: #f8fafc; /* Clean light gray background */
   font-weight: bold;
 }
 .highlight .c, .highlight .ch, .highlight .cd, .highlight .cm, .highlight .cpf, .highlight .c1, .highlight .cs {
-  color: #928374;
+  color: #718096; /* Muted gray for comments */
   font-style: italic;
 }
 .highlight .cp {
-  color: #427b58;
+  color: #805ad5; /* Clean purple for class properties */
 }
 .highlight .nt {
-  color: #9d0006;
+  color: #e53e3e; /* Clean red for name tags */
 }
 .highlight .o, .highlight .ow {
-  color: #282828;
+  color: #2d3748; /* Clean dark gray for operators */
 }
 .highlight .p, .highlight .pi {
-  color: #282828;
+  color: #2d3748; /* Clean dark gray for punctuation */
 }
 .highlight .gi {
-  color: #79740e;
-  background-color: #fbf1c7;
+  color: #38a169; /* Clean green for git insertions */
+  background-color: #f8fafc; /* Clean light gray background */
 }
 .highlight .gd {
-  color: #9d0006;
-  background-color: #fbf1c7;
+  color: #e53e3e; /* Clean red for git deletions */
+  background-color: #f8fafc; /* Clean light gray background */
 }
 .highlight .gh {
-  color: #79740e;
+  color: #38a169; /* Clean green for git headers */
   font-weight: bold;
 }
 .highlight .k, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kv {
-  color: #9d0006;
+  color: #805ad5; /* Clean purple for keywords */
 }
 .highlight .kc {
-  color: #8f3f71;
+  color: #805ad5; /* Clean purple for keyword constants */
 }
 .highlight .kt {
-  color: #b57614;
+  color: #d69e2e; /* Clean orange for keyword types */
 }
 .highlight .kd {
-  color: #af3a03;
+  color: #805ad5; /* Clean purple for keyword declarations */
 }
 .highlight .s, .highlight .sb, .highlight .sc, .highlight .dl, .highlight .sd, .highlight .s2, .highlight .sh, .highlight .sx, .highlight .s1 {
-  color: #79740e;
+  color: #319795; /* Clean teal for strings */
   font-style: italic;
 }
 .highlight .si {
-  color: #79740e;
+  color: #319795; /* Clean teal for string interpolations */
   font-style: italic;
 }
 .highlight .sr {
-  color: #79740e;
+  color: #319795; /* Clean teal for string regex */
   font-style: italic;
 }
 .highlight .sa {
-  color: #9d0006;
+  color: #e53e3e; /* Clean red for string attributes */
 }
 .highlight .se {
-  color: #af3a03;
+  color: #d69e2e; /* Clean orange for string escapes */
 }
 .highlight .nn {
-  color: #427b58;
+  color: #805ad5; /* Clean purple for namespace names */
 }
 .highlight .nc {
-  color: #427b58;
+  color: #805ad5; /* Clean purple for name classes */
 }
 .highlight .no {
-  color: #8f3f71;
+  color: #805ad5; /* Clean purple for name objects */
 }
 .highlight .na {
-  color: #79740e;
+  color: #319795; /* Clean teal for name attributes */
 }
 .highlight .m, .highlight .mb, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo, .highlight .mx {
-  color: #8f3f71;
+  color: #d69e2e; /* Clean orange for numbers */
 }
 .highlight .ss {
-  color: #076678;
+  color: #3182ce; /* Clean blue for string symbols */
 }
