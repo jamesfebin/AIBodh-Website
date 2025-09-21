@@ -747,7 +747,11 @@ fn setup_camera(mut commands: Commands) {
 
 ### Building the Player Module
 
-Add following lines of code in player.rs
+Now that we have our basic app structure in place, it's time to bring our character to life! We'll create a dedicated `player.rs` module to handle everything related to our little adventurer. This keeps our code organized and makes it easier to add more features later.
+
+This module will hold all the constants, components, and systems that make our player move, animate, and interact with the world. 
+
+Add following code in player.rs
 
 ```rust
 // player.rs
@@ -807,9 +811,18 @@ When you assign most values in Rust, the old variable stops owning it or in othe
 
 Rust enforces that each value has a single owner so memory can be freed safely. We'll unpack the ownership rules and borrowing in later chapters.
 
-<br>
+**This is a bit going over my head!**
+
+Yea, don't worry, we have many more chapters to go and as you move through them, we will tackle this. It's alright to understand these concepts now.
+
 
 ### Animation System Components
+
+When we have a spritesheet with multiple frames (like our 9-frame walking animation), we need a way to control how fast those frames play. Without timing control, our character would either be frozen on one frame or cycling through frames so fast it looks like a blur!
+
+Think of it like a flipbook - if you flip the pages too slowly, the animation looks choppy. If you flip too fast, you can't see what's happening. The `AnimationTimer` gives us precise control over this timing, ensuring our character's walking animation looks smooth and natural at just the right speed.
+
+`AnimationTimer` wraps a Bevy `Timer` so each player entity knows when to advance to the next animation frame. Each tick represents one slice of time; once the timer hits its interval we move to the next sprite in the sheet.
 
 ```rust
 // Append these lines of code to player.rs
@@ -824,11 +837,6 @@ struct AnimationState {
 }
 ```
 
-`AnimationTimer` wraps a Bevy `Timer` so each player entity knows when to advance to the next animation frame. Each tick represents one slice of time; once the timer hits its interval we move to the next sprite in the sheet.
-
-**What's Deref, DerefMut macros doing?**
-
-`Deref` lets our wrapper pretend to be the inner `Timer` when we read from it, and `DerefMut` does the same for writes. That means we can just call `timer.tick(time.delta())` on `AnimationTimer` without manually pulling out the inner value first.
 
 **So we are renaming the Timer to AnimationTimer?**
 
@@ -839,6 +847,12 @@ We're wrapping the timer, not renaming it. Think of `AnimationTimer` as a little
 Yes—`AnimationTimer` is a tuple struct that contains a `Timer`. We build one when we spawn the player so each entity can carry its own timer data. This pattern shows up whenever you want to attach extra meaning to an existing type without writing a brand-new API.
 
 `AnimationState` remembers which way the player points, whether they are moving, and whether they just started or stopped. Systems read this to choose animation rows and reset frames when movement changes.
+
+
+**What's Deref, DerefMut macros doing?**
+
+`Deref` lets our wrapper pretend to be the inner `Timer` when we read from it, and `DerefMut` does the same for writes. That means we can just call `timer.tick(time.delta())` on `AnimationTimer` without manually pulling out the inner value first.
+
 
 ### Spawning the Player
 
