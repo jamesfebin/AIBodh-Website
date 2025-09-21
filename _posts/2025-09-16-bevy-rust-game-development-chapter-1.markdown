@@ -130,7 +130,12 @@ right_guy_anxious: Exactly! That's why they let you shoot yourself in the foot!.
 
 **And what's this `mut commands: Commands`?**
 
-It's from bevy library, that allows you to add entities to your game world. Rust likes explicit types, so `:Commands` lets the compiler know this parameter is Bevy's command interface. Skip the hint and Rust can't be sure what shows up, so it blocks the build.
+It's from bevy library, that allows you to add things to your game world. Rust likes explicit types, so `:Commands` lets the compiler know this parameter is Bevy's command interface. Skip the hint and Rust can't be sure what shows up, so it blocks the build.
+
+```comic 
+left_guy_sad: I wrote commands.pawn instead of spawn and the compiler yelled at me!
+right_girl_surprised: Rust is like those grammar nazis.
+```
 
 **What's a type?**
 
@@ -138,7 +143,9 @@ A type tells Rust what kind of value you are handling—numbers, text, timers, B
 
 **Isn't this too much work?**
 
-It pays off almost immediately. It prevents mistakes, ex: If you try to add a string to a number, the compiler stops you before the game runs. On top of that, knowing the exact type lets Rust pack data tightly. A `Vec2` is just two numbers, so Rust stores exactly two numbers—no surprise extra space—which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
+It prevents mistakes and helps you with performance, ex: If you try to add a string to a number, the compiler stops you before the game runs. On top of that, knowing the exact type lets Rust pack data tightly.
+
+A `Vec2` is just two numbers, so Rust stores exactly two numbers—no surprise extra space—which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
 
 When you create a Vec2 object in JavaScript or Python, you're not just storing two numbers. The runtime adds type metadata, property information, and prototype references - turning your simple 8-byte data structure into ~48 bytes of memory.
 
@@ -192,13 +199,20 @@ Rust's type system works at compile time. When you declare a Vec2 struct with tw
 
 With 1000 game entities, this difference becomes dramatic:
 
-Dynamic language: ~48KB+ (6x overhead)
-Rust: 8KB (just the data)
+| Language | Memory Usage | Overhead |
+|----------|-------------|----------|
+| Rust | 8KB | None |
+| Dynamic language | ~48KB+ | 6x overhead |
+
 
 This isn't just about memory usage - it's about performance. Smaller, predictable memory layouts mean better CPU cache utilization, which directly translates to faster frame rates in games where you're processing thousands of entities every frame.
 The compiler catches type errors before your game runs, and the tight memory packing keeps it running fast.
 
-<br>
+```comic 
+left_guy_anxious: Other languages treat memory like it's unlimited!
+right_girl_anxious: Rust reminds us that "Memory doesn't grow on trees!" 
+```
+
 
 ### Adding a Camera
 
@@ -209,7 +223,6 @@ We need a camera because nothing shows on screen without one. The world can exis
 fn setup(mut commands: Commands) {
 	commands.spawn(Camera2d)
 }
-
 ```
 
 **What's Camera2d?**
