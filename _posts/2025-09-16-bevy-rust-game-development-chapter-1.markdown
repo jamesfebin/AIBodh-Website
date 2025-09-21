@@ -284,48 +284,7 @@ direction: down
 ### Registering our setup function
 
 We need to register our setup function with bevy to be triggered on Startup. 
-```d2
-# Overall layout
-direction: down
 
-# -------- main function --------
-main_fn: "Main Function" {
-  # lay children left->right inside this container
-  direction: right
-
-  app_new: "Bevy App Initialized\nDefault Pluging Added\nRegister setup function"
-  
-}
-
-# connector note
-main_fn -> startup: "hands control to Bevy"
-
-# -------- startup phase --------
-startup: "Startup Phase" {
-  direction: right
-  setup_once: "Run setup function\nSpawns Camera2d\nWorld ready for first frame"
-
-}
-
-startup -> mainloop: "enters main loop"
-
-# -------- bevy main loop --------
-mainloop: "Bevy Main Loop" {
-  direction: down
-
-  s1: "1. Run update systems"
-  s2: "2. Render game world"
-  s3: "3. Repeat until quit"
-
-  # straight vertical flow
-  s1 -> s2
-  s2 -> s3
-
-
-
-}
-
-```
 Update your `src/main.rs` with the following code.
 
 ```rust
