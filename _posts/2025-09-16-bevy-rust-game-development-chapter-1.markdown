@@ -47,7 +47,7 @@ We see the above pattern very common in building games, the pattern of create/se
 - **Setup**: Spawn enemy with different behaviors, load enemy sprites and animations, configure enemy health and damage values.
 - **Update**: Move enemies toward the player, check if enemies are hit by bullets, remove dead enemies and spawn new enemies at intervals.
 
-At the core of Bevy, we have this simple **setup and update system**. This foundational pattern is what makes Bevy both powerful and easy to understand - once you grasp this concept, building a game in bevy becomes easier.
+At the core of Bevy, we have this simple **setup and update system**. This foundational pattern is what makes Bevy both powerful and easy to understand - once you grasp this concept, building with bevy becomes easier.
 
 ```d2
 direction:right
@@ -214,7 +214,9 @@ right_girl_anxious:  Memory doesn't grow on trees!
 ```
 
 
-### Adding a Camera
+### Setting up a Camera
+
+**What should we setup first?**
 
 We need a camera because nothing shows on screen without one. The world can exist in data, but the camera decides what actually gets drawn.
 
@@ -279,9 +281,52 @@ sprite_bundle -> spawn_bundle: "spawn in one call" {
 direction: down
 ```
 
-### Putting Everything Together
+### Registering our setup function
 
-Now we need to handover the responsiblity to bevy from main function. Update your `src/main.rs` with the following code.
+We need to register our setup function with bevy to be triggered on Startup. 
+```d2
+# Overall layout
+direction: down
+
+# -------- main function --------
+main_fn: "Main Function" {
+  # lay children left->right inside this container
+  direction: right
+
+  app_new: "Bevy App Initialized\nDefault Pluging Added\nRegister setup function"
+  
+}
+
+# connector note
+main_fn -> startup: "hands control to Bevy"
+
+# -------- startup phase --------
+startup: "Startup Phase" {
+  direction: right
+  setup_once: "Run setup function\nSpawns Camera2d\nWorld ready for first frame"
+
+}
+
+startup -> mainloop: "enters main loop"
+
+# -------- bevy main loop --------
+mainloop: "Bevy Main Loop" {
+  direction: down
+
+  s1: "1. Run update systems"
+  s2: "2. Render game world"
+  s3: "3. Repeat until quit"
+
+  # straight vertical flow
+  s1 -> s2
+  s2 -> s3
+
+
+
+}
+
+```
+Update your `src/main.rs` with the following code.
 
 ```rust
 // Replace your main.rs with the following code.
@@ -299,53 +344,7 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-```d2
-# Overall layout
-direction: down
 
-# -------- main function --------
-main_fn: "Main Function" {
-  # lay children left->right inside this container
-  direction: right
-
-  app_new: "App::new()"
-  add_plugins: "add_plugins(DefaultPlugins)"
-  add_systems: "add_systems(Startup, setup)"
-  run: "run()"
-}
-
-# connector note
-main_fn -> startup: "hands control to Bevy"
-
-# -------- startup phase --------
-startup: "Startup Phase" {
-  direction: right
-  setup_once: "setup() runs once"
-  camera2d: "spawns Camera2d"
-  first_frame: "world ready for first frame"
-}
-
-startup -> mainloop: "enters main loop"
-
-# -------- bevy main loop --------
-mainloop: "Bevy Main Loop" {
-  direction: down
-
-  s1: "1. Poll input"
-  s2: "2. Run systems"
-  s3: "3. Update world"
-  s4: "4. Render frame"
-  s5: "5. Repeat until quit"
-
-  # straight vertical flow
-  s1 -> s2
-  s2 -> s3
-  s3 -> s4
-  s4 -> s5
-
-}
-
-```
 
 **What's bevy::prelude?**
 
@@ -382,7 +381,7 @@ A blank screen? Yup, we have only setup the camera, now let's add our player.
 
 <br>
 
-## Creating the Player
+## Setting up the Player
 
 ```rust
 // Place this before main function in main.rs
