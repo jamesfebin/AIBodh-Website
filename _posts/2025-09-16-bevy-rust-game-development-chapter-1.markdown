@@ -898,10 +898,28 @@ We load the spritesheet through the `AssetServer`, create a texture atlas layout
 
 `AnimationState { facing, moving: false, was_moving: false }` sets the starting direction and flags that the character is idle right now and was idle last frame. `AnimationTimer(Timer::from_seconds(ANIM_DT, TimerMode::Repeating))` creates a repeating stopwatch that fires every `ANIM_DT` seconds to advance the spritesheet.
 
+**What's an `AssetServer`?**
+
+The `AssetServer` is Bevy's file loader and manager that handles loading and caching of game assets like images, sounds, and 3D models.
+
+When you call `asset_server.load("path/to/sprite.png")`, it doesn't immediately load the file into memory. Instead, it returns a handle that you can use later. This is called "lazy loading" - the actual file loading happens in the background, and Bevy will notify you when it's ready.
+
+This approach is efficient because:
+- Multiple entities can share the same sprite without loading it multiple times
+- Assets are only loaded when actually needed
+- Bevy can optimize and batch-load assets for better performance
+- If an asset fails to load, it won't crash your entire game
+
+In our case, `asset_server.load("sprites/player.png")` requests the spritesheet and returns a handle to track its loading status.
+
 <br>
 
 
 ### Movement System
+
+Now that we have our player spawned with all the necessary components, we need to update our existing movement system to track which direction the player is facing. This is crucial for the animation system to know which row of the spritesheet to use - each direction (up, down, left, right) corresponds to a different row in our sprite atlas.
+
+This updated system will detect the movement direction and update the `AnimationState` accordingly, so our animation system can pick the correct sprite row for walking animations in each direction.
 
 ```rust
 // Append these lines of code to player.rs
@@ -952,6 +970,10 @@ The query asks Bevy for the single entity tagged `Player`, giving us mutable acc
 
 
 ### Animation Implementation
+
+Now we have all the pieces in place - our player can move in different directions, and we're tracking which way they're facing. The final piece is the animation system that actually updates the sprite frames to create the walking animation.
+
+This system takes the direction information from our movement system and uses the animation timer to cycle through the sprite frames at the right speed. It handles the complex logic of switching between different animation rows when the player changes direction, and ensures smooth transitions between walking and idle states.
 
 ```rust
 // Append these lines of code to player.rs
@@ -1055,7 +1077,7 @@ impl Plugin for PlayerPlugin {
 
 The `build` method is the checklist. Bevy passes us a mutable `App`, and we bolt on the systems we care about. `spawn_player` is scheduled in `Startup` so the sprite appears as soon as the game launches. `move_player` and `animate_player` go into the `Update` schedule so they execute every frame—handling input and animation in lockstep. With everything declared here, dropping `PlayerPlugin` into `App::new()` automatically wires up the entire player flow.
 
-**So this build function is something in built structure, which I have to write?**
+**So this build function is an in-built structure, which I have to write?**
 
 Yes. The `Plugin` trait says "any plugin must provide a `build(&self, app: &mut App)` function." We implement that trait, so Rust expects us to supply the body. Bevy calls this method when it loads the plugin, which is why we add all our systems inside it.
 
@@ -1086,14 +1108,6 @@ fn main() {
         .run();
 }
 ```
-
-**Why write `use crate::player::PlayerPlugin;`?**
-
-`main.rs` sits at the root of the crate, so the `player` module lives directly under that root. The `crate::` prefix says “start looking from the top of this package,” then drill down into the `player` module to grab `PlayerPlugin`. It is the clearest way to point at a module that was declared with `mod player;` at the root level.
-
-**So when could I just write `player::PlayerPlugin`?**
-
-Only from inside a module that can already see `player` as a sibling. For example, code inside `src/player/mod.rs` or a child of `player` can refer to `PlayerPlugin` without the `crate::` prefix because the path is relative to that module. When you are in `main.rs`or any other file at the crate root`crate::` makes the intent explicit and keeps paths consistent even as the project grows.
 
 Let's run it.
 
