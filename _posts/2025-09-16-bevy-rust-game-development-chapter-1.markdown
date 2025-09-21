@@ -344,10 +344,6 @@ Now let's create our player! Remember our **Setup System** and **Update System**
 
 Think of an entity as a unique ID (like a social security number) and components as the data attached to it. For our player, we need components like movement speed, health, or special abilities. In Rust, the perfect way to create these components is with a **struct**.
 
-**Wait, but didn't we say bundles hold components together?** 
-
-Yes! **Bundles** are collections of components, while **structs** define individual components. It's like bundles are the "starter pack" and structs are the individual items inside.
-
 `struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
 
 ```rust
