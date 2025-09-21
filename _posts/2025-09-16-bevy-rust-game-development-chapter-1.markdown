@@ -363,7 +363,7 @@ Tag marks an entity for later lookup. Because `Player` is attached to only our h
 
 **What's this #[derive(component)]?**
 
-`derive` tells Rust to attach the component macro code to this struct. A macro is Rust's way of generating  pre-defined template code for you. `#[derive(Component)]` automatically injects the boilerplate Bevy needs so it can store and find `Player` entities, saving us from copying the same glue code everywhere. We'll take a closer look at macros later in the series. This is the moment our player type becomes a component.
+`derive` tells Rust to attach the component macro code to this struct. A macro is Rust's way of generating  pre-defined template code for you. `#[derive(Component)]` automatically injects the boilerplate Bevy needs, so it can store and find `Player` entities, saving us from copying the same glue code everywhere. We'll take a closer look at macros later in the series. This is the moment our player type becomes a component.
 
 **What's a component, and why should the player be a component?**
 
@@ -768,7 +768,7 @@ Rust enforces that each value has a single owner so memory can be freed safely. 
 
 **This is a bit going over my head!**
 
-Yea, don't worry, we have many more chapters to go and as you move through them, we will tackle this. It's alright to understand these concepts now.
+Yea, don't worry, we have many more chapters to go and as you move through them, we will tackle this. It's alright to not understand these concepts now.
 
 
 ### Animation System Components
