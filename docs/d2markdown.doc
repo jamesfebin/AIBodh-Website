@@ -1,0 +1,217 @@
+Syntax snippets
+Hello world
+hello -> world
+Labels
+x: I'm a Mac
+y: And I'm a PC
+x -> y: gazoontite
+Declaring a shape
+imAShape
+im_a_shape
+im a shape
+i'm a shape
+a-shape
+Customize shape type
+donut: { shape: circle }
+database.shape: cylinder
+you: {
+  shape: person
+}
+Connections
+dogs -> cats -> mice: chase
+replica 1 <-> replica 2
+a -> b: To err is human, to moo bovine {
+  source-arrowhead: 1
+  target-arrowhead: * {
+    shape: diamond
+  }
+}
+Containers
+good chips: {
+  doritos
+  ruffles
+}
+bad chips.lays
+bad chips.pringles
+
+chocolate.chip.cookies
+Markdown text
+explanation: |md
+  # I can do headers
+
+  - lists
+  - lists
+
+  And other normal markdown stuff
+|
+Latex
+plankton -> formula: will steal
+formula: {
+  equation: |latex
+    \lim_{h \rightarrow 0 } \frac{f(x+h)-f(x)}{h}
+  |
+}
+Code blocks
+explanation: |go
+  awsSession := From(c.Request.Context())
+  client := s3.New(awsSession)
+
+  ctx, cancelFn := context.WithTimeout(c.Request.Context(), AWS_TIMEOUT)
+  defer cancelFn()
+|
+Icons and Images
+my network: {
+  icon: https://icons.terrastruct.com/infra/019-network.svg
+}
+github: {
+  shape: image
+  icon: https://icons.terrastruct.com/dev/github.svg
+}
+SQL Tables
+costumes: {
+  shape: sql_table
+  id: int {constraint: primary_key}
+  silliness: int
+  monster: int
+  last_updated: timestamp
+}
+
+monsters: {
+  shape: sql_table
+  id: int {constraint: primary_key}
+  movie: string
+  weight: int
+  last_updated: timestamp
+}
+
+costumes.monster -> monsters.id
+UML Class
+D2 Parser: {
+  shape: class
+
+  +reader: io.RuneReader
+  # Default visibility is + so no need to specify.
+  readerPos: d2ast.Position
+
+  # Private field.
+  -lookahead: "[]rune"
+
+  # Escape the # to prevent being parsed as comment
+  #lookaheadPos: d2ast.Position
+  # Or just wrap in quotes
+  "#peekn(n int)": (s string, eof bool)
+
+  +peek(): (r rune, eof bool)
+  rewind()
+  commit()
+}
+Sequence Diagrams
+shape: sequence_diagram
+alice -> bob: What does it mean\nto be well-adjusted?
+bob -> alice: The ability to play bridge or\ngolf as if they were games.
+Styling
+x: {
+  style: {
+    stroke: "#53C0D8"
+    stroke-width: 5
+    shadow: true
+  }
+}
+
+y: {
+  style: {
+    opacity: 0.6
+    fill: red
+    3d: true
+    stroke: black
+  }
+}
+
+x -> y: {
+  style: {
+    stroke: green
+    opacity: 0.5
+    stroke-width: 2
+    stroke-dash: 5
+  }
+}
+Layout direction
+direction: right
+x -> y -> z: onwards!
+Diagram title
+title: Hello Friends {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 29
+    bold: true
+    underline: true
+  }
+}
+x -> y
+Tooltips
+x: { tooltip: Total abstinence is easier than perfect moderation }
+y: { tooltip: I can't make my satellite dish PAYMENTS! }
+x -> y
+Links
+x: I'm a Mac {
+  link: https://apple.com
+}
+y: And I'm a PC {
+  link: https://microsoft.com
+}
+x -> y: gazoontite
+Root styles
+style: {
+  fill: Beige
+  stroke: DarkBlue
+  stroke-width: 8
+  double-border: true
+  fill-pattern: lines
+}
+
+report: |md
+  # Report card
+
+  - Computer science: B
+  - Diagram making: A+
+|
+Classes
+classes: {
+  shiny orb: {
+    label: ""
+    shape: circle
+    width: 40
+    style: {
+      fill: yellow
+      shadow: true
+    }
+  }
+}
+
+x.class: shiny orb
+y.class: shiny orb
+z.class: shiny orb
+Grid diagrams
+grid-rows: 2
+Executive
+Legislative
+Judicial
+The American Government.width: 400
+Variables
+vars: {
+  name: Joe
+  colors: {
+    primary: "#065535"
+  }
+}
+
+customer: ${name}
+customer.style.fill: ${primary}
+Globs
+x
+y
+z
+
+*.style.fill: yellow
+x -> *

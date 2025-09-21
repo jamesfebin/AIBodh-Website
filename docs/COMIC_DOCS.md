@@ -14,7 +14,6 @@ The comic system allows you to create dialogue-based comic panels directly in ma
 ```comic
 left_guy_smile: Ready for the briefing?
 right_girl_angry: Only if you finally updated the sprites.
-left_guy_smile: All polished. Let's deploy.
 ```
 
 
@@ -82,8 +81,6 @@ Available expressions for each character type:
 ```comic
 left_guy_angry: This is getting frustrating!
 right_girl_anxious: Maybe we should take a break?
-left_guy_sad: You're right, I'm sorry.
-right_girl_smile: No worries, let's continue!
 ```
 
 
@@ -93,20 +90,6 @@ right_girl_smile: No worries, let's continue!
 ```comic
 left_guy_smile: How's the new feature looking?
 right_girl_surprised: Wait, did you see the test results?
-left_guy_anxious: Oh no, what happened?
-right_girl_laugh: They're all passing! Great job!
-```
-
-
-### Multiple Expression Changes
-
-
-```comic
-left_guy_smile: Everything is going perfectly.
-left_guy_surprised: Wait, what's that error message?
-left_guy_anxious: This doesn't look good...
-right_girl_laugh: Don't worry, I'll fix it!
-right_girl_smile: There, all done!
 ```
 
 
@@ -135,16 +118,6 @@ right_girl_laugh: The background is blue!
 - `dialogueAreaHeight` - Height of text area (default: 240)
 - `panelWidth` - Panel width in pixels (default: 1024)
 - `panelHeight` - Panel height in pixels (default: 768)
-
-### Expression Aliases
-
-You can use underscores, hyphens, or spaces in expression names:
-
-```
-left_guy_more-angry: All equivalent
-left_guy_more_angry: All equivalent  
-left_guy_more angry: All equivalent
-```
 
 ## Complete Token Reference
 
@@ -192,7 +165,7 @@ right_girl_surprised    right_lady_surprised    right_gal_surprised
 
 ### Build Process
 
-1. Jekyll plugin scans for ```` ```comic ```` code blocks
+1. Jekyll plugin scans for  ```comic ```` code blocks
 2. Extracts dialogue content and optional title
 3. Generates temporary markdown file with global defaults
 4. Calls Node.js comic CLI to generate SVG

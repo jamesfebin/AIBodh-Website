@@ -8,7 +8,7 @@ excerpt: "Learn to build a video game from scratch using Rust and Bevy. This fir
 ---
 
 
-This is chapter 1 of the rust bevy tutorial series "The Impatient Programmer's Guide to Bevy and Rust: Build a Video Game from Scratch". I will be going in-depth into bevy and game development in this series, also cover NPCs powered by AI Agents. [Join our community](https://discord.com/invite/cD9qEsSjUH) to be updated on new releases on this series. Source code for this chapter is [available here](https://github.com/jamesfebin/BevyGameChapter1/)
+This is chapter 1 of my rust-bevy tutorial series "The Impatient Programmer's Guide to Bevy and Rust: Build a Video Game from Scratch". I will be going in-depth into bevy and game development in this series, also cover NPCs powered by AI Agents. [Join our community](https://discord.com/invite/cD9qEsSjUH) to be updated on new releases on this series. Source code for this chapter is [available here](https://github.com/jamesfebin/BevyGameChapter1/).
 
 Here's what you will be able to achieve by the end of this tutorial.
 
@@ -16,7 +16,7 @@ Here's what you will be able to achieve by the end of this tutorial.
 
 
 <br>
-## Setup Instructions
+## **Setup** Instructions
 
 If you haven't setup rust yet, please follow the [official guide](https://www.rust-lang.org/tools/install) to set it up. 
 
@@ -36,15 +36,71 @@ If you haven't setup rust yet, please follow the [official guide](https://www.ru
 
 I am going to assume you have programming experience in any one language like javascript or python.  <br><br>
 
-## Building a Game: Systems Thinking
+## Thinking in Systems
 
 What do we need to build a simple game that allows player to move from keyboard input?
-- We need to make our game world with the player.
-- We need to monitor keyboard input and then apply it on the player.
-<br>
-<br>
+- **World System**: Create a game world where the player can move.
+- **Input System**: Monitor keyboard input and translate it into player movement.
 
-Let's imagine a function called setup, that gives you "commands" as an argument, and it give you spawn ability to create or spawn anything you want. Well, bevy gives you exactly that.
+We see the above pattern very common in building games, the pattern of create/setup and the pattern of monitoring game state changes and updating the game world entities. 
+
+- **Setup**: Spawn enemy with different behaviors, load enemy sprites and animations, configure enemy health and damage values.
+- **Update**: Move enemies toward the player, check if enemies are hit by bullets, remove dead enemies and spawn new enemies at intervals.
+
+At the core of Bevy, we have this simple **setup and update system**. This foundational pattern is what makes Bevy both powerful and easy to understand - once you grasp this concept, building a game in bevy becomes easier.
+
+```d2
+direction:right
+
+Game Start: {
+  shape: circle
+
+}
+
+Setup System: {
+  shape: rectangle
+
+}
+
+Update System: {
+  shape: rectangle
+
+}
+
+Game End: {
+  shape: circle
+
+}
+
+Game Start -> Setup System: "Initialize once"
+Setup System -> Update System: "Start game loop"
+Update System -> Update System: "Run every frame"
+Update System -> Game End: "Player quits"
+
+Setup System: {
+  label: |md
+    **Setup System**
+    - Create entities
+    - Load resources
+    - Configure systems
+    - Set initial state
+  |
+}
+
+Update System: {
+  label: |md
+    **Update System**
+    - Process input
+    - Update game logic
+    - Render frame
+    - Handle events
+  |
+}
+```
+
+### Setup System
+
+Imagine a function called setup, that gives you "commands" as an argument, and it give you spawn ability to create or spawn anything you want. Well, bevy gives you exactly that.
 
 ```rust
 // Pseudo code, doesn't compile
@@ -58,15 +114,19 @@ fn setup(mut commands: Commands) {
 
 **What's mut?**
 
-`mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value.
+`mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value. Rust uses this knowledge to prevent a whole class of bugs.
 
 <!-- ![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }}) -->
 
 ```comic 
 left_girl_sad: Why do I need to tell Rust I'm going to change something?
-right_guy_smile: It's like Rust is that friend who asks 'Are you sure you want to do that'?
+right_guy_smile: Rust has rules to prevent you from making mistakes - like a safety net that catches you before you fall!
 ```
 
+```comic 
+left_girl_angry: But other languages don't make me do this!
+right_guy_anxious: Exactly! That's why they let you shoot yourself in the foot! 
+```
 
 **And what's this `mut commands: Commands`?**
 
