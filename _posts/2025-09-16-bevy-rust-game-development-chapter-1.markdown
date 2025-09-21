@@ -120,12 +120,12 @@ fn setup(mut commands: Commands) {
 
 ```comic 
 left_girl_sad: Why do I need to tell Rust I'm going to change something?
-right_guy_smile: Rust has rules to prevent you from making mistakes - like a safety net that catches you before you fall!
+right_guy_smile: Rust has rules to prevent you from making mistakes.
 ```
 
 ```comic 
 left_girl_angry: But other languages don't make me do this!
-right_guy_anxious: Exactly! That's why they let you shoot yourself in the foot! 
+right_guy_anxious: Exactly! That's why they let you shoot yourself in the foot!.
 ```
 
 **And what's this `mut commands: Commands`?**
