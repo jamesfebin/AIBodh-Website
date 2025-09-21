@@ -210,7 +210,7 @@ The compiler catches type errors before your game runs, and the tight memory pac
 
 ```comic 
 left_guy_anxious: Other languages treat memory like it's unlimited!
-right_girl_anxious: Rust reminds us that "Memory doesn't grow on trees!" 
+right_girl_anxious:  Memory doesn't grow on trees! 
 ```
 
 
