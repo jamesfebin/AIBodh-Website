@@ -837,6 +837,9 @@ struct AnimationState {
 }
 ```
 
+**What's Deref, DerefMut macros doing?**
+
+`Deref` lets our wrapper pretend to be the inner `Timer` when we read from it, and `DerefMut` does the same for writes. That means we can just call `timer.tick(time.delta())` on `AnimationTimer` without manually pulling out the inner value first.
 
 **So we are renaming the Timer to AnimationTimer?**
 
@@ -849,12 +852,12 @@ Yes—`AnimationTimer` is a tuple struct that contains a `Timer`. We build one w
 `AnimationState` remembers which way the player points, whether they are moving, and whether they just started or stopped. Systems read this to choose animation rows and reset frames when movement changes.
 
 
-**What's Deref, DerefMut macros doing?**
 
-`Deref` lets our wrapper pretend to be the inner `Timer` when we read from it, and `DerefMut` does the same for writes. That means we can just call `timer.tick(time.delta())` on `AnimationTimer` without manually pulling out the inner value first.
 
 
 ### Spawning the Player
+
+We load the spritesheet through the `AssetServer`, create a texture atlas layout so Bevy knows the grid, and pick the starting frame for a hero facing down. Then we spawn an entity with the sprite, transform at the origin, our marker components, and the timer that will drive animation.
 
 ```rust
 // Append these lines of code to player.rs
@@ -894,9 +897,10 @@ fn spawn_player(
 
 ```
 
-We load the spritesheet through the `AssetServer`, create a texture atlas layout so Bevy knows the grid, and pick the starting frame for a hero facing down. Then we spawn an entity with the sprite, transform at the origin, our marker components, and the timer that will drive animation.
 
-`AnimationState { facing, moving: false, was_moving: false }` sets the starting direction and flags that the character is idle right now and was idle last frame. `AnimationTimer(Timer::from_seconds(ANIM_DT, TimerMode::Repeating))` creates a repeating stopwatch that fires every `ANIM_DT` seconds to advance the spritesheet.
+`AnimationState { facing, moving: false, was_moving: false }` sets the starting direction and flags that the character is idle right now and was idle last frame.
+
+ `AnimationTimer(Timer::from_seconds(ANIM_DT, TimerMode::Repeating))` creates a repeating stopwatch that fires every `ANIM_DT` seconds to advance the spritesheet.
 
 **What's an `AssetServer`?**
 
@@ -912,7 +916,6 @@ This approach is efficient because:
 
 In our case, `asset_server.load("sprites/player.png")` requests the spritesheet and returns a handle to track its loading status.
 
-<br>
 
 
 ### Movement System
@@ -966,14 +969,28 @@ fn move_player(
 
 The query asks Bevy for the single entity tagged `Player`, giving us mutable access to its `Transform` and `AnimationState`. We build a direction vector from the pressed keys, normalize it so diagonal input isn't faster, and move the player by speed × frame time. The facing logic compares horizontal vs vertical strength to decide which way the sprite should look. We record whether the player is moving now so later systems can detect when motion starts or stops.
 
-<br>
-
-
 ### Animation Implementation
 
 Now we have all the pieces in place - our player can move in different directions, and we're tracking which way they're facing. The final piece is the animation system that actually updates the sprite frames to create the walking animation.
 
 This system takes the direction information from our movement system and uses the animation timer to cycle through the sprite frames at the right speed. It handles the complex logic of switching between different animation rows when the player changes direction, and ensures smooth transitions between walking and idle states.
+
+```d2
+
+Input: "Arrow Keys"
+Movement: "Detects keys & updates position"
+State: "Facing direction & movement status"
+Timer: "Ticks every 0.1s"
+Atlas: "Sprite rows & frames"
+Animation: "Switches rows & advances frames"
+
+Input -> Movement: "Keyboard"
+Movement -> State: "Updates direction"
+State -> Animation: "Current state"
+Timer -> Animation: "Time to advance"
+Animation -> Atlas: "Updates frame"
+Atlas -> Player Moves: "Visual output"
+```
 
 ```rust
 // Append these lines of code to player.rs
