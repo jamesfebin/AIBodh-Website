@@ -379,9 +379,17 @@ cargo run
 A blank screen? Yup, we have only setup the camera, now let's add our player. 
 
 
-<br>
-
 ## Setting up the Player
+
+Now let's create our player! Remember our **Setup System** and **Update System** from earlier? Well, in Bevy, everything is an **Entity** with **Components** that systems can work with.
+
+Think of an entity as a unique ID (like a social security number) and components as the data attached to it. For our player, we need components like movement speed, health, or special abilities. In Rust, the perfect way to create these components is with a **struct**.
+
+**Wait, but didn't we say bundles hold components together?** 
+
+Yes! **Bundles** are collections of components, while **structs** define individual components. It's like bundles are the "starter pack" and structs are the individual items inside.
+
+`struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
 
 ```rust
 // Place this before main function in main.rs
@@ -389,13 +397,10 @@ A blank screen? Yup, we have only setup the camera, now let's add our player.
 struct Player;
 ```
 
-`struct` is one of the core building blocks of rust. It groups similar data together. Here we declare an empty `Player` struct so the type itself acts as a tag we can attach to the player entity. Later we can add things like player health.
-
 ```comic 
 left_girl_sad: So the struct is empty... does that mean my player is invisible?
 right_guy_laugh: No, it means he exist in spirit. You've made a philosophical protagonist
 ```
-
 
 **Why tag?**
 
@@ -403,7 +408,7 @@ Tag marks an entity for later lookup. Because `Player` is attached to only our h
 
 **What's this #[derive(component)]?**
 
-`derive` tells Rust to attach the component macro code to this struct. A macro is Rust's way of generating  pre-defined template code for you. `#[derive(Component)]` writes the boilerplate Bevy needs so it can store and find `Player` entities, saving us from copying the same glue code everywhere. We'll take a closer look at macros later in the series. This is the moment our player type becomes a component.
+`derive` tells Rust to attach the component macro code to this struct. A macro is Rust's way of generating  pre-defined template code for you. `#[derive(Component)]` automatically injects the boilerplate Bevy needs so it can store and find `Player` entities, saving us from copying the same glue code everywhere. We'll take a closer look at macros later in the series. This is the moment our player type becomes a component.
 
 **What's a component, and why should the player be a component?**
 
@@ -523,14 +528,30 @@ Once the queue flushes, those entities live in the world, ready for systems to d
 
 ### Implementing Player Movement
 
-Moving the player is simple, listen to keyboard events and apply it on the player.
+Now let's create our **Update System** for player movement! Think about what we need to move a player:
+
+1. **Keyboard input** - to know which keys are pressed
+2. **Time** - to make movement smooth regardless of frame rate  
+3. **Player position** - to actually move the player
+
+In other game engines, you'd spend time manually connecting these systems together. But here's the magic of Bevy - you just ask for what you need in your function parameters, and Bevy automatically provides it!
+
+```comic 
+left_guy_surprised: Wow that saves a lot of time I spend on manually wiring things!
+right_girl_laugh: Perfect! Now you can't hide behind "it's a technical limitation" anymore!  
+```
+
+Let's write our move player function. 
 
 ```rust
 // Append this code to main.rs
 fn move_player(
-    input: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>,
-    mut player_transform: Single<&mut Transform, With<Player>>,
+    // "Bevy, give me keyboard input"
+    input: Res<ButtonInput<KeyCode>>,           
+    // "Bevy, give me the game timer"
+    time: Res<Time>,                            
+    // "Bevy, give me the player's position"
+    mut player_transform: Single<&mut Transform, With<Player>>, 
 ) {
     let mut direction = Vec2::ZERO;
     if input.pressed(KeyCode::ArrowLeft) {
@@ -556,11 +577,11 @@ fn move_player(
 ```
 
 
-Bevy looks at the parameters of your system function and automatically hands you the matching data. If you ask for `Res<Time>`, the engine passes in the global timer resource every frame—no manual wiring required.
+
 
 **What's Res?**
 
-`Res<T>` is a read-only handle to shared data of type `T`. Resources are pieces of game-wide information that are not tied to any single entity. For example, `Res<Time>` gives you the game's master clock, so every system reads the same "time since last frame" value.
+Res or Resources are pieces of game-wide information that are not tied to any single entity. For example, `Res<Time>` gives you the game's master clock, so every system reads the same "time since last frame" value.
 
 <b> Explain Single<&mut Transform, With<Player>>? <b>
 
@@ -601,7 +622,7 @@ query_type -> world.entity_43: "match: With<Player>" {
 }
 ```
 
-`Single<&mut Transform, With<Player>>` asks Bevy for exactly one entity that has a `Transform` component and also carries the `Player` tag. The `&mut Transform` part means we intend to modify that transform (Remember, we added transform component in the setup function). If more than one player existed, this extractor would complain, which is perfect for a single-hero game.
+`Single<&mut Transform, With<Player>>` asks Bevy for exactly one entity that has a `Transform` component and also carries the `Player` tag. The `&mut Transform` part means we intend to modify that transform or player position (Remember, we added transform component in the setup function). If more than one player existed, this extractor would complain, which is perfect for a single-hero game.
 
 **What's Vec2::ZERO?**
 
@@ -609,7 +630,7 @@ query_type -> world.entity_43: "match: With<Player>" {
 
 **What's this KeyCode::... pattern?**
 
-`KeyCode::ArrowLeft`, `KeyCode::ArrowRight`, and friends are enums (will cover enums later) that represent specific keys on the keyboard. Checking `input.pressed(KeyCode::ArrowLeft)` simply asks Bevy whether that key is held down during the current frame.
+`KeyCode::ArrowLeft`, `KeyCode::ArrowRight` ... are enums (will cover enums later) that represent specific keys on the keyboard. Checking `input.pressed(KeyCode::ArrowLeft)` simply asks Bevy whether that key is held down during the current frame.
 
 We ignore zero direction so the player stands still when no keys are pressed. Once we have input, `normalize()` converts the vector to length 1 so diagonal movement isn't faster than straight movement. `speed` says how many pixels per second to move, and `time.delta_secs()` returns the frame time—the number of seconds since the previous frame—so multiplying them gives the distance we should travel this update. Finally we add that delta to the player's transform translation to move the sprite on screen.
 
@@ -661,7 +682,7 @@ update_schedule -> system_execution: "registers"
 direction: down
 ```
 
-**What's move_player added as Update? What's Update?**
+**Why is move_player added as Update? What's Update?**
 
 `move_player` runs every frame, so we plug it into the `Update` schedule. `Update` is Bevy's built-in stage that fires once per game loop after startup is done.
 
@@ -686,7 +707,9 @@ For this project the spritesheet is already included in the [repo](https://githu
 
 <br>
 
-### Refactoring: Code Organization
+### Refactoring Code 
+
+We need to add more code and adding to main.rs will make hard to read and understand.
 
 Update your main.rs file to the following, also create another file player.rs
 
@@ -700,7 +723,7 @@ mod player;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::WHITE)) // We have update the bg color to white
+        .insert_resource(ClearColor(Color::WHITE)) // We have updated the bg color to white
         .add_plugins(
             DefaultPlugins.set(AssetPlugin {
                 // Our assets live in `src/assets` for this project
