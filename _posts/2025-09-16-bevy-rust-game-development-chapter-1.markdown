@@ -145,7 +145,7 @@ A type tells Rust what kind of value you are handling—numbers, text, timers, B
 
 It prevents mistakes and helps you with performance, ex: If you try to add a string to a number, the compiler stops you before the game runs. On top of that, knowing the exact type lets Rust pack data tightly.
 
-A `Vec2` is just two numbers, so Rust stores exactly two numbers—no surprise extra space—which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
+A `Vec2` is just two numbers, so Rust stores exactly two numbers, no surprise extra space, which keeps things fast when you have thousands of game entities. These helps your game to be memory efficient.
 
 When you create a Vec2 object in JavaScript or Python, you're not just storing two numbers. The runtime adds type metadata, property information, and prototype references - turning your simple 8-byte data structure into ~48 bytes of memory.
 
@@ -850,8 +850,6 @@ We're wrapping the timer, not renaming it. Think of `AnimationTimer` as a little
 Yes—`AnimationTimer` is a tuple struct that contains a `Timer`. We build one when we spawn the player so each entity can carry its own timer data. This pattern shows up whenever you want to attach extra meaning to an existing type without writing a brand-new API.
 
 `AnimationState` remembers which way the player points, whether they are moving, and whether they just started or stopped. Systems read this to choose animation rows and reset frames when movement changes.
-
-
 
 
 
