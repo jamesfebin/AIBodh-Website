@@ -31,6 +31,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Architects+Daughter:wght@400&display=swap" rel="stylesheet">
   
+  <!-- Ensure comic fonts load properly on mobile -->
+  <style>
+    @font-face {
+      font-family: 'Architects Daughter';
+      font-display: swap;
+      src: url('https://fonts.gstatic.com/s/architectsdaughter/v18/KtkxAKiDZI_td1Lkx62xHZHDtgO_Y-bvTYlg4w.woff2') format('woff2');
+    }
+  </style>
+  
   {%- feed_meta -%}
   {%- if jekyll.environment == 'production' and site.google_analytics -%}
     {%- include google-analytics.html -%}

@@ -110,7 +110,7 @@ function parseStoryboard(filePath) {
     panelWidth: 1024,
     panelHeight: 768,
     spriteScale: 0.85,
-    fontFamily: "'Architects Daughter', 'Comic Sans MS', cursive",
+    fontFamily: "'Architects Daughter', 'Space Mono', monospace",
   fontSize: 34,
   fontColor: '#111111',
   fontPath: null,
