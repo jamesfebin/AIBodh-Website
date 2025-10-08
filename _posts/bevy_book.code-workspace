@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../bevy_game"
+		},
+		{
+			"path": "../../LibraryUpdates/bevy_procedural_tilemaps"
+		}
+	],
+	"settings": {}
+}
