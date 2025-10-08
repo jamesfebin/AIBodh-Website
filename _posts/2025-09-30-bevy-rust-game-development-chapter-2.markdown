@@ -215,7 +215,7 @@ direction: right
 Pick: {
   label: |md
     **Pick cell**
-    - fewest candidates
+    - fewest possiblities
   |
 }
 
@@ -223,14 +223,13 @@ Filter: {
   label: |md
     **Filter**
     - apply rules
-    - compute candidates
   |
 }
 
 Place: {
   label: |md
     **Place**
-    - choose one candidate
+    - choose one option
   |
 }
 
@@ -256,6 +255,18 @@ Propagate -> Backtrack: if contradiction
 Backtrack -> Pick
 ```
 
-That “remove options for peers” step is constraint propagation. Each placement immediately trims the candidates for its neighbors. The least-free cell becomes the next target. If any neighbor reaches zero candidates in Sudoku, you backtrack and try a different path.
+That "remove options for peers" step is **constraint propagation**. Each placement immediately reduces the possibilities for neighboring cells. The cell with the fewest remaining possibilities becomes our next target. If any cell ends up with zero possibilities, we've hit a contradiction—in Sudoku, you backtrack and try a different value.
 
-For our world: a grid cell is like a Sudoku cell, and sockets are the rules. We pick the most constrained location, place a tile that matches the neighbors’ sockets, propagate those constraints, and continue. When we get stuck, our implementation does not backtrack; it retries from a fresh random seed (up to a retry limit) and reruns the loop until a valid map falls out.
+**For our tile-based world:** Think of each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other. 
+
+Here's how it works:
+1. **Find the most constrained cell** - the one with the fewest valid tiles that could fit.
+2. **Place a tile** whose sockets are compatible with its neighbors.
+3. **Propagate constraints** - this placement immediately reduces the valid options for surrounding cells.
+4. **Repeat** until the grid is complete.
+
+When we hit a dead end (no valid tiles for a cell), our implementation takes a simpler approach than Sudoku: instead of backtracking through previous choices, we restart with a fresh random seed (up to a retry limit) and run the entire process again until we generate a valid map.
+
+**What do you mean by fresh random seed?**
+
+A "random seed" is a starting number that controls which "random" sequence the algorithm will follow. Same seed = same tile placement order every time. When we hit a dead end, instead of backtracking, we generate a new random seed and start over—this gives us a completely different sequence of tile choices to try.
