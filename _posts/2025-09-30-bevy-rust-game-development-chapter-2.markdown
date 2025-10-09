@@ -446,6 +446,119 @@ bevy = "0.17.2" // Line update alert
 bevy_procedural_tilemaps = "0.1.2" // Line update alert
 ```
 
+## Bevy Procedural Tilemaps
+
+The `bevy_procedural_tilemaps` library is a powerful tool that handles the complex logic of generating coherent, rule-based worlds. 
+
+### What the Library Handles
+
+The library takes care of the **algorithmic complexity** of procedural generation:
+
+- **Rule Processing**: Converts our game rules into the library's internal format.
+- **Generator Creation**: Builds the procedural generation engine with our configuration.
+- **Constraint Solving**: Figures out which tiles can go where based on rules.
+- **Grid Management**: Handles the 2D grid system and coordinate transformations.  
+- **Entity Spawning**: Creates Bevy entities and positions them correctly.
+
+### What We Need to Provide
+
+We need to give the library the **game-specific information** it needs:
+
+- **Sprite Definitions**: What sprites to use for each tile type.
+- **Compatibility Rules**: Which tiles can be placed next to each other.
+- **Generation Configuration**: The patterns and constraints for our specific game world.
+- **Asset Data**: Sprite information, positioning, and custom components.
+
+
+```d2
+
+direction: right
+
+Sprite Atlas: {
+  shape: rectangle
+}
+
+Asset Definitions: {
+  shape: rectangle
+}
+
+Compatibility Rules: {
+  shape: rectangle
+}
+
+Model Organizer: {
+  shape: rectangle
+}
+
+Generation Config: {
+  shape: rectangle
+}
+
+Library Interface: {
+  shape: rectangle
+}
+
+Sprite Atlas -> Asset Definitions: "Sprite names"
+Asset Definitions -> Model Organizer: "What to spawn"
+Compatibility Rules -> Model Organizer: "What can go where"
+Model Organizer -> Library Interface: "Organized models"
+Generation Config -> Library Interface: "Generation settings"
+```
+
+### How the System Works Together
+
+The library pipeline works in stages: first it processes our rules and builds a generator, then the constraint solver figures out valid tile placements, and finally the entity spawner creates the actual game objects in the Bevy world.
+
+### The Workflow
+
+1. **We Define**: Create tile definitions, compatibility rules, and generation patterns
+2. **Library Processes**: Runs the constraint-solving algorithm to find valid tile placements
+3. **Library Spawns**: Creates Bevy entities with the correct sprites, positions, and components
+4. **Result**: A coherent, rule-based world appears in our game
+
+The beauty of this system is that we focus on **what we want** (environment design), while the library handles **how to achieve it** (complex algorithms). This separation of concerns makes procedural generation accessible to game developers without requiring deep knowledge of constraint-solving algorithms.
+
+**What's a generator?**
+
+A generator is the core engine that runs the procedural generation algorithm. It's a puzzle solver that takes our rules (which tiles can go where) and our grid (the empty world), then systematically figures out how to fill every position with valid tiles. It uses constraint-solving algorithms to ensure that every tile placement follows our compatibility rules, creating a coherent world that makes sense according to our game's logic.
+
+**Library Processing Pipeline**
+
+```d2
+
+direction: right
+
+Our Code: {
+  shape: rectangle
+}
+
+Rule Processing: {
+  shape: rectangle
+}
+
+Generation Engine: {
+  shape: rectangle
+}
+
+Entity Creation: {
+  shape: rectangle
+}
+
+Bevy World: {
+  Generated Entities: {
+    shape: rectangle
+  }
+}
+
+Our Code -> Rule Processing: "Models & rules"
+Rule Processing -> Generation Engine: "Processed rules"
+Generation Engine -> Entity Creation: "Valid tile positions"
+Entity Creation -> Bevy World.Generated Entities: "Creates game objects"
+```
+
+Now that we understand how the procedural generation system works, let's build our map module.
+
+
 ## The Map Module
 
 We'll create a dedicated `map` folder inside the `src` folder to house all our world generation logic.
@@ -466,12 +579,12 @@ src/
 ├── player.rs
 └── map/
     ├── mod.rs       
-    ├── sockets.rs       
+    ├── assets.rs       
 ```
 
 **What's `mod.rs`**
 
-The `mod.rs` file is Rust's way of declaring what modules exist in a folder. Think of it as the "table of contents" for our map module. Add the following line to your `mod.rs`.
+The `mod.rs` file is Rust's way of declaring what modules exist in a folder. It's like the "table of contents" for our map module. Add the following line to your `mod.rs`.
 
 ```rust
 // src/map/mod.rs
@@ -482,34 +595,19 @@ pub mod assets;   // Exposes assets.rs as a module
 
 It's Rust convention, when you create a folder, Rust looks for `mod.rs` to understand the module structure.
 
-Let's start by creating our `assets.rs` file. This will handle how we define what gets spawned in our world.
+
+#### Assets
+Let's start by creating our `assets.rs` file inside the `map` folder. This will handle how we define what gets spawned in our world.
 
 The `bevy_procedural_tilemaps` library can generate complex worlds, but it needs to know **what to actually place** at each generated location. 
 
 Think about it: when the algorithm decides "this should be a grass tile," it needs to know:
-- Which sprite to use from our tilemap
-- Where exactly to position it
-- What components to add (collision, physics, etc.)
+- Which sprite to use from our tilemap?
+- Where exactly to position it?
+- What components to add (collision, physics, etc.)?
 
-The library expects us to provide this information in a very specific format. For every single tile type, we'd need to write something like this:
-
-```rust
-// Pseudo code warning, don't use
-// Without SpawnableAsset - Lots of boilerplate for each tile
-
-ModelAsset {
-    assets_bundle: AtlasSpriteAsset {
-        image: tilemap_handles.image.clone(),
-        layout: tilemap_handles.layout.clone(),
-        atlas_index: 42, // Hard to remember which sprite is which
-    },
-    grid_offset: GridDelta::new(0, 0, 0),
-    world_offset: Vec3::ZERO,
-    spawn_commands: |_| {},
-}
-```
-
-Now imagine doing this for **every single tile type** in your game - grass, dirt, trees, rocks, water, etc. You'd have hundreds of these complex definitions.
+The library expects us to provide this information in a very specific format. And doing 
+this for **every single tile type** in your game - grass, dirt, trees, rocks, water, etc will result in redundant code.
 
 This is where `SpawnableAsset` comes in. It's our **abstraction layer** to help you avoid unnecessary boilerplate. 
 
@@ -554,9 +652,63 @@ impl SpawnableAsset {
 ```
 
 **SpawnableAsset Struct**
-- `sprite_name`: Gives a name to your sprite (like "grass", "tree", "rock").
-- `grid_offset`: For objects that span multiple tiles ().
-- `offset`: Fine-tuning the position.
-- `components_spawner`: A function that adds custom behavior (collision, physics, etc.).
+
+The `SpawnableAsset` struct contains all the information needed to spawn a tile in our world. The `sprite_name` field gives a name to your sprite (like "grass", "tree", "rock").
+
+The `grid_offset` is used for objects that span multiple tiles - it's a positioning within the tile grid itself. 
+
+For example, a tree might need two tiles: the bottom part at the original position, and the top part one tile up. The `offset` field is for fine-tuning the position in world coordinates - this is for precise positioning adjustments. 
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_tl.png" alt="Tree top-left" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_tr.png" alt="Tree top-right" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+<tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_bl.png" alt="Tree bottom-left" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_br.png" alt="Tree bottom-right" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+</table>
+</div>
+</div>
+
+**Grid Offset**
+- Bottom-left part: grid_offset = (0, 0) - stays at original position
+- Bottom-right part: grid_offset = (1, 0) - moves one tile right
+- Top-left part: grid_offset = (0, 1) - moves one tile up
+- Top-right part: grid_offset = (1, 1) - moves one tile up and right
+
+The `offset` field, on the other hand, is for fine-tuning the position within the tile - like moving a rock slightly to the left or making sure a tree trunk is perfectly centered within its tile space.
+
+Let's see how `offset` works with rock positioning:
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tr>
+<td style="padding: 3px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_1.png" alt="Rock 1" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(0px, 0px);"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_2.png" alt="Rock 2" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(-8px, -6px);"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_3.png" alt="Rock 3" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(6px, 5px);"></td>
+</tr>
+</table>
+</div>
+</div>
+
+**Offset**
+- **Rock 1**: `offset = (0, 0)` - centered in tile
+- **Rock 2**: `offset = (-8, -6)` - moved slightly left and up
+- **Rock 3**: `offset = (6, 5)` - moved slightly right and down
+
+Finally, the `components_spawner` is a function that adds custom behavior like collision, physics, or other game mechanics.
 
 
+**Why is sprite name defined as `&'static str?`**
+//Todo
+
+**What's `GridDelta`?**
+//Todo
+
+**Why's components_spawner defined as `fn(&mut EntityCommands)`?**
+//Todo
