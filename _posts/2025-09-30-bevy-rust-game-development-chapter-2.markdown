@@ -614,7 +614,6 @@ This is where `SpawnableAsset` comes in. It's our **abstraction layer** to help 
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_procedural_tilemaps::prelude::*;
-use crate::map::tilemap::TILEMAP;
 
 #[derive(Clone)]
 pub struct SpawnableAsset {
@@ -895,13 +894,121 @@ In Rust, the last expression in a function is automatically returned without nee
 
 The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide the public method `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
 
+Now that we understand how to define our sprites with `SpawnableAsset`, **how do we load and use these sprites in our game?**
+
 ## Loading Sprite Assets
 
-Now that we understand how to define our sprites with `SpawnableAsset`, we need to solve a practical problem: **how do we actually load and use these sprites in our game?**
+Our game uses a **sprite atlas** - a single large image containing all our sprites. Bevy needs to know where each sprite is located within this image, and we need to avoid reloading the same image multiple times.
 
-Our game uses a **sprite atlas** - a single large image containing all our sprites. Bevy needs to know exactly where each sprite is located within this image, and we need to avoid reloading the same image multiple times.
 
-Go ahead and append this code into your `assets.rs`
+Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png` inside it, you can get it from the [github repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust). 
+
+<div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+<div style="text-align: center;">
+  <img src="/assets/book_assets/tile_layers/tilemap.png" alt="Tilemap sprite atlas" style="max-width: 100%; height: auto; pointer-events: none;">
+</div>
+The tilemap assets used in this example are based on <a target="_blank" href="https://opengameart.org/content/16x16-game-assets">16x16 Game Assets</a>  by George Bailey, available on OpenGameArt under CC-BY 4.0 license. <strong>However, to follow this tutorial, please use tilemap.png provide from the chapter's <a target="_blank" style="font-weight:650" href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust"> github repo</a>.</strong> 
+</div> 
+
+Now inside `src/maps` folder create a file `tilemap.rs`.
+
+This is where our tilemap definition comes in - it acts as a "map" that tells Bevy the coordinates of every sprite in our atlas.
+
+```rust
+// src/maps/tilemap.rs
+use bevy::math::{URect, UVec2};
+
+pub struct TilemapSprite {
+    pub name: &'static str,
+    pub pixel_x: u32,
+    pub pixel_y: u32,
+}
+
+pub struct TilemapDefinition {
+    pub tile_width: u32,
+    pub tile_height: u32,
+    pub atlas_width: u32,
+    pub atlas_height: u32,
+    pub sprites: &'static [TilemapSprite],
+}
+```
+
+The `TilemapSprite` struct represents a single sprite within our atlas. It stores the sprite's name (like "dirt" or "green_grass") and its exact pixel coordinates within the atlas image. 
+
+The `TilemapDefinition` struct serves as the "blueprint" that Bevy uses to understand how to slice up our atlas image into individual sprites.
+
+Though our tilemap stores sprite names and pixel coordinates, Bevy's texture atlas system requires numeric indices and rectangular regions. These methods perform the necessary conversions.
+
+
+Append the following code to your `tilemap.rs`.
+
+```rust
+// src/maps/tilemap.rs
+
+impl TilemapDefinition {
+    pub const fn tile_size(&self) -> UVec2 {
+        UVec2::new(self.tile_width, self.tile_height)
+    }
+
+    pub const fn atlas_size(&self) -> UVec2 {
+        UVec2::new(self.atlas_width, self.atlas_height)
+    }
+
+    pub fn sprite_index(&self, name: &str) -> Option<usize> {
+        self.sprites.iter().position(|sprite| sprite.name == name)
+    }
+
+    pub fn sprite_rect(&self, index: usize) -> URect {
+        let sprite = &self.sprites[index];
+        let min = UVec2::new(sprite.pixel_x, sprite.pixel_y);
+        URect::from_corners(min, min + self.tile_size())
+    }
+}
+```
+
+The `tile_size()` method converts our tile dimensions into a `UVec2` (unsigned 2D vector), which Bevy uses for size calculations. Similarly, `atlas_size()` provides the total atlas dimensions as a `UVec2`, which Bevy uses to create the texture atlas layout.
+
+The `sprite_index()` method is crucial for finding sprites by name. When we want to render a "dirt" tile, this method searches through our sprite array and returns the index position of that sprite. 
+
+Finally, `sprite_rect()` takes a sprite index and calculates the exact rectangular region within our atlas that contains that sprite. It uses `URect` (unsigned rectangle) to define the boundaries, which Bevy's texture atlas system requires to know which part of the large image to display.
+
+Now let's put our tilemap definition to use by adding our first sprite - the dirt tile.
+
+### Adding the dirt tile
+
+Let's start with a simple dirt tile to test our tilemap system. We'll add more sprites later as we build out our game world.
+
+Append this code to `tilemap.rs`
+
+```rust
+// src/maps/tilemap.rs
+pub const TILEMAP: TilemapDefinition = TilemapDefinition {
+    tile_width: 32,
+    tile_height: 32,
+    atlas_width: 256,
+    atlas_height: 320,
+    sprites: &[
+          TilemapSprite {
+            name: "dirt",
+            pixel_x: 128,
+            pixel_y: 0,
+        },
+    ]
+}
+```
+
+Cool, now let's come back to our `assets.rs`, in the imports, let's import our `TILEMAP`.
+
+```rust
+// src/maps/assets.rs
+use bevy::prelude::*; 
+use bevy_procedural_tilemaps::prelude::*;
+use crate::map::tilemap::TILEMAP; // <--- line update alert
+```
+
+Now that we have our tilemap definition with the dirt tile, we need to connect it to our asset loading system. 
+
+Go ahead and append this code into your `assets.rs`. 
 
 ```rust
 // src/map/assets.rs
@@ -932,11 +1039,75 @@ The `sprite(atlas_index)` method creates a ready-to-use `Sprite` for any sprite 
 
 This index-based approach makes it easy to programmatically select any sprite from our atlas without having to remember complex coordinates or file paths.
 
-**What is a `Handle`?**
-<br>
-A `Handle` in Bevy is a **reference** to an asset. 
+### Loading the Atlas
 
-**What happens when we clone a `Handle`?**
+Now that we understand how `TilemapHandles` works, let's see how we actually create it. The `prepare_tilemap_handles` function is responsible for loading our sprite atlas and creating the layout information.
 
-When we call `.clone()` on a `Handle`, we're **not copying the actual image data**. Instead, we're creating another lightweight reference to the same asset. This is extremely fast because it only creates a new reference.
+```rust
+pub fn prepare_tilemap_handles(
+    asset_server: &Res<AssetServer>,
+    atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    assets_directory: &str,
+    tilemap_file: &str,
+) -> TilemapHandles {
+    let image = asset_server.load::<Image>(format!("{assets_directory}/{tilemap_file}"));
+    let mut layout = TextureAtlasLayout::new_empty(TILEMAP.atlas_size());
+    for index in 0..TILEMAP.sprites.len() {
+        layout.add_texture(TILEMAP.sprite_rect(index));
+    }
+    let layout = atlas_layouts.add(layout);
+
+    TilemapHandles { image, layout }
+}
+```
+
+**What this function does:**
+
+The function loads the atlas image using Bevy's asset server, creates an empty texture atlas layout matching our tilemap size, then iterates through all sprites to register their rectangles in the layout. Finally, it adds the layout to Bevy's asset system and returns our `TilemapHandles` struct.
+
+## Converting Assets: `load_assets`
+
+Now let's look at the `load_assets` function, which converts our `SpawnableAsset` definitions into concrete `Sprite` objects that the procedural generator can use.
+
+```rust
+pub fn load_assets(
+    tilemap_handles: &TilemapHandles,
+    assets_definitions: Vec<Vec<SpawnableAsset>>,
+) -> ModelsAssets<Sprite> {
+    let mut models_assets = ModelsAssets::<Sprite>::new();
+    for (model_index, assets) in assets_definitions.into_iter().enumerate() {
+        for asset_def in assets {
+            let SpawnableAsset {
+                sprite_name,
+                grid_offset,
+                offset,
+                components_spawner,
+            } = asset_def;
+
+            let Some(atlas_index) = TILEMAP.sprite_index(sprite_name) else {
+                panic!("Unknown atlas sprite '{}'", sprite_name);
+            };
+
+            models_assets.add(
+                model_index,
+                ModelAsset {
+                    assets_bundle: tilemap_handles.sprite(atlas_index),
+                    grid_offset,
+                    world_offset: offset,
+                    spawn_commands: components_spawner,
+                },
+            )
+        }
+    }
+    models_assets
+}
+```
+
+**What this function does:**
+
+The function takes our `TilemapHandles` and a collection of `SpawnableAsset` definitions, then converts them into `ModelAsset` objects that the procedural generator can use. It iterates through each model and each asset within that model, looks up the sprite name to get the atlas index, creates a sprite using our `TilemapHandles`, and stores everything in a `ModelsAssets` collection.
+
+**Key insight**: This function is where our high-level `SpawnableAsset` definitions get converted into the low-level `Sprite` objects that Bevy can actually render.
+
+According to the assets pipeline documentation, this function runs during startup in `setup_generator`, and the returned `ModelsAssets<Sprite>` is passed to `NodesSpawner::new()` so that every time the procedural generator selects a model, the corresponding sprites are spawned with the correct offsets and extra components.
 
