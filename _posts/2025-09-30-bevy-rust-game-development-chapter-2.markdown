@@ -851,10 +851,6 @@ impl SpawnableAsset {
         self.grid_offset = offset;
         self
     }
-
-    pub fn sprite_name(&self) -> &'static str {
-        self.sprite_name
-    }
 }
 ```
 
@@ -895,6 +891,6 @@ Closures are perfect because they can capture game state (like player health, en
 
 In Rust, the last expression in a function is automatically returned without needing a `return` keyword or semicolon. This makes it easier to specify what value should be returned - you just write the expression you want to return, and Rust handles the rest. This is Rust's way of making code cleaner and more concise.
 
-**Why can't you manipulate or retrieve `grid_offset` or `sprite_name` directly?**
+**Why can't you manipulate or retrieve `grid_offset` directly?**
 
-The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide public methods like `sprite_name()` to safely access the data, and `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
+The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide the public method `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
