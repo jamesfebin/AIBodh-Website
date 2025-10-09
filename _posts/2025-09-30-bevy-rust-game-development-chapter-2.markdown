@@ -950,7 +950,7 @@ Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png
 The tilemap assets used in this example are based on <a target="_blank" href="https://opengameart.org/content/16x16-game-assets">16x16 Game Assets</a>  by George Bailey, available on OpenGameArt under CC-BY 4.0 license. <strong>However, to follow this tutorial, please use tilemap.png provide from the chapter's <a target="_blank" style="font-weight:650" href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust"> github repo</a>.</strong> 
 </div> 
 
-Now inside `src/map` folder create a file `tilemap.rs`.
+Now inside `src/map` folder create a file `tilemap.rs`. When you add a file inside map folder, ensure to register it in `mod.rs` by adding the line `pub mod tilemap`.
 
 This is where our tilemap definition comes in - it acts as a "map" that tells Bevy the coordinates of every sprite in our atlas.
 
@@ -1125,7 +1125,7 @@ This function loads the atlas into memory and sets up the layout structure, but 
 
 ### Step 3: Converting Sprite Names to Renderable Sprites
 
-Finally, we need a way to convert sprite names (like "dirt") into actual `Sprite` objects that can be rendered. This is the last piece that ties everything together.
+Finally, we need a way to convert sprite names (like "dirt") into actual `Sprite` objects that can be rendered. This is the last piece that connects everything we've built so far.
 
 ```rust
 pub fn load_assets(
@@ -1161,14 +1161,19 @@ pub fn load_assets(
 }
 ```
 
-**Here's how it works:**
+**Why the two loops?**
 
-1. **Look up sprite name**: `TILEMAP.sprite_index(sprite_name)` converts "dirt" → index 0
-2. **Create sprite**: `tilemap_handles.sprite(atlas_index)` uses the index to create a renderable `Sprite`
-3. **Package everything**: Combines the sprite with grid offsets and spawn commands into a `ModelAsset`
-4. **Return collection**: Returns `ModelsAssets` ready for the procedural generator
+Some tiles are simple and need just one sprite (like dirt). Others are complex and need multiple sprites (like a tree that needs 4 parts). 
 
-This is the final connection! When we later define a tile that needs the "dirt" sprite, this function will look it up in `TILEMAP`, create the actual `Sprite` using our `TilemapHandles`, and package it for the generator to use.
+The outer loop says "for each type of tile," and the inner loop says "for each sprite that tile needs."
 
-According to the assets pipeline documentation, this function runs during startup in `setup_generator`, and the returned `ModelsAssets<Sprite>` is passed to `NodesSpawner::new()` so that every time the procedural generator selects a model, the corresponding sprites are spawned with the correct offsets and extra components.
+**Let's walk through what happens when we load a dirt tile:**
+
+1. We have: `SpawnableAsset { sprite_name: "dirt", ... }`
+2. The function asks TILEMAP: "Where is 'dirt'?" → TILEMAP replies: "Index 0"
+3. It then asks TilemapHandles: "Give me a Sprite for index 0" → Gets back a ready-to-render `Sprite`
+4. Finally, it packages everything together with the positioning info and stores it
+
+Later, when the procedural generator decides "I need to place a dirt tile here," it grabs this prepared `Sprite` and spawns it at the right location. No need to look anything up again - it's all ready to go!
+
 
