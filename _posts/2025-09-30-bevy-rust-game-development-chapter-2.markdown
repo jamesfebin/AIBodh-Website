@@ -24,19 +24,19 @@ Here's what you will be able to achieve by the end of this tutorial.
 
 ## Procedural Generation
 
-I have huge respect for artists who hand craft tiles to build game worlds. But I belong to the impatient lazy species. 
+I respect artists who hand craft tiles to build game worlds. But I belong to the impatient/lazy species. 
 
-So, I thought, there has to be a better way. I went on an exploration to figure it out and came across procedural generation. 
+I went on an exploration and came across procedural generation. 
 
-Little did I know the complexities involved in it. I was in the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightment came three days ago, all the pieces suddenly fit together.
+Little did I know the complexities involved. I was in the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightment came three days ago, all the pieces fit together.
 
 Basically it's about automatically fitting things together like a jigsaw puzzle. To solve this problem, let's again think in systems. 
 
 **What do we need to generate the game world procedurally?**
 1. Tileset.
-2. Sockets for tiles because only comptable tiles should fit.
-3. Comptability rules.
-4. Magic algorithm that uses all the above components to generate a coherent world.
+2. Sockets for tiles because only compatible tiles should fit.
+3. Compatibility rules.
+4. Magic algorithm that uses these components to generate a coherent world.
 
 **How does this magic algorithm work?**
 
@@ -44,7 +44,7 @@ That “magic algorithm” has a name: Wave Function Collapse (WFC). The easiest
 
 **Small 4×4 Sudoku**
 
-Let's solve this step by step, focusing on the most constrained cells first. I'll highlight the sub-grid we're working with and show exactly where we're placing each number.
+Let's solve this step by step, focusing on the most constrained cells first. 
 
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
@@ -270,7 +270,7 @@ Backtrack -> Pick
 
 **For our tile-based world:** Think of each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
 
-Let's see this in action with a step-by-step demonstration using the following water tiles. We'll learn how constraints propagate to form a coherent landscape:
+Let's see this in action using the following water tiles. We'll learn how constraints propagate to form a coherent environment:
 
 <div class="columns is-mobile is-centered">
 <div class="column is-narrow">
@@ -343,7 +343,7 @@ We start with an empty grid where every cell can potentially hold any tile. The 
 </div>
 </div>
 
-The algorithm starts by placing the initial water center tile. This placement immediately constrains the neighboring cells - they now know they need to connect to water on at least one side.
+The algorithm starts by placing the initial water center tile (almost). This placement immediately constrains the neighboring cells - they now know they need to connect to water on at least one side.
 
 **Step 3 - Propagate Constraints**
 
@@ -424,10 +424,29 @@ While Wave Function Collapse is powerful, it has its limitations.
 We'll address these limitations in a later chapter. For now, we'll focus on building a functional section of our game world that will become the foundation for building larger game worlds.
 </div>
 
+## From Theory to Implementation
 
-## Setting up systems
+Now that we understand **how** Wave Function Collapse works—the constraint propagation, socket compatibility, and tile placement logic—it's time to transform this knowledge into actual running code.
 
-Before we begin procedural generation, let's set up few essential systems. We will be using `bevy_procedural_tilemaps` [crate](https://crates.io/crates/bevy_procedural_tilemaps). I built this by forking `ghx_proc_gen` [library](https://crates.io/crates/ghx_proc_gen), primarly because I wanted to make it compatable with the new bevy 0.17 and also make it simple for learners to use. 
+**The reality of implementation:**
+
+Building a WFC algorithm from scratch is complex. You'd need to implement:
+- Constraint propagation across the entire grid
+- Backtracking when hitting dead ends
+- Efficient data structures for tracking possibilities
+- Grid coordinate management
+- Random selection with proper probability weights
+
+That's a lot of algorithmic complexity before we even get to the game-specific parts like sprites, rules, and world design.
+
+**Our approach:**
+
+Instead of reinventing the wheel, we'll use a library that handles the WFC algorithm internals. This lets us focus on what makes our game unique: the tiles, the rules, the world aesthetics. We define **what** we want; the library figures out **how** to achieve it.
+
+
+## Setting Up Our Toolkit
+
+Let's add the procedural generation library to our project. We'll be using the `bevy_procedural_tilemaps` [crate](https://crates.io/crates/bevy_procedural_tilemaps), which I built by forking `ghx_proc_gen` [library](https://crates.io/crates/ghx_proc_gen). I created this fork primarily to ensure compatibility with Bevy 0.17 and to simplify this tutorial. 
 
 If you need advanced features, check out the original `ghx_proc_gen` [crate](https://crates.io/crates/ghx_proc_gen) by Guillaume Henaux, which includes 3D capabilities and debugging tools.
 
@@ -593,9 +612,22 @@ pub mod assets;   // Exposes assets.rs as a module
 
 It's Rust convention, when you create a folder, Rust looks for `mod.rs` to understand the module structure.
 
+### Building the Map System
 
-#### Assets
-Let's start by creating our `assets.rs` file inside the `map` folder. This will handle how we define what gets spawned in our world.
+Now that we've set up our module structure, we need to build the actual components. Our map system will consist of several interconnected files:
+
+1. **`assets.rs`** - Defines what sprites to spawn and how to position them
+2. **`tilemap.rs`** - Maps sprite names to their pixel coordinates in our atlas
+3. **`models.rs`** - Organizes tile models and keeps them synchronized with their assets
+4. **`sockets.rs`** - Defines connection points for tile compatibility
+5. **`rules.rs`** - Defines terrain layers, compatibility rules, and world generation logic
+6. **`generate.rs`** - Sets up the procedural generation engine
+
+We'll build these in a logical order, starting with the foundation and working our way up.
+
+### Creating SpawnableAsset
+
+Let's start by creating our `assets.rs` file inside the `map` folder. This will be the foundation that defines how we spawn sprites in our world.
 
 The `bevy_procedural_tilemaps` library can generate complex worlds, but it needs to know **what to actually place** at each generated location. 
 
@@ -653,11 +685,15 @@ For example, a tree might need two tiles: the bottom part at the original positi
 </div>
 
 **Grid Offset**
-- Bottom-left part: grid_offset = (0, 0) - stays at original position
-- Bottom-right part: grid_offset = (1, 0) - moves one tile right
-- Top-left part: grid_offset = (0, 1) - moves one tile up
-- Top-right part: grid_offset = (1, 1) - moves one tile up and right
 
+| Tree Part | Grid Offset | Description |
+|-----------|-------------|-------------|
+| Bottom-left | `(0, 0)` | Stays at original position |
+| Bottom-right | `(1, 0)` | Moves one tile right |
+| Top-left | `(0, 1)` | Moves one tile up |
+| Top-right | `(1, 1)` | Moves one tile up and right |
+
+<br><br>
 The `offset` field, on the other hand, is for fine-tuning the position within the tile - like moving a rock slightly to the left or making sure a tree trunk is perfectly centered within its tile space.
 
 Let's see how `offset` works with rock positioning:
@@ -675,12 +711,15 @@ Let's see how `offset` works with rock positioning:
 </div>
 
 **Offset**
-- **Rock 1**: `offset = (0, 0)` - centered in tile
-- **Rock 2**: `offset = (-8, -6)` - moved slightly left and up
-- **Rock 3**: `offset = (6, 5)` - moved slightly right and down
+
+| Rock | Offset | Description |
+|------|--------|-------------|
+| Rock 1 | `(0, 0)` | Centered in tile |
+| Rock 2 | `(-8, -6)` | Moved slightly left and up |
+| Rock 3 | `(6, 5)` | Moved slightly right and down |
 
 Finally, the `components_spawner` is a function that adds custom behavior like collision, physics, or other game mechanics.
-
+<br><br>
 
 **Why is sprite name defined as `&'static str?`**
 
@@ -688,7 +727,6 @@ To understand `&'static str`, we need to break down each part. Let's start with 
 
 Here's how memory works with our sprite names:
 
-**Memory Structure:**
 ```d2
 # Memory visualization
 memory: {
@@ -771,7 +809,7 @@ A string literal is text that's written directly in your code, surrounded by quo
 
 **What's a lifetime and what has `'static` got to do with it?**
 
-A **lifetime** is Rust's way of tracking how long data lives in memory. Think of it like an expiration date - Rust needs to know when it's safe to use data and when it might be deleted.
+A **lifetime** is Rust's way of tracking how long data lives in memory. Rust needs to know when it's safe to use data and when it might be deleted.
 
 Most data has a limited lifetime. For example:
 - Local variables live only while a function runs
@@ -799,7 +837,7 @@ Here's why this matters for game development:
 let sprite_name = {
     let temp = "grass";
     &temp  // temp gets deleted here!
-}; // Using sprite_name here = crash!
+}; 
 println!("{}", sprite_name); // CRASH! Using deleted data
 ```
 
@@ -817,7 +855,7 @@ Not quite. str represents text data, but you can only use it through a reference
 
 **What's `GridDelta`?**
 
-`GridDelta` is a struct that represents movement in grid coordinates. Think of it as "how many tiles to move" in each direction. For example, `GridDelta::new(1, 0, 0)` means "move one tile to the right", while `GridDelta::new(0, 1, 0)` means "move one tile up". It's used for positioning multi-tile objects like the tree sprite with multiple tiles we mentioned earlier in grid offset.
+`GridDelta` is a struct that represents movement in grid coordinates. It specifies "how many tiles to move" in each direction. For example, `GridDelta::new(1, 0, 0)` means "move one tile to the right", while `GridDelta::new(0, 1, 0)` means "move one tile up". It's used for positioning multi-tile objects like the tree sprite with multiple tiles we mentioned earlier in grid offset.
 
 **Why's components_spawner defined as `fn(&mut EntityCommands)`?**
 
@@ -830,9 +868,10 @@ The function pointer allows us to customize what components get added to each sp
 
 Yes! In Rust, you need a mutable reference (`&mut`) when you want to modify something. `EntityCommands` needs to be mutable because it's used to add, remove, or modify components on entities.
 
+<br>
 Now let's add some helpful methods to our `SpawnableAsset` struct to make it easier to create and configure sprite assets.
 
-Append the following code to the same assets.rs file.
+Append the following code to the same `assets.rs` file.
 
 ```rust
 // src/map/assets.rs
@@ -884,6 +923,7 @@ let attack = |_| {
 - The closure can use these captured variables when it's called later.
 
 **Why use closures here?**
+<br>
 Closures are perfect because they can capture game state (like player health, enemy types, or configuration settings) and use that information when spawning sprites. This allows each sprite to be customized based on the current game context.
 
 **Why is semicolon missing in the last line of these functions?**
@@ -910,12 +950,12 @@ Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png
 The tilemap assets used in this example are based on <a target="_blank" href="https://opengameart.org/content/16x16-game-assets">16x16 Game Assets</a>  by George Bailey, available on OpenGameArt under CC-BY 4.0 license. <strong>However, to follow this tutorial, please use tilemap.png provide from the chapter's <a target="_blank" style="font-weight:650" href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust"> github repo</a>.</strong> 
 </div> 
 
-Now inside `src/maps` folder create a file `tilemap.rs`.
+Now inside `src/map` folder create a file `tilemap.rs`.
 
 This is where our tilemap definition comes in - it acts as a "map" that tells Bevy the coordinates of every sprite in our atlas.
 
 ```rust
-// src/maps/tilemap.rs
+// src/map/tilemap.rs
 use bevy::math::{URect, UVec2};
 
 pub struct TilemapSprite {
@@ -943,7 +983,7 @@ Though our tilemap stores sprite names and pixel coordinates, Bevy's texture atl
 Append the following code to your `tilemap.rs`.
 
 ```rust
-// src/maps/tilemap.rs
+// src/map/tilemap.rs
 
 impl TilemapDefinition {
     pub const fn tile_size(&self) -> UVec2 {
@@ -981,7 +1021,7 @@ Let's start with a simple dirt tile to test our tilemap system. We'll add more s
 Append this code to `tilemap.rs`
 
 ```rust
-// src/maps/tilemap.rs
+// src/map/tilemap.rs
 pub const TILEMAP: TilemapDefinition = TilemapDefinition {
     tile_width: 32,
     tile_height: 32,
@@ -994,21 +1034,35 @@ pub const TILEMAP: TilemapDefinition = TilemapDefinition {
             pixel_y: 0,
         },
     ]
-}
+};
 ```
 
-Cool, now let's come back to our `assets.rs`, in the imports, let's import our `TILEMAP`.
+Perfect! We now have a complete tilemap definition with our first sprite. Notice how we're using a const definition - this means all this sprite metadata is determined at compile time, making it very efficient. The dirt tile sits at pixel coordinates (128, 0) in our 256x320 atlas image.
+
+### Connecting the Tilemap to Asset Loading
+
+Now that we've defined our tilemap and sprites in `tilemap.rs`, we need to connect this to our asset loading system in `assets.rs`. `tilemap.rs` knows *where* each sprite is in our atlas from disk, while `assets.rs` will handle *loading* the atlas and converting these coordinates into actual renderable sprites.
+
+Let's update the imports in `assets.rs` to bring in our `TILEMAP` definition:
 
 ```rust
-// src/maps/assets.rs
+// src/map/assets.rs
 use bevy::prelude::*; 
 use bevy_procedural_tilemaps::prelude::*;
 use crate::map::tilemap::TILEMAP; // <--- line update alert
 ```
 
-Now that we have our tilemap definition with the dirt tile, we need to connect it to our asset loading system. 
+With the import in place, we can now build the three key functions that helps our procedural rendering system:
 
-Go ahead and append this code into your `assets.rs`. 
+1. `TilemapHandles` - Container that holds our loaded atlas and layout data
+2. `prepare_tilemap_handles` - Loads the atlas image from disk and builds the layout structure
+3. `load_assets` - Converts sprite names into actual renderable sprites
+
+Let's build these step by step.
+
+### Step 1: Creating the TilemapHandles Struct
+
+First, we need a way to hold references to both the atlas image and its layout. Go ahead and append this code into your `assets.rs`:
 
 ```rust
 // src/map/assets.rs
@@ -1028,20 +1082,15 @@ impl TilemapHandles {
 }
 ```
 
-The `TilemapHandles` struct contains two key components: `image` is a reference to the loaded sprite sheet, while `layout` is a reference to the atlas layout instructions that tell Bevy how to slice the image into individual sprites. 
+**What's happening here:**
 
-The `sprite(atlas_index)` method creates a ready-to-use `Sprite` for any sprite in our atlas. The `atlas_index` parameter tells the method **which sprite** to extract from our atlas. Think of it like a coordinate system:
+The `TilemapHandles` struct is a container for two handles: `image` points to our loaded sprite sheet file, while `layout` points to the atlas layout that tells Bevy how to slice that image into individual sprites.
 
-**How it works:**
-1. **Input**: `atlas_index` (e.g., `2` for the rock sprite)
-2. **Process**: The method uses this index to find the correct rectangle in our atlas
-3. **Output**: A complete `Sprite` object ready to be rendered
+The `sprite(atlas_index)` method is a convenience function that creates a ready-to-render `Sprite` by combining the image and layout with a specific index. For example, if the dirt tile is at index 0, calling `tilemap_handles.sprite(0)` gives us a `Sprite` configured to display just the dirt tile from our atlas.
 
-This index-based approach makes it easy to programmatically select any sprite from our atlas without having to remember complex coordinates or file paths.
+### Step 2: Loading the Atlas from Disk
 
-### Loading the Atlas
-
-Now that we understand how `TilemapHandles` works, let's see how we actually create it. The `prepare_tilemap_handles` function is responsible for loading our sprite atlas and creating the layout information.
+Now let's create the function that actually loads the atlas image file and sets up the layout. This is where the connection to our `TILEMAP` definition becomes crucial.
 
 ```rust
 pub fn prepare_tilemap_handles(
@@ -1061,13 +1110,22 @@ pub fn prepare_tilemap_handles(
 }
 ```
 
-**What this function does:**
+**Breaking it down:**
 
-The function loads the atlas image using Bevy's asset server, creates an empty texture atlas layout matching our tilemap size, then iterates through all sprites to register their rectangles in the layout. Finally, it adds the layout to Bevy's asset system and returns our `TilemapHandles` struct.
+1. **Load the image**: `asset_server.load()` requests the atlas image file from disk
+2. **Create empty layout**: `TextureAtlasLayout::new_empty(TILEMAP.atlas_size())` creates a layout matching our 256x320 atlas
+3. **Register each sprite**: The loop iterates through all sprites in `TILEMAP`, using `TILEMAP.sprite_rect(index)` to get each sprite's coordinates and adding them to the layout
+4. **Store and return**: The layout is added to Bevy's asset system, and we return a `TilemapHandles` containing both handles
 
-## Converting Assets: `load_assets`
+This is where `TILEMAP.atlas_size()` and `TILEMAP.sprite_rect()` from our tilemap definition come into play - they tell Bevy exactly how to slice up our atlas image!
 
-Now let's look at the `load_assets` function, which converts our `SpawnableAsset` definitions into concrete `Sprite` objects that the procedural generator can use.
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+This function loads the atlas into memory and sets up the layout structure, but it doesn't actually generate the game world yet. We're just preparing the tools that the procedural generator will use later to create the map.
+</div>
+
+### Step 3: Converting Sprite Names to Renderable Sprites
+
+Finally, we need a way to convert sprite names (like "dirt") into actual `Sprite` objects that can be rendered. This is the last piece that ties everything together.
 
 ```rust
 pub fn load_assets(
@@ -1103,11 +1161,14 @@ pub fn load_assets(
 }
 ```
 
-**What this function does:**
+**Here's how it works:**
 
-The function takes our `TilemapHandles` and a collection of `SpawnableAsset` definitions, then converts them into `ModelAsset` objects that the procedural generator can use. It iterates through each model and each asset within that model, looks up the sprite name to get the atlas index, creates a sprite using our `TilemapHandles`, and stores everything in a `ModelsAssets` collection.
+1. **Look up sprite name**: `TILEMAP.sprite_index(sprite_name)` converts "dirt" → index 0
+2. **Create sprite**: `tilemap_handles.sprite(atlas_index)` uses the index to create a renderable `Sprite`
+3. **Package everything**: Combines the sprite with grid offsets and spawn commands into a `ModelAsset`
+4. **Return collection**: Returns `ModelsAssets` ready for the procedural generator
 
-**Key insight**: This function is where our high-level `SpawnableAsset` definitions get converted into the low-level `Sprite` objects that Bevy can actually render.
+This is the final connection! When we later define a tile that needs the "dirt" sprite, this function will look it up in `TILEMAP`, create the actual `Sprite` using our `TilemapHandles`, and package it for the generator to use.
 
 According to the assets pipeline documentation, this function runs during startup in `setup_generator`, and the returned `ModelsAssets<Sprite>` is passed to `NodesSpawner::new()` so that every time the procedural generator selects a model, the corresponding sprites are spawned with the correct offsets and extra components.
 
