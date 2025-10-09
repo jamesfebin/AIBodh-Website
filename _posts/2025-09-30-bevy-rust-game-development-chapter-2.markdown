@@ -522,8 +522,6 @@ The beauty of this system is that we focus on **what we want** (environment desi
 
 A generator is the core engine that runs the procedural generation algorithm. It's a puzzle solver that takes our rules (which tiles can go where) and our grid (the empty world), then systematically figures out how to fill every position with valid tiles. It uses constraint-solving algorithms to ensure that every tile placement follows our compatibility rules, creating a coherent world that makes sense according to our game's logic.
 
-**Library Processing Pipeline**
-
 ```d2
 
 direction: right
@@ -630,25 +628,6 @@ pub struct SpawnableAsset {
     components_spawner: fn(&mut EntityCommands),
 }
 
-impl SpawnableAsset {
-    pub fn new(sprite_name: &'static str) -> Self {
-        Self {
-            sprite_name,
-            grid_offset: GridDelta::new(0, 0, 0),
-            offset: Vec3::ZERO,
-            components_spawner: |_| {}, // Default: no extra components
-        }
-    }
-
-    pub fn with_grid_offset(mut self, offset: GridDelta) -> Self {
-        self.grid_offset = offset;
-        self
-    }
-
-    pub fn sprite_name(&self) -> &'static str {
-        self.sprite_name
-    }
-}
 ```
 
 **SpawnableAsset Struct**
@@ -705,10 +684,217 @@ Finally, the `components_spawner` is a function that adds custom behavior like c
 
 
 **Why is sprite name defined as `&'static str?`**
-//Todo
+
+To understand `&'static str`, we need to break down each part. Let's start with the `&` symbol - this creates a **reference** to data instead of owning it. References are much more memory-efficient because they don't copy the data, they just point to where it already exists.
+
+Here's how memory works with our sprite names:
+
+**Memory Structure:**
+```d2
+# Memory visualization
+memory: {
+  shape: rectangle
+  
+  data_section: {
+    label: "Read-only Memory"
+    
+    string_data: {
+      label: "\"grass\"\n(actual data)"
+      shape: rectangle
+    }
+  }
+  
+  stack_section: {
+    label: "Stack"
+    
+    reference: {
+      label: "&str\n(just points, no copy)"
+      shape: rectangle
+    }
+  }
+}
+
+memory.stack_section.reference -> memory.data_section.string_data: "points to"
+```
+
+The diagram shows two different memory areas: **Stack** (where our reference lives) and **Read-only memory** (where the actual string data is stored). The reference is just metadata that says "the string 'grass' is stored at this memory address."
+
+Our sprite name `"grass"` lives in read-only memory because it's a string literal embedded in the compiled binary, while the reference `&str` lives on the stack because it's just a fixed-size pointer (address + length) to that read-only data.
+
+
+
+```d2
+# Comparison
+without_reference: {
+  label: "Without Reference (Copy)"
+  
+  original: "\"grass\""
+  copy1: "\"grass\""
+  copy2: "\"grass\""
+  copy3: "\"grass\""
+  
+  note: {
+    label: "Multiple copies\nwaste memory"
+    shape: text
+  }
+}
+
+with_reference: {
+  label: "With Reference (&)"
+  
+  data: "\"grass\"\n(one copy)"
+  ref1: "&str"
+  ref2: "&str"
+  ref3: "&str"
+  
+  ref1 -> data
+  ref2 -> data
+  ref3 -> data
+  
+  note: {
+    label: "One data, many pointers\nsaves memory"
+    shape: text
+  }
+}
+
+without_reference -> with_reference: "Better!"
+```
+
+**What's a string literal?**
+
+A string literal is text that's written directly in your code, surrounded by quotes. When you write `"grass"` in your Rust code, the compiler embeds this text directly into the compiled binary. This means:
+
+- The text `"grass"` becomes part of your executable file
+- It's loaded into read-only memory when your program starts
+- It exists for the entire duration of your program (hence `'static` lifetime)
+- Multiple references can point to the same literal without copying the text
+
+
+**What's a lifetime and what has `'static` got to do with it?**
+
+A **lifetime** is Rust's way of tracking how long data lives in memory. Think of it like an expiration date - Rust needs to know when it's safe to use data and when it might be deleted.
+
+Most data has a limited lifetime. For example:
+- Local variables live only while a function runs
+- Function parameters live only while the function executes
+- Data created in a loop might be deleted when the loop ends
+
+But some data lives forever - like string literals embedded in your program. The `'static` lifetime means "this data lives for the entire duration of the program" - it never gets deleted.
+
+This is perfect for our sprite names because they're hardcoded in our source code (like `"grass"`, `"tree"`, `"rock"`) and will never change or be deleted while the program runs. Rust can safely let us use these references anywhere in our code because it knows the data will always be there.
+
+**Why does Rust need to know when it's safe to use data? Other languages don't seem to care about this.**
+
+Most languages (like C, C++, Java, Python) handle memory safety differently:
+
+- **C/C++**: Don't track lifetimes at all - you can accidentally use deleted data, leading to crashes or security vulnerabilities
+- **Java/Python/C#**: Use garbage collection - the runtime automatically deletes unused data, but this adds overhead and unpredictable pauses
+- **Rust**: Tracks lifetimes at compile time - prevents crashes without runtime overhead
+
+Here's why this matters for game development:
+
+**The Problem Other Languages Have**
+```rust
+// Psuedo code warning, don't use
+// This would crash in C++ or cause undefined behavior
+let sprite_name = {
+    let temp = "grass";
+    &temp  // temp gets deleted here!
+}; // Using sprite_name here = crash!
+println!("{}", sprite_name); // CRASH! Using deleted data
+```
+
+**Rust Prevents This**
+<br>
+Rust's compiler analyzes your code and says "Hey, you're trying to use data that might be deleted. I won't let you compile this unsafe code." This catches bugs before your game even runs.
+
+**Does `str` mean String data type?**
+<br>
+Not quite. str represents text data, but you can only use it through a reference like &str (a view of text stored somewhere else). String is text you own and can modify. Our sprite names like "grass" are baked into the program, so &str just points to that text without copying it - much more efficient than using String.
+
+**Putting it all together**
+<br>
+`&'static str` means "a reference to a string slice that lives for the entire program duration." This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).
 
 **What's `GridDelta`?**
-//Todo
+
+`GridDelta` is a struct that represents movement in grid coordinates. Think of it as "how many tiles to move" in each direction. For example, `GridDelta::new(1, 0, 0)` means "move one tile to the right", while `GridDelta::new(0, 1, 0)` means "move one tile up". It's used for positioning multi-tile objects like the tree sprite with multiple tiles we mentioned earlier in grid offset.
 
 **Why's components_spawner defined as `fn(&mut EntityCommands)`?**
-//Todo
+
+This is a function pointer that takes a mutable reference to `EntityCommands` (Bevy's way of adding components to entities). Looking at the code in `assets.rs`, we can see it defaults to an empty function that does nothing.
+
+The function pointer allows us to customize what components get added to each spawned entity. For example, a tree sprite might need collision components for physics, while a decorative flower might only need basic rendering components. Each sprite can have its own custom set of components without affecting others.
+
+
+**Why do we need a mutable reference to EntityCommands?**
+
+Yes! In Rust, you need a mutable reference (`&mut`) when you want to modify something. `EntityCommands` needs to be mutable because it's used to add, remove, or modify components on entities.
+
+Now let's add some helpful methods to our `SpawnableAsset` struct to make it easier to create and configure sprite assets.
+
+Append the following code to the same assets.rs file.
+
+```rust
+// src/map/assets.rs
+impl SpawnableAsset {
+    pub fn new(sprite_name: &'static str) -> Self {
+        Self {
+            sprite_name,
+            grid_offset: GridDelta::new(0, 0, 0),
+            offset: Vec3::ZERO,
+            components_spawner: |_| {}, // Default: no extra components
+        }
+    }
+
+    pub fn with_grid_offset(mut self, offset: GridDelta) -> Self {
+        self.grid_offset = offset;
+        self
+    }
+
+    pub fn sprite_name(&self) -> &'static str {
+        self.sprite_name
+    }
+}
+```
+
+**What's `-> Self`?**
+
+In Rust, you must specify the return type of functions (unlike some languages that can infer it). The `-> Self` tells the compiler exactly what type the function returns, which helps catch errors at compile time. `Self` means "the same type as the struct this method belongs to" - so `Self` refers to `SpawnableAsset` here.
+
+**What's `|_| {}`?**
+
+This is a closure (anonymous function) that does nothing. The `|_|` means "takes one parameter but ignores it" (the underscore means we don't use the parameter), and `{}` is an empty function body. 
+
+We need this because our `SpawnableAsset` struct requires a `components_spawner` field (as we saw in the struct definition), but for basic sprites we don't want to add any custom components. This empty closure serves as a "do nothing" default. We'll learn how to use this field to add custom components in later chapters, but for now it's just a placeholder that satisfies the struct's requirements.
+
+**What's a closure? What do you mean by anonymous function?**
+
+A **closure** is a function that can "capture" variables from its surrounding environment. An **anonymous function** means it doesn't have a name - you can't call it directly like `my_function()`. Instead, you define it inline where you need it.
+
+**Variable capture example:**
+```rust
+let health = 100;
+let damage = 25;
+
+// This closure captures 'health' and 'damage' from the surrounding scope
+let attack = |_| {
+    health - damage  // Uses captured variables
+};
+```
+
+**What this means:**
+- The closure `attack` "remembers" the values of `health` and `damage` from when it was created
+- Even if `health` and `damage` change later, the closure still has the original values
+- The closure can use these captured variables when it's called later.
+
+**Why use closures here?**
+Closures are perfect because they can capture game state (like player health, enemy types, or configuration settings) and use that information when spawning sprites. This allows each sprite to be customized based on the current game context.
+
+**Why is semicolon missing in the last line of these functions?**
+
+In Rust, the last expression in a function is automatically returned without needing a `return` keyword or semicolon. This makes it easier to specify what value should be returned - you just write the expression you want to return, and Rust handles the rest. This is Rust's way of making code cleaner and more concise.
+
+**Why can't you manipulate or retrieve `grid_offset` or `sprite_name` directly?**
+
+The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide public methods like `sprite_name()` to safely access the data, and `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
