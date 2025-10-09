@@ -894,3 +894,49 @@ In Rust, the last expression in a function is automatically returned without nee
 **Why can't you manipulate or retrieve `grid_offset` directly?**
 
 The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide the public method `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
+
+## Loading Sprite Assets
+
+Now that we understand how to define our sprites with `SpawnableAsset`, we need to solve a practical problem: **how do we actually load and use these sprites in our game?**
+
+Our game uses a **sprite atlas** - a single large image containing all our sprites. Bevy needs to know exactly where each sprite is located within this image, and we need to avoid reloading the same image multiple times.
+
+Go ahead and append this code into your `assets.rs`
+
+```rust
+// src/map/assets.rs
+#[derive(Clone)]
+pub struct TilemapHandles {
+    pub image: Handle<Image>,
+    pub layout: Handle<TextureAtlasLayout>,
+}
+
+impl TilemapHandles {
+    pub fn sprite(&self, atlas_index: usize) -> Sprite {
+        Sprite::from_atlas_image(
+            self.image.clone(),
+            TextureAtlas::from(self.layout.clone()).with_index(atlas_index),
+        )
+    }
+}
+```
+
+The `TilemapHandles` struct contains two key components: `image` is a reference to the loaded sprite sheet, while `layout` is a reference to the atlas layout instructions that tell Bevy how to slice the image into individual sprites. 
+
+The `sprite(atlas_index)` method creates a ready-to-use `Sprite` for any sprite in our atlas. The `atlas_index` parameter tells the method **which sprite** to extract from our atlas. Think of it like a coordinate system:
+
+**How it works:**
+1. **Input**: `atlas_index` (e.g., `2` for the rock sprite)
+2. **Process**: The method uses this index to find the correct rectangle in our atlas
+3. **Output**: A complete `Sprite` object ready to be rendered
+
+This index-based approach makes it easy to programmatically select any sprite from our atlas without having to remember complex coordinates or file paths.
+
+**What is a `Handle`?**
+<br>
+A `Handle` in Bevy is a **reference** to an asset. 
+
+**What happens when we clone a `Handle`?**
+
+When we call `.clone()` on a `Handle`, we're **not copying the actual image data**. Instead, we're creating another lightweight reference to the same asset. This is extremely fast because it only creates a new reference.
+
