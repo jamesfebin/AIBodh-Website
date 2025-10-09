@@ -1056,7 +1056,7 @@ With the import in place, we can now build the three key functions that helps ou
 
 1. `TilemapHandles` - Container that holds our loaded atlas and layout data
 2. `prepare_tilemap_handles` - Loads the atlas image from disk and builds the layout structure
-3. `load_assets` - Converts sprite names into actual renderable sprites
+3. `load_assets` - Converts sprite names into `Sprite` data structures ready for rendering
 
 Let's build these step by step.
 
@@ -1174,6 +1174,26 @@ The outer loop says "for each type of tile," and the inner loop says "for each s
 3. It then asks TilemapHandles: "Give me a Sprite for index 0" → Gets back a ready-to-render `Sprite`
 4. Finally, it packages everything together with the positioning info and stores it
 
-Later, when the procedural generator decides "I need to place a dirt tile here," it grabs this prepared `Sprite` and spawns it at the right location. No need to look anything up again - it's all ready to go!
+**What does the final data look like?**
+
+After `load_assets` completes, we have a collection of `ModelAsset` objects in memory. Here's what the data structure looks like for a few tiles:
+
+| Model | Field | Value | What It Means |
+|-------|-------|-------|---------------|
+| **Dirt** | `assets_bundle` | `Sprite(atlas_index: 0)` | Points to dirt sprite in atlas |
+|  | `grid_offset` | `(0, 0, 0)` | No grid offset needed |
+|  | `world_offset` | `(0, 0, 0)` | No world offset needed |
+| **Tree (bottom)** | `assets_bundle` | `Sprite(atlas_index: 31)` | Points to tree bottom sprite |
+|  | `grid_offset` | `(0, 0, 0)` | Placed at base position |
+|  | `world_offset` | `(0, 0, 0)` | Centered |
+| **Tree (top)** | `assets_bundle` | `Sprite(atlas_index: 30)` | Points to tree top sprite |
+|  | `grid_offset` | `(0, 1, 0)` | One tile up from bottom |
+|  | `world_offset` | `(0, 0, 0)` | Centered |
+
+**Important:** These are just data structures in memory - nothing is drawn on screen yet! The actual rendering happens later when the procedural generator uses these prepared `ModelAsset` objects to spawn entities.
+
+**When does this run?**
+
+This `load_assets` function runs once at game startup, converting all our sprite names into ready-to-use `Sprite` objects. We do this upfront so that when the procedural generator later creates the world, it can just grab the pre-loaded sprites and spawn them instantly - no need to do any lookups or conversions during generation.
 
 
