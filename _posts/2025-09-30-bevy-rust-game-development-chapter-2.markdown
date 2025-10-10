@@ -1342,8 +1342,8 @@ pub struct TerrainModelBuilder {
 ```
 
 The `TerrainModelBuilder` holds both lists in one place:
-- **`models`**: What the WFC algorithm uses
-- **`assets`**: The sprites for each model
+1. **`models`**: What the WFC algorithm uses
+2. **`assets`**: The sprites for each model
 
 By bundling them together, you can't add one without the other. Problem solved!
 
@@ -1378,13 +1378,149 @@ impl TerrainModelBuilder {
 }
 ```
 
-The `TerrainModelBuilder` provides three simple methods that solve our synchronization problem. The `new()` method creates an empty builder to start with. The `create_model()` method is the key - it takes both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index, making it impossible to mismatch them. Finally, `into_parts()` splits the builder back into separate collections when you're done building, so the assets can go to the renderer and the models can go to the WFC generator. This simple wrapper prevents us from making "wrong sprite for wrong model" mistakes.
+The `TerrainModelBuilder` provides three simple methods that solve our synchronization problem. The `new()` method creates an empty builder to start with. 
+
+The `create_model()` method both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index, making it impossible to mismatch them.
+
+Finally, `into_parts()` splits the builder back into separate collections when you're done building, so the assets can go to the renderer and the models can go to the WFC generator. This simple wrapper prevents us from making "wrong sprite for wrong model" mistakes.
 
 **What's `<T>` doing in `pub fn create_model<T>`?**
 
-The `<T>` is Rust's **generic type parameter** - it's like a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (like simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them. Generics let us write one function that works with multiple types, as long as they can all be converted into a `ModelTemplate`. This is incredibly powerful because it means we can add new socket definition types in the future without changing our `TerrainModelBuilder` code - the compiler will automatically handle the type conversions for us!
+The `<T>` is Rust's **generic type parameter** - it's like a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (like simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them. 
+
+Generics let us write one function that works with multiple types, as long as they can all be converted into a `ModelTemplate`. This is incredibly powerful because it means we can add new socket definition types in the future without changing our `TerrainModelBuilder` code - the compiler will automatically handle the type conversions for us!
 
 
 **What's this `where T: Into<ModelTemplate<Cartesian3D>>`?**
 
-This is a **trait bound** that tells Rust what capabilities the generic type `T` must have. The `where` clause says "T must be able to convert itself into a `ModelTemplate<Cartesian3D>` (a 3D model template)." `Into` is Rust's way of saying "this type knows how to transform itself into that type" - like how a string can be converted into a number, or how our socket definitions can be converted into model templates. This means we can pass in any type that knows how to become a `ModelTemplate` - whether it's simple single-socket tiles, complex multi-socket tiles, or even a custom socket type you create later. Rust automatically provides this conversion ability for compatible types, so this gives us maximum flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
+This is a **trait bound** that tells Rust what capabilities the generic type `T` must have. The `where` clause says "T must be able to convert itself into a `ModelTemplate<Cartesian3D>` (a 3D model template)." 
+
+`Into` is Rust's way of saying "this type knows how to transform itself into that type" - like how a string can be converted into a number, or how our socket definitions can be converted into model templates. This means we can pass in any type that knows how to become a `ModelTemplate` - whether it's simple single-socket tiles, complex multi-socket tiles, or even a custom socket type you create later.
+
+Rust automatically provides this conversion ability for compatible types, so this gives us maximum flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
+
+## Building the Foundation: Dirt Layer Sockets
+
+Now that we understand how to keep models and assets synchronized, let's start building our procedural world from the ground up - literally! The dirt layer forms the foundation that everything else sits on.
+
+**Why Layers Make WFC Simpler:**
+
+Without layers, we'd need to cram all our rules into a single layer: "water connects to water and grass", "grass connects to grass and dirt", "trees connect to grass", "dirt connects to dirt" - plus all the edge cases and special connections. This creates a massive web of interdependencies that makes the WFC algorithm struggle to find valid solutions.
+
+By using layers, we break this complexity into manageable pieces. Each layer only needs to worry about its own connections, making the WFC algorithm much more likely to find valid solutions quickly.
+
+Let's see how this works in practice by examining our dirt layer implementation:
+
+Create a new file `sockets.rs` inside the `map` folder, and don't forget to add `pub mod sockets;` to your `mod.rs`.
+
+```rust
+// src/map/sockets.rs
+use bevy_procedural_tilemaps::prelude::*;
+
+pub struct TerrainSockets {
+    pub dirt: DirtLayerSockets,
+}
+```
+
+```rust
+pub struct DirtLayerSockets {
+    pub layer_up: Socket,      // What can sit on top of dirt
+    pub layer_down: Socket,     // What dirt can sit on
+    pub material: Socket,       // What dirt connects to horizontally
+}
+```
+
+**Understanding Dirt's Socket System:**
+
+The dirt layer needs three types of sockets to function properly in our 3D world:
+
+1. **`layer_up`** - This socket defines what can be placed in the layer above dirt. Remember layers are to seperate rule cram concerns (water can be above grass without touching it).
+
+2. **`layer_down`** - This socket defines what layer the dirt itself can be placed on. For the base layer, this will connect to void (empty space).
+
+3. **`material`** - This socket handles horizontal connections between dirt tiles, ensuring they connect properly to form continuous ground.
+
+## Creating the Rules: Building the Dirt Layer
+
+Now that we have our socket system defined, we need to create the rules that tell the WFC algorithm how to use these sockets. This is where we define what tiles can be placed and how they connect to each other.
+
+Create a new file `rules.rs` inside the `map` folder, and don't forget to add `pub mod rules;` to your `mod.rs`.
+
+```rust
+// src/map/rules.rs
+use crate::map::assets::SpawnableAsset;
+use crate::map::models::TerrainModelBuilder;
+use crate::map::sockets::*;
+use bevy_procedural_tilemaps::prelude::*;
+
+fn build_dirt_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.dirt.material,
+                x_neg: terrain_sockets.dirt.material,
+                z_pos: terrain_sockets.dirt.layer_up,
+                z_neg: terrain_sockets.dirt.layer_down,
+                y_pos: terrain_sockets.dirt.material,
+                y_neg: terrain_sockets.dirt.material,
+            },
+            vec![SpawnableAsset::new("dirt")],
+        )
+        .with_weight(20.);
+
+    socket_collection.add_connections(vec![(
+        terrain_sockets.dirt.material,
+        vec![terrain_sockets.dirt.material],
+    )]);
+}
+```
+
+**Understanding the Dirt Layer Rules:**
+
+1. **Creates a dirt model** - Defines a tile that **exposes** sockets on all six sides
+2. **Exposes socket types** - Horizontal sides expose `dirt.material`, vertical sides expose layer sockets
+3. **Assigns a sprite** - `SpawnableAsset::new("dirt")` tells the renderer which sprite to use
+4. **Sets the weight** - `.with_weight(20.)` makes dirt tiles 20 times more likely to be placed
+5. **Defines connection rules** - `add_connections` tells WFC that `dirt.material` can connect to other `dirt.material`
+
+This creates a simple but effective foundation layer that can form continuous ground while supporting other layers on top!
+
+Now we need a function that the generator will call to get all our dirt layer rules and models:
+
+```rust
+pub fn build_world() -> (
+    Vec<Vec<SpawnableAsset>>,
+    ModelCollection<Cartesian3D>,
+    SocketCollection,
+) {
+    let mut socket_collection = SocketCollection::new();
+    let terrain_sockets = create_sockets(&mut socket_collection);
+
+    let mut terrain_model_builder = TerrainModelBuilder::new();
+
+    // Build dirt layer
+    build_dirt_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    let (assets, models) = terrain_model_builder.into_parts();
+
+    (assets, models, socket_collection)
+}
+```
+
+**What This Function Does:**
+
+1. **Creates the socket collection** - This is where all our socket connection rules are stored
+2. **Gets our socket definitions** - Calls `create_sockets()` to get all the socket types we defined
+3. **Creates the model builder** - This keeps our models and assets synchronized
+4. **Builds the dirt layer** - Calls our `build_dirt_layer` function to create all the dirt models and rules
+5. **Returns the three collections** - Assets for rendering, models for WFC rules, and socket collection for connections
+
+This function is what the generator calls to get all the rules and models needed to create our procedural world!
