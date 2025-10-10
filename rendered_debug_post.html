@@ -1,0 +1,1569 @@
+<body><nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/">
+      <img src="/assets/logo.png" alt="AIBodh" class="site-logo">
+    </a>
+
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div id="navbarMenu" class="navbar-menu">
+    <div class="navbar-end">
+      <a class="navbar-item" href="/about/">About</a>
+      <a class="navbar-item" href="https://discord.com/invite/cD9qEsSjUH" target="_blank">Community</a>
+    </div>
+  </div>
+</nav>
+<main class="page-content" aria-label="Content">
+    <div class="container">
+  <div class="section">
+    <div class="columns post-layout-columns is-variable is-6-desktop">
+      <div class="column post-main-column is-8-desktop is-offset-1-desktop is-10-tablet is-full-mobile">
+        <article class="post h-entry" itemscope="" itemtype="http://schema.org/BlogPosting">
+
+          <header class="post-header">
+            <h1 class="post-title title is-2 p-name" itemprop="name headline">The Impatient Programmer's Guide to Bevy and Rust: Chapter 2 - Let There Be a World</h1>
+            <p class="post-meta">
+              <time class="dt-published" datetime="2025-09-30T15:30:00+05:30" itemprop="datePublished">Sep 30, 2025
+              </time>• <span class="post-category">RUST</span></p><div class="post-tags"><span class="tag">rust</span><span class="tag">bevy</span><span class="tag">game development</span><span class="tag">tutorial</span></div></header>
+
+          <div class="post-content content e-content" itemprop="articleBody">
+            <style>
+.tile-image {
+  margin: 0 !important;
+  object-fit: none !important;
+  cursor: default !important;
+  pointer-events: none !important;
+}
+</style>
+
+<p>Here’s what you will be able to achieve by the end of this tutorial.</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+<strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey as enjoyable as possible! Your feedback matters - share your frustrations, questions, or suggestions on Reddit/Discord/LinkedIn. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
+</div>
+
+<h2 id="procedural-generation">Procedural Generation</h2>
+
+<p>I respect artists who hand craft tiles to build game worlds. But I belong to the impatient/lazy species.</p>
+
+<p>I went on an exploration and came across procedural generation.</p>
+
+<p>Little did I know the complexities involved. I was in the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightment came three days ago, all the pieces fit together.</p>
+
+<p>Basically it’s about automatically fitting things together like a jigsaw puzzle. To solve this problem, let’s again think in systems.</p>
+
+<p><strong>What do we need to generate the game world procedurally?</strong></p>
+<ol>
+  <li>Tileset.</li>
+  <li>Sockets for tiles because only compatible tiles should fit.</li>
+  <li>Compatibility rules.</li>
+  <li>Magic algorithm that uses these components to generate a coherent world.</li>
+</ol>
+
+<p><strong>How does this magic algorithm work?</strong></p>
+
+<p>That “magic algorithm” has a name: Wave Function Collapse (WFC). The easiest way to see it is with a tiny Sudoku. Same idea: pick the cell with the fewest valid options, place a value, update neighbors, and repeat. If a choice leads to a dead end, undo that guess and try the next option.</p>
+
+<p><strong>Small 4×4 Sudoku</strong></p>
+
+<p>Let’s solve this step by step, focusing on the most constrained cells first.</p>
+
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;display=swap" rel="stylesheet">
+
+<div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007acc;">
+<strong>Initial Puzzle:</strong> We need to fill in the empty cells (marked with dots) following Sudoku rules.
+</div>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7 !important; border-radius: 8px !important;">?</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">2</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">3</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">1</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">4</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+<strong>Step 1 — Finding the most constrained cell:</strong><br>
+Let's analyze the top-left 2×2 box:
+<ul>
+<li>Row 1 already has: 2</li>
+<li>Column 1 already has: 4</li>
+<li>Top-left box already has: 3</li>
+<li>Available numbers: 1, 2, 3, 4</li>
+<li>Eliminating: 2 (in row), 4 (in column), 3 (in box)</li>
+<li><strong>Only 1 remains!</strong></li>
+</ul>
+</div>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9 !important; border-radius: 8px !important; font-weight: bold;">1</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">2</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">3</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">1</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">4</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
+<strong>Propagation Effect:</strong> Now that we placed 1, we can eliminate 1 from:
+<ul>
+<li>Row 1: ✓ (already done)</li>
+<li>Column 1: ✓ (already done)</li>
+<li>Top-left 2×2 box: ✓ (already done)</li>
+</ul>
+This makes other cells more constrained!
+</div>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+<strong>Step 2 — Next most constrained cell:</strong><br>
+Now let's find the next cell with the fewest options. 
+</div>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9 !important; border-radius: 8px !important;">1</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7 !important; border-radius: 8px !important;">?</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">2</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">3</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">1</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">4</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
+<strong>Analysis for the position:</strong>
+<ul>
+<li>Row 1 already has: 1, 2</li>
+<li>Column 2 already has: 3</li>
+<li>Top-left box already has: 1, 3</li>
+<li>Available numbers: 1, 2, 3, 4</li>
+<li>Eliminating: 1 (in row), 2 (in row), 3 (in column and box)</li>
+<li><strong>Only 4 remains!</strong></li>
+</ul>
+</div>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9 !important; border-radius: 8px !important;">1</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9 !important; border-radius: 8px !important; font-weight: bold;">4</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">2</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #e3f2fd !important; border-radius: 8px !important;">3</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">1</td>
+</tr>
+<tr>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">4</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+<td style="padding: 12px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #f5f5f5 !important; border-radius: 8px !important;">.</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Key Insight:</strong> This is the essence of constraint propagation! Each placement immediately reduces the options for neighboring cells, making the puzzle progressively easier to solve. We continue this process: pick the most constrained cell → place the only possible value → propagate constraints → repeat.
+</div>
+
+<div class="d2-diagram">
+  <img src="/assets/generated/d2/d2_e2a91f98ca2cbdb175c032912f683fb9.svg" alt="D2 Diagram" class="d2-svg comic-image" data-comic-hash="e2a91f98ca2cbdb175c032912f683fb9" data-comic-settings="d2-diagram">
+</div>
+
+<p>Each placement immediately reduces the possibilities for neighboring cells. The cell with the fewest remaining possibilities becomes our next target. If any cell ends up with zero possibilities, we’ve hit a contradiction—in Sudoku, you backtrack and try a different value.</p>
+
+<p><strong>For our tile-based world:</strong> Imagine each grid cell as a Sudoku cell, but instead of numbers, we’re placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.</p>
+
+<p>Let’s see this in action using the following water tiles. We’ll learn how constraints propagate to form a coherent environment:</p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 24px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_side_t.png" alt="Water top" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_side_b.png" alt="Water bottom" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_side_l.png" alt="Water left" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_side_r.png" alt="Water right" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+</tr>
+<tr>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_in_tl.png" alt="Water corner in TL" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_in_tr.png" alt="Water corner in TR" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_in_bl.png" alt="Water corner in BL" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_in_br.png" alt="Water corner in BR" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_tl.png" alt="Water corner out TL" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+</tr>
+<tr>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_tr.png" alt="Water corner out TR" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_bl.png" alt="Water corner out BL" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+<td style="padding: 4px; text-align: center; width: 50px; height: 50px; border: none !important; background-color: #f5f5f5; border-radius: 6px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_br.png" alt="Water corner out BR" class="tile-image" style="width: 50px; height: 42px; display: block;"></td>
+
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p><strong>Step 1 - Initial Grid</strong></p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+<tr>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p>We start with an empty grid where every cell can potentially hold any tile. The <code class="language-plaintext highlighter-rouge">?</code> symbols represent the “superposition” - each cell contains all possible tiles until we begin constraining them through the algorithm.</p>
+
+<p><strong>Step 2 - First Placement</strong></p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+<tr>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 8px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p>The algorithm starts by placing the initial water center tile (almost). This placement immediately constrains the neighboring cells - they now know they need to connect to water on at least one side.</p>
+
+<p><strong>Step 3 - Propagate Constraints</strong></p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_t.png" alt="Water edge" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_t.png" alt="Water edge" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+<tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #ffeaa7; border-radius: 8px !important;">?</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p>Constraint propagation kicks in! The algorithm expands the water area by placing more center tiles, and the edge tiles are constrained to have water-facing sides where they connect to the water body.</p>
+
+<p><strong>Step 4 - Final Result</strong></p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_tl.png" alt="Water" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_t.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_t.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_corner_out_tr.png" alt="Water" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+<tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_l.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/water_side_r.png" alt="Water center" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p>The algorithm completes by filling the edges with appropriate boundary tiles. Notice how each tile connects perfectly - center tiles have water on all sides, edge tiles have water facing inward and grass edges facing outward, creating a coherent geography.</p>
+
+<p>This demonstrates the core Wave Function Collapse algorithm in action:</p>
+<ol>
+  <li><strong>Find the most constrained cell</strong> - the one with the fewest valid tiles that could fit</li>
+  <li><strong>Place a tile</strong> whose sockets are compatible with its neighbors</li>
+  <li><strong>Propagate constraints</strong> - this placement immediately reduces the valid options for surrounding cells</li>
+  <li><strong>Repeat</strong> until the grid is complete</li>
+</ol>
+
+<p>When we hit a dead end (no valid tiles for a cell), our implementation takes a simpler approach than Sudoku: instead of backtracking through previous choices, we restart with a fresh random seed (up to a retry limit) and run the entire process again until we generate a valid map.</p>
+
+<p><strong>What do you mean by fresh random seed?</strong></p>
+
+<p>A “random seed” is a starting number that controls which “random” sequence the algorithm will follow. Same seed = same tile placement order every time. When we hit a dead end, instead of backtracking, we generate a new random seed and start over—this gives us a completely different sequence of tile choices to try.</p>
+
+<p><strong>Can configuring this randomness help us customize maps?</strong></p>
+
+<p>Yes! The algorithm’s randomness comes from the order in which it picks cells and tiles, and we can control this to influence the final result. By adjusting the random seed or the selection strategy, we can:</p>
+
+<ul>
+  <li><strong>Bias toward certain patterns</strong> - Weight certain tiles more heavily to create specific landscape types.</li>
+  <li><strong>Control size and complexity</strong> - Influence whether we get small ponds or large lakes.</li>
+  <li><strong>Create predictable variations</strong> - Use the same seed for consistent results, or different seeds for variety.</li>
+</ul>
+
+<p>The same tileset can generate endless variations of coherent landscapes, from simple ponds to complex branching river systems, all by tweaking the randomness probability configuration.</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+While Wave Function Collapse is powerful, it has its limitations.
+<ul>
+<li><strong>No large-scale structure control</strong> - WFC focuses on tile compatibility, so it won't automatically create big patterns like "one large lake" or "mountain ranges".</li>
+<li><strong>Can get stuck</strong> - Complex rules might lead to impossible situations where no valid tiles remain, requiring restarts.</li>
+<li><strong>Performance depends on complexity</strong> - More tile types and stricter rules increase computation time and failure rates.</li>
+<li><strong>Requires careful rule design</strong> - Poorly designed compatibility rules can lead to unrealistic or broken landscapes.</li>
+</ul>
+We'll address these limitations in a later chapter. For now, we'll focus on building a functional section of our game world that will become the foundation for building larger game worlds.
+</div>
+
+<h2 id="from-theory-to-implementation">From Theory to Implementation</h2>
+
+<p>Now that we understand <strong>how</strong> Wave Function Collapse works—the constraint propagation, socket compatibility, and tile placement logic—it’s time to transform this knowledge into actual running code.</p>
+
+<p><strong>The reality of implementation:</strong></p>
+
+<p>Building a WFC algorithm from scratch is complex. You’d need to implement:</p>
+<ul>
+  <li>Constraint propagation across the entire grid</li>
+  <li>Backtracking when hitting dead ends</li>
+  <li>Efficient data structures for tracking possibilities</li>
+  <li>Grid coordinate management</li>
+  <li>Random selection with proper probability weights</li>
+</ul>
+
+<p>That’s a lot of algorithmic complexity before we even get to the game-specific parts like sprites, rules, and world design.</p>
+
+<p><strong>Our approach:</strong></p>
+
+<p>Instead of reinventing the wheel, we’ll use a library that handles the WFC algorithm internals. This lets us focus on what makes our game unique: the tiles, the rules, the world aesthetics. We define <strong>what</strong> we want; the library figures out <strong>how</strong> to achieve it.</p>
+
+<h2 id="setting-up-our-toolkit">Setting Up Our Toolkit</h2>
+
+<p>Let’s add the procedural generation library to our project. We’ll be using the <code class="language-plaintext highlighter-rouge">bevy_procedural_tilemaps</code> <a href="https://crates.io/crates/bevy_procedural_tilemaps">crate</a>, which I built by forking <code class="language-plaintext highlighter-rouge">ghx_proc_gen</code> <a href="https://crates.io/crates/ghx_proc_gen">library</a>. I created this fork primarily to ensure compatibility with Bevy 0.17 and to simplify this tutorial.</p>
+
+<p>If you need advanced features, check out the original <code class="language-plaintext highlighter-rouge">ghx_proc_gen</code> <a href="https://crates.io/crates/ghx_proc_gen">crate</a> by Guillaume Henaux, which includes 3D capabilities and debugging tools.</p>
+
+<p>Hope you are following the code from first chapter. Here’s the <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">source code</a>.</p>
+
+<p>Update your <code class="language-plaintext highlighter-rouge">Cargo.toml</code> with the bevy_procedural_tilemaps crate.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">package</span><span class="p">]</span>
+<span class="n">name</span> <span class="o">=</span> <span class="s">"bevy_game"</span>
+<span class="n">version</span> <span class="o">=</span> <span class="s">"0.1.0"</span>
+<span class="n">edition</span> <span class="o">=</span> <span class="s">"2024"</span> 
+
+<span class="p">[</span><span class="n">dependencies</span><span class="p">]</span>
+<span class="n">bevy</span> <span class="o">=</span> <span class="s">"0.17.2"</span> <span class="c1">// Line update alert </span>
+<span class="n">bevy_procedural_tilemaps</span> <span class="o">=</span> <span class="s">"0.1.2"</span> <span class="c1">// Line update alert</span>
+</code></pre></div></div>
+
+<h2 id="bevy-procedural-tilemaps">Bevy Procedural Tilemaps</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">bevy_procedural_tilemaps</code> library is a powerful tool that handles the complex logic of generating coherent, rule-based worlds.</p>
+
+<h3 id="what-the-library-handles">What the Library Handles</h3>
+
+<p>The library takes care of the <strong>algorithmic complexity</strong> of procedural generation:</p>
+
+<ul>
+  <li><strong>Rule Processing</strong>: Converts our game rules into the library’s internal format.</li>
+  <li><strong>Generator Creation</strong>: Builds the procedural generation engine with our configuration.</li>
+  <li><strong>Constraint Solving</strong>: Figures out which tiles can go where based on rules.</li>
+  <li><strong>Grid Management</strong>: Handles the 2D grid system and coordinate transformations.</li>
+  <li><strong>Entity Spawning</strong>: Creates Bevy entities and positions them correctly.</li>
+</ul>
+
+<h3 id="what-we-need-to-provide">What We Need to Provide</h3>
+
+<p>We need to give the library the <strong>game-specific information</strong> it needs:</p>
+
+<ul>
+  <li><strong>Sprite Definitions</strong>: What sprites to use for each tile type.</li>
+  <li><strong>Compatibility Rules</strong>: Which tiles can be placed next to each other.</li>
+  <li><strong>Generation Configuration</strong>: The patterns and constraints for our specific game world.</li>
+  <li><strong>Asset Data</strong>: Sprite information, positioning, and custom components.</li>
+</ul>
+
+<div class="d2-diagram">
+  <img src="/assets/generated/d2/d2_56ee0a9e75f2707d7f630cb65435018e.svg" alt="D2 Diagram" class="d2-svg comic-image" data-comic-hash="56ee0a9e75f2707d7f630cb65435018e" data-comic-settings="d2-diagram">
+</div>
+
+<h3 id="how-the-system-works-together">How the System Works Together</h3>
+
+<p>The library pipeline works in stages: first it processes our rules and builds a generator, then the constraint solver figures out valid tile placements, and finally the entity spawner creates the actual game objects in the Bevy world.</p>
+
+<h3 id="the-workflow">The Workflow</h3>
+
+<ol>
+  <li><strong>We Define</strong>: Create tile definitions, compatibility rules, and generation patterns</li>
+  <li><strong>Library Processes</strong>: Runs the constraint-solving algorithm to find valid tile placements</li>
+  <li><strong>Library Spawns</strong>: Creates Bevy entities with the correct sprites, positions, and components</li>
+  <li><strong>Result</strong>: A coherent, rule-based world appears in our game</li>
+</ol>
+
+<p>The beauty of this system is that we focus on <strong>what we want</strong> (environment design), while the library handles <strong>how to achieve it</strong> (complex algorithms). This separation of concerns makes procedural generation accessible to game developers without requiring deep knowledge of constraint-solving algorithms.</p>
+
+<p><strong>What’s a generator?</strong></p>
+
+<p>A generator is the core engine that runs the procedural generation algorithm. It’s a puzzle solver that takes our rules (which tiles can go where) and our grid (the empty world), then systematically figures out how to fill every position with valid tiles. It uses constraint-solving algorithms to ensure that every tile placement follows our compatibility rules, creating a coherent world that makes sense according to our game’s logic.</p>
+
+<div class="d2-diagram">
+  <img src="/assets/generated/d2/d2_bc1019107d72da751c84634508d11473.svg" alt="D2 Diagram" class="d2-svg comic-image" data-comic-hash="bc1019107d72da751c84634508d11473" data-comic-settings="d2-diagram">
+</div>
+
+<p>Now that we understand how the procedural generation system works, let’s build our map module.</p>
+
+<h2 id="the-map-module">The Map Module</h2>
+
+<p>We’ll create a dedicated <code class="language-plaintext highlighter-rouge">map</code> folder inside the <code class="language-plaintext highlighter-rouge">src</code> folder to house all our world generation logic.</p>
+
+<p><strong>Why create a separate folder for map generation?</strong></p>
+
+<p>The map system is complex and requires multiple specialized components working together. World generation involves:</p>
+
+<ul>
+  <li><strong>Asset management</strong> - Loading and organizing hundreds of tile images.</li>
+  <li><strong>Rule definitions</strong> - Complex compatibility rules between different terrain types.</li>
+  <li><strong>Grid setup</strong> - Configuring map dimensions and coordinate systems.</li>
+</ul>
+
+<p>Trying to fit all this logic into a single file would create a large file that can become difficult to navigate.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>src/
+├── main.rs
+├── player.rs
+└── map/
+    ├── mod.rs       
+    ├── assets.rs       
+</code></pre></div></div>
+
+<p><strong>What’s <code class="language-plaintext highlighter-rouge">mod.rs</code></strong></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">mod.rs</code> file is Rust’s way of declaring what modules exist in a folder. It’s like the “table of contents” for our map module. Add the following line to your <code class="language-plaintext highlighter-rouge">mod.rs</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/mod.rs</span>
+<span class="k">pub</span> <span class="k">mod</span> <span class="n">assets</span><span class="p">;</span>   <span class="c1">// Exposes assets.rs as a module</span>
+</code></pre></div></div>
+
+<p><strong>Why <code class="language-plaintext highlighter-rouge">mod.rs</code> specifically?</strong></p>
+
+<p>It’s Rust convention, when you create a folder, Rust looks for <code class="language-plaintext highlighter-rouge">mod.rs</code> to understand the module structure.</p>
+
+<h3 id="building-the-map-system">Building the Map System</h3>
+
+<p>Now that we’ve set up our module structure, we need to build the actual components. Our map system will consist of several interconnected files:</p>
+
+<ol>
+  <li><strong><code class="language-plaintext highlighter-rouge">assets.rs</code></strong> - Defines what sprites to spawn and how to position them</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">tilemap.rs</code></strong> - Maps sprite names to their pixel coordinates in our atlas</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">models.rs</code></strong> - Organizes tile models and keeps them synchronized with their assets</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">sockets.rs</code></strong> - Defines connection points for tile compatibility</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">rules.rs</code></strong> - Defines terrain layers, compatibility rules, and world generation logic</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">generate.rs</code></strong> - Sets up the procedural generation engine</li>
+</ol>
+
+<p>We’ll build these in a logical order, starting with the foundation and working our way up.</p>
+
+<h3 id="creating-spawnableasset">Creating SpawnableAsset</h3>
+
+<p>Let’s start by creating our <code class="language-plaintext highlighter-rouge">assets.rs</code> file inside the <code class="language-plaintext highlighter-rouge">map</code> folder. This will be the foundation that defines how we spawn sprites in our world.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">bevy_procedural_tilemaps</code> library can generate complex worlds, but it needs to know <strong>what to actually place</strong> at each generated location.</p>
+
+<p>Think about it: when the algorithm decides “this should be a grass tile,” it needs to know:</p>
+<ul>
+  <li>Which sprite to use from our tilemap?</li>
+  <li>Where exactly to position it?</li>
+  <li>What components to add (collision, physics, etc.)?</li>
+</ul>
+
+<p>The library expects us to provide this information in a very specific format. And doing 
+this for <strong>every single tile type</strong> in your game - grass, dirt, trees, rocks, water, etc will result in redundant code.</p>
+
+<p>This is where <code class="language-plaintext highlighter-rouge">SpawnableAsset</code> comes in. It’s our <strong>abstraction layer</strong> to help you avoid unnecessary boilerplate.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/assets.rs</span>
+
+<span class="k">use</span> <span class="nn">bevy</span><span class="p">::{</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">,</span> <span class="nn">sprite</span><span class="p">::</span><span class="n">Anchor</span><span class="p">};</span>
+<span class="k">use</span> <span class="nn">bevy_procedural_tilemaps</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+
+<span class="nd">#[derive(Clone)]</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">SpawnableAsset</span> <span class="p">{</span>
+    <span class="cd">/// Name of the sprite inside our tilemap atlas</span>
+    <span class="n">sprite_name</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">'static</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="cd">/// Offset in grid coordinates (for multi-tile objects)</span>
+    <span class="n">grid_offset</span><span class="p">:</span> <span class="n">GridDelta</span><span class="p">,</span>
+    <span class="cd">/// Offset in world coordinates (fine positioning)</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="n">Vec3</span><span class="p">,</span>
+    <span class="cd">/// Function to add custom components (like collision, physics, etc.)</span>
+    <span class="n">components_spawner</span><span class="p">:</span> <span class="k">fn</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="n">EntityCommands</span><span class="p">),</span>
+<span class="p">}</span>
+
+</code></pre></div></div>
+
+<p><strong>SpawnableAsset Struct</strong></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">SpawnableAsset</code> struct contains all the information needed to spawn a tile in our world. The <code class="language-plaintext highlighter-rouge">sprite_name</code> field gives a name to your sprite (like “grass”, “tree”, “rock”).</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">grid_offset</code> is used for objects that span multiple tiles - it’s a positioning within the tile grid itself.</p>
+
+<p>For example, a tree might need two tiles: the bottom part at the original position, and the top part one tile up. The <code class="language-plaintext highlighter-rouge">offset</code> field is for fine-tuning the position in world coordinates - this is for precise positioning adjustments.</p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_tl.png" alt="Tree top-left" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_tr.png" alt="Tree top-right" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+<tr>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_bl.png" alt="Tree bottom-left" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important;"><img src="/assets/book_assets/tile_layers/big_tree_1_br.png" alt="Tree bottom-right" class="tile-image" style="width: 60px; height: 50px; display: block;"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p><strong>Grid Offset</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tree Part</th>
+      <th>Grid Offset</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bottom-left</td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0)</code></td>
+      <td>Stays at original position</td>
+    </tr>
+    <tr>
+      <td>Bottom-right</td>
+      <td><code class="language-plaintext highlighter-rouge">(1, 0)</code></td>
+      <td>Moves one tile right</td>
+    </tr>
+    <tr>
+      <td>Top-left</td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 1)</code></td>
+      <td>Moves one tile up</td>
+    </tr>
+    <tr>
+      <td>Top-right</td>
+      <td><code class="language-plaintext highlighter-rouge">(1, 1)</code></td>
+      <td>Moves one tile up and right</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><br><br>
+The <code class="language-plaintext highlighter-rouge">offset</code> field, on the other hand, is for fine-tuning the position within the tile - like moving a rock slightly to the left or making sure a tree trunk is perfectly centered within its tile space.</p>
+
+<p>Let’s see how <code class="language-plaintext highlighter-rouge">offset</code> works with rock positioning:</p>
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<table style="border-collapse: separate; border-spacing: 2px; font-family: 'VT323', monospace; font-size: 32px; border-radius: 8px; overflow: hidden; border: none; display: inline-block; margin-bottom: 20px;">
+<tbody><tr>
+<td style="padding: 3px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_1.png" alt="Rock 1" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(0px, 0px);"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_2.png" alt="Rock 2" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(-8px, -6px);"></td>
+<td style="padding: 6px; text-align: center; width: 60px; height: 60px; border: none !important; background-color: #c8e6c9; border-radius: 8px !important; position: relative;"><img src="/assets/book_assets/tile_layers/rock_3.png" alt="Rock 3" class="tile-image" style="width: 60px; height: 50px; display: block; transform: translate(6px, 5px);"></td>
+</tr>
+</tbody></table>
+</div>
+</div>
+
+<p><strong>Offset</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Rock</th>
+      <th>Offset</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Rock 1</td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0)</code></td>
+      <td>Centered in tile</td>
+    </tr>
+    <tr>
+      <td>Rock 2</td>
+      <td><code class="language-plaintext highlighter-rouge">(-8, -6)</code></td>
+      <td>Moved slightly left and up</td>
+    </tr>
+    <tr>
+      <td>Rock 3</td>
+      <td><code class="language-plaintext highlighter-rouge">(6, 5)</code></td>
+      <td>Moved slightly right and down</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Finally, the <code class="language-plaintext highlighter-rouge">components_spawner</code> is a function that adds custom behavior like collision, physics, or other game mechanics.
+<br><br></p>
+
+<p><strong>Why is sprite name defined as <code class="language-plaintext highlighter-rouge">&amp;'static str?</code></strong></p>
+
+<p>To understand <code class="language-plaintext highlighter-rouge">&amp;'static str</code>, we need to break down each part. Let’s start with the <code class="language-plaintext highlighter-rouge">&amp;</code> symbol - this creates a <strong>reference</strong> to data instead of owning it. References are much more memory-efficient because they don’t copy the data, they just point to where it already exists.</p>
+
+<p>Here’s how memory works with our sprite names:</p>
+
+<div class="d2-diagram">
+  <img src="/assets/generated/d2/d2_79f26ed765b111742b70e597b6b8b75a.svg" alt="D2 Diagram" class="d2-svg comic-image" data-comic-hash="79f26ed765b111742b70e597b6b8b75a" data-comic-settings="d2-diagram">
+</div>
+
+<p>The diagram shows two different memory areas: <strong>Stack</strong> (where our reference lives) and <strong>Read-only memory</strong> (where the actual string data is stored). The reference is just metadata that says “the string ‘grass’ is stored at this memory address.”</p>
+
+<p>Our sprite name <code class="language-plaintext highlighter-rouge">"grass"</code> lives in read-only memory because it’s a string literal embedded in the compiled binary, while the reference <code class="language-plaintext highlighter-rouge">&amp;str</code> lives on the stack because it’s just a fixed-size pointer (address + length) to that read-only data.</p>
+
+<div class="d2-diagram">
+  <img src="/assets/generated/d2/d2_427d58f1da05e94c1e0b29b1d4bcda5e.svg" alt="D2 Diagram" class="d2-svg comic-image" data-comic-hash="427d58f1da05e94c1e0b29b1d4bcda5e" data-comic-settings="d2-diagram">
+</div>
+
+<p><strong>What’s a string literal?</strong></p>
+
+<p>A string literal is text that’s written directly in your code, surrounded by quotes. When you write <code class="language-plaintext highlighter-rouge">"grass"</code> in your Rust code, the compiler embeds this text directly into the compiled binary. This means:</p>
+
+<ul>
+  <li>The text <code class="language-plaintext highlighter-rouge">"grass"</code> becomes part of your executable file</li>
+  <li>It’s loaded into read-only memory when your program starts</li>
+  <li>It exists for the entire duration of your program (hence <code class="language-plaintext highlighter-rouge">'static</code> lifetime)</li>
+  <li>Multiple references can point to the same literal without copying the text</li>
+</ul>
+
+<p><strong>What’s a lifetime and what has <code class="language-plaintext highlighter-rouge">'static</code> got to do with it?</strong></p>
+
+<p>A <strong>lifetime</strong> is Rust’s way of tracking how long data lives in memory. Rust needs to know when it’s safe to use data and when it might be deleted.</p>
+
+<p>Most data has a limited lifetime. For example:</p>
+<ul>
+  <li>Local variables live only while a function runs</li>
+  <li>Function parameters live only while the function executes</li>
+  <li>Data created in a loop might be deleted when the loop ends</li>
+</ul>
+
+<p>But some data lives forever - like string literals embedded in your program. The <code class="language-plaintext highlighter-rouge">'static</code> lifetime means “this data lives for the entire duration of the program” - it never gets deleted.</p>
+
+<p>This is perfect for our sprite names because they’re hardcoded in our source code (like <code class="language-plaintext highlighter-rouge">"grass"</code>, <code class="language-plaintext highlighter-rouge">"tree"</code>, <code class="language-plaintext highlighter-rouge">"rock"</code>) and will never change or be deleted while the program runs. Rust can safely let us use these references anywhere in our code because it knows the data will always be there.</p>
+
+<p><strong>Why does Rust need to know when it’s safe to use data? Other languages don’t seem to care about this.</strong></p>
+
+<p>Most languages (like C, C++, Java, Python) handle memory safety differently:</p>
+
+<ul>
+  <li><strong>C/C++</strong>: Don’t track lifetimes at all - you can accidentally use deleted data, leading to crashes or security vulnerabilities</li>
+  <li><strong>Java/Python/C#</strong>: Use garbage collection - the runtime automatically deletes unused data, but this adds overhead and unpredictable pauses</li>
+  <li><strong>Rust</strong>: Tracks lifetimes at compile time - prevents crashes without runtime overhead</li>
+</ul>
+
+<p>Here’s why this matters for game development:</p>
+
+<p><strong>The Problem Other Languages Have</strong></p>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Psuedo code warning, don't use</span>
+<span class="c1">// This would crash in C++ or cause undefined behavior</span>
+<span class="k">let</span> <span class="n">sprite_name</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">temp</span> <span class="o">=</span> <span class="s">"grass"</span><span class="p">;</span>
+    <span class="o">&amp;</span><span class="n">temp</span>  <span class="c1">// temp gets deleted here!</span>
+<span class="p">};</span> 
+<span class="nd">println!</span><span class="p">(</span><span class="s">"{}"</span><span class="p">,</span> <span class="n">sprite_name</span><span class="p">);</span> <span class="c1">// CRASH! Using deleted data</span>
+</code></pre></div></div>
+
+<p><strong>Rust Prevents This</strong>
+<br>
+Rust’s compiler analyzes your code and says “Hey, you’re trying to use data that might be deleted. I won’t let you compile this unsafe code.” This catches bugs before your game even runs.</p>
+
+<p><strong>Does <code class="language-plaintext highlighter-rouge">str</code> mean String data type?</strong>
+<br>
+Not quite. str represents text data, but you can only use it through a reference like &amp;str (a view of text stored somewhere else). String is text you own and can modify. Our sprite names like “grass” are baked into the program, so &amp;str just points to that text without copying it - much more efficient than using String.</p>
+
+<p><strong>Putting it all together</strong>
+<br>
+<code class="language-plaintext highlighter-rouge">&amp;'static str</code> means “a reference to a string slice that lives for the entire program duration.” This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).</p>
+
+<p><strong>What’s <code class="language-plaintext highlighter-rouge">GridDelta</code>?</strong></p>
+
+<p><code class="language-plaintext highlighter-rouge">GridDelta</code> is a struct that represents movement in grid coordinates. It specifies “how many tiles to move” in each direction. For example, <code class="language-plaintext highlighter-rouge">GridDelta::new(1, 0, 0)</code> means “move one tile to the right”, while <code class="language-plaintext highlighter-rouge">GridDelta::new(0, 1, 0)</code> means “move one tile up”. It’s used for positioning multi-tile objects like the tree sprite with multiple tiles we mentioned earlier in grid offset.</p>
+
+<p><strong>Why’s components_spawner defined as <code class="language-plaintext highlighter-rouge">fn(&amp;mut EntityCommands)</code>?</strong></p>
+
+<p>This is a function pointer that takes a mutable reference to <code class="language-plaintext highlighter-rouge">EntityCommands</code> (Bevy’s way of adding components to entities). Looking at the code in <code class="language-plaintext highlighter-rouge">assets.rs</code>, we can see it defaults to an empty function that does nothing.</p>
+
+<p>The function pointer allows us to customize what components get added to each spawned entity. For example, a tree sprite might need collision components for physics, while a decorative flower might only need basic rendering components. Each sprite can have its own custom set of components without affecting others.</p>
+
+<p><strong>Why do we need a mutable reference to EntityCommands?</strong></p>
+
+<p>Yes! In Rust, you need a mutable reference (<code class="language-plaintext highlighter-rouge">&amp;mut</code>) when you want to modify something. <code class="language-plaintext highlighter-rouge">EntityCommands</code> needs to be mutable because it’s used to add, remove, or modify components on entities.</p>
+
+<p><br>
+Now let’s add some helpful methods to our <code class="language-plaintext highlighter-rouge">SpawnableAsset</code> struct to make it easier to create and configure sprite assets.</p>
+
+<p>Append the following code to the same <code class="language-plaintext highlighter-rouge">assets.rs</code> file.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/assets.rs</span>
+<span class="k">impl</span> <span class="n">SpawnableAsset</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">new</span><span class="p">(</span><span class="n">sprite_name</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">'static</span> <span class="nb">str</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="k">Self</span> <span class="p">{</span>
+            <span class="n">sprite_name</span><span class="p">,</span>
+            <span class="n">grid_offset</span><span class="p">:</span> <span class="nn">GridDelta</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="n">offset</span><span class="p">:</span> <span class="nn">Vec3</span><span class="p">::</span><span class="n">ZERO</span><span class="p">,</span>
+            <span class="n">components_spawner</span><span class="p">:</span> <span class="p">|</span><span class="n">_</span><span class="p">|</span> <span class="p">{},</span> <span class="c1">// Default: no extra components</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">with_grid_offset</span><span class="p">(</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="n">GridDelta</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="k">self</span><span class="py">.grid_offset</span> <span class="o">=</span> <span class="n">offset</span><span class="p">;</span>
+        <span class="k">self</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>What’s <code class="language-plaintext highlighter-rouge">-&gt; Self</code>?</strong></p>
+
+<p>In Rust, you must specify the return type of functions (unlike some languages that can infer it). The <code class="language-plaintext highlighter-rouge">-&gt; Self</code> tells the compiler exactly what type the function returns, which helps catch errors at compile time. <code class="language-plaintext highlighter-rouge">Self</code> means “the same type as the struct this method belongs to” - so <code class="language-plaintext highlighter-rouge">Self</code> refers to <code class="language-plaintext highlighter-rouge">SpawnableAsset</code> here.</p>
+
+<p><strong>What’s <code class="language-plaintext highlighter-rouge">|_| {}</code>?</strong></p>
+
+<p>This is a closure (anonymous function) that does nothing. The <code class="language-plaintext highlighter-rouge">|_|</code> means “takes one parameter but ignores it” (the underscore means we don’t use the parameter), and <code class="language-plaintext highlighter-rouge">{}</code> is an empty function body.</p>
+
+<p>We need this because our <code class="language-plaintext highlighter-rouge">SpawnableAsset</code> struct requires a <code class="language-plaintext highlighter-rouge">components_spawner</code> field (as we saw in the struct definition), but for basic sprites we don’t want to add any custom components. This empty closure serves as a “do nothing” default. We’ll learn how to use this field to add custom components in later chapters, but for now it’s just a placeholder that satisfies the struct’s requirements.</p>
+
+<p><strong>What’s a closure? What do you mean by anonymous function?</strong></p>
+
+<p>A <strong>closure</strong> is a function that can “capture” variables from its surrounding environment. An <strong>anonymous function</strong> means it doesn’t have a name - you can’t call it directly like <code class="language-plaintext highlighter-rouge">my_function()</code>. Instead, you define it inline where you need it.</p>
+
+<p><strong>Variable capture example:</strong></p>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="n">health</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
+<span class="k">let</span> <span class="n">damage</span> <span class="o">=</span> <span class="mi">25</span><span class="p">;</span>
+
+<span class="c1">// This closure captures 'health' and 'damage' from the surrounding scope</span>
+<span class="k">let</span> <span class="n">attack</span> <span class="o">=</span> <span class="p">|</span><span class="n">_</span><span class="p">|</span> <span class="p">{</span>
+    <span class="n">health</span> <span class="o">-</span> <span class="n">damage</span>  <span class="c1">// Uses captured variables</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p><strong>What this means:</strong></p>
+<ul>
+  <li>The closure <code class="language-plaintext highlighter-rouge">attack</code> “remembers” the values of <code class="language-plaintext highlighter-rouge">health</code> and <code class="language-plaintext highlighter-rouge">damage</code> from when it was created</li>
+  <li>Even if <code class="language-plaintext highlighter-rouge">health</code> and <code class="language-plaintext highlighter-rouge">damage</code> change later, the closure still has the original values</li>
+  <li>The closure can use these captured variables when it’s called later.</li>
+</ul>
+
+<p><strong>Why use closures here?</strong>
+<br>
+Closures are perfect because they can capture game state (like player health, enemy types, or configuration settings) and use that information when spawning sprites. This allows each sprite to be customized based on the current game context.</p>
+
+<p><strong>Why is semicolon missing in the last line of these functions?</strong></p>
+
+<p>In Rust, the last expression in a function is automatically returned without needing a <code class="language-plaintext highlighter-rouge">return</code> keyword or semicolon. This makes it easier to specify what value should be returned - you just write the expression you want to return, and Rust handles the rest. This is Rust’s way of making code cleaner and more concise.</p>
+
+<p><strong>Why can’t you manipulate or retrieve <code class="language-plaintext highlighter-rouge">grid_offset</code> directly?</strong></p>
+
+<p>The fields are private (no <code class="language-plaintext highlighter-rouge">pub</code> keyword), which means they can only be accessed from within the same module. This is called “encapsulation” - it prevents developers from making mistakes by modifying the struct’s data directly, which could break the internal logic. We provide the public method <code class="language-plaintext highlighter-rouge">with_grid_offset()</code> to safely modify it while maintaining the struct’s integrity.</p>
+
+<p>Now that we understand how to define our sprites with <code class="language-plaintext highlighter-rouge">SpawnableAsset</code>, <strong>how do we load and use these sprites in our game?</strong></p>
+
+<h2 id="loading-sprite-assets">Loading Sprite Assets</h2>
+
+<p>Our game uses a <strong>sprite atlas</strong> - a single large image containing all our sprites. Bevy needs to know where each sprite is located within this image, and we need to avoid reloading the same image multiple times.</p>
+
+<p>Create a folder <code class="language-plaintext highlighter-rouge">tile_layers</code> in your <code class="language-plaintext highlighter-rouge">src/assets</code> folder and place <code class="language-plaintext highlighter-rouge">tilemap.png</code> inside it, you can get it from the <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">github repo</a>.</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+<div style="text-align: center;">
+  <img src="/assets/book_assets/tile_layers/tilemap.png" alt="Tilemap sprite atlas" style="max-width: 100%; height: auto; pointer-events: none;">
+</div>
+The tilemap assets used in this example are based on <a target="_blank" href="https://opengameart.org/content/16x16-game-assets">16x16 Game Assets</a>  by George Bailey, available on OpenGameArt under CC-BY 4.0 license. <strong>However, to follow this tutorial, please use tilemap.png provide from the chapter's <a target="_blank" style="font-weight:650" href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust"> github repo</a>.</strong> 
+</div>
+
+<p>Now inside <code class="language-plaintext highlighter-rouge">src/map</code> folder create a file <code class="language-plaintext highlighter-rouge">tilemap.rs</code>. When you add a file inside map folder, ensure to register it in <code class="language-plaintext highlighter-rouge">mod.rs</code> by adding the line <code class="language-plaintext highlighter-rouge">pub mod tilemap</code>.</p>
+
+<p>This is where our tilemap definition comes in - it acts as a “map” that tells Bevy the coordinates of every sprite in our atlas.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/tilemap.rs</span>
+<span class="k">use</span> <span class="nn">bevy</span><span class="p">::</span><span class="nn">math</span><span class="p">::{</span><span class="n">URect</span><span class="p">,</span> <span class="n">UVec2</span><span class="p">};</span>
+
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">TilemapSprite</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">name</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">'static</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">pixel_x</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">pixel_y</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">TilemapDefinition</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">tile_width</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">tile_height</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">atlas_width</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">atlas_height</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">sprites</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">'static</span> <span class="p">[</span><span class="n">TilemapSprite</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">TilemapSprite</code> struct represents a single sprite within our atlas. It stores the sprite’s name (like “dirt” or “green_grass”) and its exact pixel coordinates within the atlas image.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">TilemapDefinition</code> struct serves as the “blueprint” that Bevy uses to understand how to slice up our atlas image into individual sprites.</p>
+
+<p>Though our tilemap stores sprite names and pixel coordinates, Bevy’s texture atlas system requires numeric indices and rectangular regions. These methods perform the necessary conversions.</p>
+
+<p>Append the following code to your <code class="language-plaintext highlighter-rouge">tilemap.rs</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/tilemap.rs</span>
+
+<span class="k">impl</span> <span class="n">TilemapDefinition</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">const</span> <span class="k">fn</span> <span class="nf">tile_size</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">UVec2</span> <span class="p">{</span>
+        <span class="nn">UVec2</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="k">self</span><span class="py">.tile_width</span><span class="p">,</span> <span class="k">self</span><span class="py">.tile_height</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">const</span> <span class="k">fn</span> <span class="nf">atlas_size</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">UVec2</span> <span class="p">{</span>
+        <span class="nn">UVec2</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="k">self</span><span class="py">.atlas_width</span><span class="p">,</span> <span class="k">self</span><span class="py">.atlas_height</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">sprite_index</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="o">&amp;</span><span class="nb">str</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Option</span><span class="o">&lt;</span><span class="nb">usize</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">self</span><span class="py">.sprites</span><span class="nf">.iter</span><span class="p">()</span><span class="nf">.position</span><span class="p">(|</span><span class="n">sprite</span><span class="p">|</span> <span class="n">sprite</span><span class="py">.name</span> <span class="o">==</span> <span class="n">name</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">sprite_rect</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">usize</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">URect</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">sprite</span> <span class="o">=</span> <span class="o">&amp;</span><span class="k">self</span><span class="py">.sprites</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+        <span class="k">let</span> <span class="n">min</span> <span class="o">=</span> <span class="nn">UVec2</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="n">sprite</span><span class="py">.pixel_x</span><span class="p">,</span> <span class="n">sprite</span><span class="py">.pixel_y</span><span class="p">);</span>
+        <span class="nn">URect</span><span class="p">::</span><span class="nf">from_corners</span><span class="p">(</span><span class="n">min</span><span class="p">,</span> <span class="n">min</span> <span class="o">+</span> <span class="k">self</span><span class="nf">.tile_size</span><span class="p">())</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">tile_size()</code> method converts our tile dimensions into a <code class="language-plaintext highlighter-rouge">UVec2</code> (unsigned 2D vector), which Bevy uses for size calculations. Similarly, <code class="language-plaintext highlighter-rouge">atlas_size()</code> provides the total atlas dimensions as a <code class="language-plaintext highlighter-rouge">UVec2</code>, which Bevy uses to create the texture atlas layout.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">sprite_index()</code> method is crucial for finding sprites by name. When we want to render a “dirt” tile, this method searches through our sprite array and returns the index position of that sprite.</p>
+
+<p>Finally, <code class="language-plaintext highlighter-rouge">sprite_rect()</code> takes a sprite index and calculates the exact rectangular region within our atlas that contains that sprite. It uses <code class="language-plaintext highlighter-rouge">URect</code> (unsigned rectangle) to define the boundaries, which Bevy’s texture atlas system requires to know which part of the large image to display.</p>
+
+<p>Now let’s put our tilemap definition to use by adding our first sprite - the dirt tile.</p>
+
+<h3 id="adding-the-dirt-tile">Adding the dirt tile</h3>
+
+<p>Let’s start with a simple dirt tile to test our tilemap system. We’ll add more sprites later as we build out our game world.</p>
+
+<p>Append this code to <code class="language-plaintext highlighter-rouge">tilemap.rs</code></p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/tilemap.rs</span>
+<span class="k">pub</span> <span class="k">const</span> <span class="n">TILEMAP</span><span class="p">:</span> <span class="n">TilemapDefinition</span> <span class="o">=</span> <span class="n">TilemapDefinition</span> <span class="p">{</span>
+    <span class="n">tile_width</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="n">tile_height</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="n">atlas_width</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="n">atlas_height</span><span class="p">:</span> <span class="mi">320</span><span class="p">,</span>
+    <span class="n">sprites</span><span class="p">:</span> <span class="o">&amp;</span><span class="p">[</span>
+          <span class="n">TilemapSprite</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="s">"dirt"</span><span class="p">,</span>
+            <span class="n">pixel_x</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+            <span class="n">pixel_y</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">]</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>Perfect! We now have a complete tilemap definition with our first sprite. Notice how we’re using a const definition - this means all this sprite metadata is determined at compile time, making it very efficient. The dirt tile sits at pixel coordinates (128, 0) in our 256x320 atlas image.</p>
+
+<h3 id="connecting-the-tilemap-to-asset-loading">Connecting the Tilemap to Asset Loading</h3>
+
+<p>Now that we’ve defined our tilemap and sprites in <code class="language-plaintext highlighter-rouge">tilemap.rs</code>, we need to connect this to our asset loading system in <code class="language-plaintext highlighter-rouge">assets.rs</code>. <code class="language-plaintext highlighter-rouge">tilemap.rs</code> knows <em>where</em> each sprite is in our atlas from disk, while <code class="language-plaintext highlighter-rouge">assets.rs</code> will handle <em>loading</em> the atlas and converting these coordinates into actual renderable sprites.</p>
+
+<p>Let’s update the imports in <code class="language-plaintext highlighter-rouge">assets.rs</code> to bring in our <code class="language-plaintext highlighter-rouge">TILEMAP</code> definition:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/assets.rs</span>
+<span class="k">use</span> <span class="nn">bevy</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span> 
+<span class="k">use</span> <span class="nn">bevy_procedural_tilemaps</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+<span class="k">use</span> <span class="k">crate</span><span class="p">::</span><span class="nn">map</span><span class="p">::</span><span class="nn">tilemap</span><span class="p">::</span><span class="n">TILEMAP</span><span class="p">;</span> <span class="c1">// &lt;--- line update alert</span>
+</code></pre></div></div>
+
+<p>With the import in place, we can now build the three key functions that helps our procedural rendering system:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">TilemapHandles</code> - Container that holds our loaded atlas and layout data</li>
+  <li><code class="language-plaintext highlighter-rouge">prepare_tilemap_handles</code> - Loads the atlas image from disk and builds the layout structure</li>
+  <li><code class="language-plaintext highlighter-rouge">load_assets</code> - Converts sprite names into <code class="language-plaintext highlighter-rouge">Sprite</code> data structures ready for rendering</li>
+</ol>
+
+<p>Let’s build these step by step.</p>
+
+<h3 id="step-1-creating-the-tilemaphandles-struct">Step 1: Creating the TilemapHandles Struct</h3>
+
+<p>First, we need a way to hold references to both the atlas image and its layout. Go ahead and append this code into your <code class="language-plaintext highlighter-rouge">assets.rs</code>:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/assets.rs</span>
+<span class="nd">#[derive(Clone)]</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">TilemapHandles</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">image</span><span class="p">:</span> <span class="n">Handle</span><span class="o">&lt;</span><span class="n">Image</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">layout</span><span class="p">:</span> <span class="n">Handle</span><span class="o">&lt;</span><span class="n">TextureAtlasLayout</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">impl</span> <span class="n">TilemapHandles</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">sprite</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">,</span> <span class="n">atlas_index</span><span class="p">:</span> <span class="nb">usize</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">Sprite</span> <span class="p">{</span>
+        <span class="nn">Sprite</span><span class="p">::</span><span class="nf">from_atlas_image</span><span class="p">(</span>
+            <span class="k">self</span><span class="py">.image</span><span class="nf">.clone</span><span class="p">(),</span>
+            <span class="nn">TextureAtlas</span><span class="p">::</span><span class="nf">from</span><span class="p">(</span><span class="k">self</span><span class="py">.layout</span><span class="nf">.clone</span><span class="p">())</span><span class="nf">.with_index</span><span class="p">(</span><span class="n">atlas_index</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>What’s happening here:</strong></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">TilemapHandles</code> struct is a container for two handles: <code class="language-plaintext highlighter-rouge">image</code> points to our loaded sprite sheet file, while <code class="language-plaintext highlighter-rouge">layout</code> points to the atlas layout that tells Bevy how to slice that image into individual sprites.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">sprite(atlas_index)</code> method is a convenience function that creates a ready-to-render <code class="language-plaintext highlighter-rouge">Sprite</code> by combining the image and layout with a specific index. For example, if the dirt tile is at index 0, calling <code class="language-plaintext highlighter-rouge">tilemap_handles.sprite(0)</code> gives us a <code class="language-plaintext highlighter-rouge">Sprite</code> configured to display just the dirt tile from our atlas.</p>
+
+<h3 id="step-2-loading-the-atlas-from-disk">Step 2: Loading the Atlas from Disk</h3>
+
+<p>Now let’s create the function that actually loads the atlas image file and sets up the layout. This is where the connection to our <code class="language-plaintext highlighter-rouge">TILEMAP</code> definition becomes crucial.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pub</span> <span class="k">fn</span> <span class="nf">prepare_tilemap_handles</span><span class="p">(</span>
+    <span class="n">asset_server</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">Res</span><span class="o">&lt;</span><span class="n">AssetServer</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="n">atlas_layouts</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">ResMut</span><span class="o">&lt;</span><span class="n">Assets</span><span class="o">&lt;</span><span class="n">TextureAtlasLayout</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+    <span class="n">assets_directory</span><span class="p">:</span> <span class="o">&amp;</span><span class="nb">str</span><span class="p">,</span>
+    <span class="n">tilemap_file</span><span class="p">:</span> <span class="o">&amp;</span><span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="k">-&gt;</span> <span class="n">TilemapHandles</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="n">image</span> <span class="o">=</span> <span class="n">asset_server</span><span class="py">.load</span><span class="p">::</span><span class="o">&lt;</span><span class="n">Image</span><span class="o">&gt;</span><span class="p">(</span><span class="nd">format!</span><span class="p">(</span><span class="s">"{assets_directory}/{tilemap_file}"</span><span class="p">));</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">layout</span> <span class="o">=</span> <span class="nn">TextureAtlasLayout</span><span class="p">::</span><span class="nf">new_empty</span><span class="p">(</span><span class="n">TILEMAP</span><span class="nf">.atlas_size</span><span class="p">());</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="k">in</span> <span class="mi">0</span><span class="o">..</span><span class="n">TILEMAP</span><span class="py">.sprites</span><span class="nf">.len</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">layout</span><span class="nf">.add_texture</span><span class="p">(</span><span class="n">TILEMAP</span><span class="nf">.sprite_rect</span><span class="p">(</span><span class="n">index</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">let</span> <span class="n">layout</span> <span class="o">=</span> <span class="n">atlas_layouts</span><span class="nf">.add</span><span class="p">(</span><span class="n">layout</span><span class="p">);</span>
+
+    <span class="n">TilemapHandles</span> <span class="p">{</span> <span class="n">image</span><span class="p">,</span> <span class="n">layout</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Breaking it down:</strong></p>
+
+<ol>
+  <li><strong>Load the image</strong>: <code class="language-plaintext highlighter-rouge">asset_server.load()</code> requests the atlas image file from disk</li>
+  <li><strong>Create empty layout</strong>: <code class="language-plaintext highlighter-rouge">TextureAtlasLayout::new_empty(TILEMAP.atlas_size())</code> creates a layout matching our 256x320 atlas</li>
+  <li><strong>Register each sprite</strong>: The loop iterates through all sprites in <code class="language-plaintext highlighter-rouge">TILEMAP</code>, using <code class="language-plaintext highlighter-rouge">TILEMAP.sprite_rect(index)</code> to get each sprite’s coordinates and adding them to the layout</li>
+  <li><strong>Store and return</strong>: The layout is added to Bevy’s asset system, and we return a <code class="language-plaintext highlighter-rouge">TilemapHandles</code> containing both handles</li>
+</ol>
+
+<p>This is where <code class="language-plaintext highlighter-rouge">TILEMAP.atlas_size()</code> and <code class="language-plaintext highlighter-rouge">TILEMAP.sprite_rect()</code> from our tilemap definition come into play - they tell Bevy exactly how to slice up our atlas image!</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+This function loads the atlas into memory and sets up the layout structure, but it doesn't actually generate the game world yet. We're just preparing the tools that the procedural generator will use later to create the map.
+</div>
+
+<h3 id="step-3-converting-sprite-names-to-renderable-sprites">Step 3: Converting Sprite Names to Renderable Sprites</h3>
+
+<p>Finally, we need a way to convert sprite names (like “dirt”) into actual <code class="language-plaintext highlighter-rouge">Sprite</code> objects that can be rendered. This is the last piece that connects everything we’ve built so far.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pub</span> <span class="k">fn</span> <span class="nf">load_assets</span><span class="p">(</span>
+    <span class="n">tilemap_handles</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">TilemapHandles</span><span class="p">,</span>
+    <span class="n">assets_definitions</span><span class="p">:</span> <span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">SpawnableAsset</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="p">)</span> <span class="k">-&gt;</span> <span class="n">ModelsAssets</span><span class="o">&lt;</span><span class="n">Sprite</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">models_assets</span> <span class="o">=</span> <span class="nn">ModelsAssets</span><span class="p">::</span><span class="o">&lt;</span><span class="n">Sprite</span><span class="o">&gt;</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">model_index</span><span class="p">,</span> <span class="n">assets</span><span class="p">)</span> <span class="k">in</span> <span class="n">assets_definitions</span><span class="nf">.into_iter</span><span class="p">()</span><span class="nf">.enumerate</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">asset_def</span> <span class="k">in</span> <span class="n">assets</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="n">SpawnableAsset</span> <span class="p">{</span>
+                <span class="n">sprite_name</span><span class="p">,</span>
+                <span class="n">grid_offset</span><span class="p">,</span>
+                <span class="n">offset</span><span class="p">,</span>
+                <span class="n">components_spawner</span><span class="p">,</span>
+            <span class="p">}</span> <span class="o">=</span> <span class="n">asset_def</span><span class="p">;</span>
+
+            <span class="k">let</span> <span class="nf">Some</span><span class="p">(</span><span class="n">atlas_index</span><span class="p">)</span> <span class="o">=</span> <span class="n">TILEMAP</span><span class="nf">.sprite_index</span><span class="p">(</span><span class="n">sprite_name</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nd">panic!</span><span class="p">(</span><span class="s">"Unknown atlas sprite '{}'"</span><span class="p">,</span> <span class="n">sprite_name</span><span class="p">);</span>
+            <span class="p">};</span>
+
+            <span class="n">models_assets</span><span class="nf">.add</span><span class="p">(</span>
+                <span class="n">model_index</span><span class="p">,</span>
+                <span class="n">ModelAsset</span> <span class="p">{</span>
+                    <span class="n">assets_bundle</span><span class="p">:</span> <span class="n">tilemap_handles</span><span class="nf">.sprite</span><span class="p">(</span><span class="n">atlas_index</span><span class="p">),</span>
+                    <span class="n">grid_offset</span><span class="p">,</span>
+                    <span class="n">world_offset</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+                    <span class="n">spawn_commands</span><span class="p">:</span> <span class="n">components_spawner</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">models_assets</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Why the two loops?</strong></p>
+
+<p>Some tiles are simple and need just one sprite (like dirt). Others are complex and need multiple sprites (like a tree that needs 4 parts).</p>
+
+<p>The outer loop says “for each type of tile,” and the inner loop says “for each sprite that tile needs.”</p>
+
+<p><strong>Let’s walk through what happens when we load a dirt tile:</strong></p>
+
+<ol>
+  <li>We have: <code class="language-plaintext highlighter-rouge">SpawnableAsset { sprite_name: "dirt", ... }</code></li>
+  <li>The function asks TILEMAP: “Where is ‘dirt’?” → TILEMAP replies: “Index 0”</li>
+  <li>It then asks TilemapHandles: “Give me a Sprite for index 0” → Gets back a ready-to-render <code class="language-plaintext highlighter-rouge">Sprite</code></li>
+  <li>Finally, it packages everything together with the positioning info and stores it</li>
+</ol>
+
+<p><strong>What does the final data look like?</strong></p>
+
+<p>After <code class="language-plaintext highlighter-rouge">load_assets</code> completes, we have a collection of <code class="language-plaintext highlighter-rouge">ModelAsset</code> objects in memory. Here’s what the data structure looks like for a few tiles:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Model</th>
+      <th>Field</th>
+      <th>Value</th>
+      <th>What It Means</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Dirt</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">assets_bundle</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Sprite(atlas_index: 0)</code></td>
+      <td>Points to dirt sprite in atlas</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">grid_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0, 0)</code></td>
+      <td>No grid offset needed</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">world_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0, 0)</code></td>
+      <td>No world offset needed</td>
+    </tr>
+    <tr>
+      <td><strong>Tree (bottom)</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">assets_bundle</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Sprite(atlas_index: 31)</code></td>
+      <td>Points to tree bottom sprite</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">grid_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0, 0)</code></td>
+      <td>Placed at base position</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">world_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0, 0)</code></td>
+      <td>Centered</td>
+    </tr>
+    <tr>
+      <td><strong>Tree (top)</strong></td>
+      <td><code class="language-plaintext highlighter-rouge">assets_bundle</code></td>
+      <td><code class="language-plaintext highlighter-rouge">Sprite(atlas_index: 30)</code></td>
+      <td>Points to tree top sprite</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">grid_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 1, 0)</code></td>
+      <td>One tile up from bottom</td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td><code class="language-plaintext highlighter-rouge">world_offset</code></td>
+      <td><code class="language-plaintext highlighter-rouge">(0, 0, 0)</code></td>
+      <td>Centered</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Important:</strong> These are just data structures in memory - nothing is drawn on screen yet! The actual rendering happens later when the procedural generator uses these prepared <code class="language-plaintext highlighter-rouge">ModelAsset</code> objects to spawn entities.</p>
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Great Progress!</strong> You've made it through the foundation layer - sprites, tilemaps, and asset loading. Now we have the visual pieces (assets), but how does the generator know which tiles can be placed next to each other? That's where models and sockets come in!
+</div>
+
+<h2 id="from-tiles-to-models">From Tiles to Models</h2>
+
+<p>We now have assets that know <em>how to render</em> tiles. But the procedural generator needs to know <em>which tiles can be placed next to which</em>.</p>
+
+<p>You already understand <strong>tiles</strong> - the individual visual pieces like grass, dirt, and water. Now we need to add sockets to these tiles and define connection rules so the generator can figure out valid placements.</p>
+
+<p><strong>Models = Tiles + Sockets</strong></p>
+
+<p><strong>A two-step process:</strong></p>
+<ol>
+  <li>Create model with socket labels (which side has which socket)</li>
+  <li>Separately define connection rules (which sockets can connect)</li>
+</ol>
+
+<h3 id="how-models-expose-sockets">How Models Expose Sockets</h3>
+
+<p>Models expose <strong>sockets</strong> - labeled connection points on each edge. Let’s look at a green grass tile and see how it exposes sockets in different directions.</p>
+
+<p><strong>Horizontal Plane (x and y directions)</strong></p>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 40px 0; font-family: monospace;">
+  <!-- Top socket (y_pos) -->
+  <div style="text-align: center; margin-bottom: 15px;">
+    <div style="margin-bottom: 10px; font-size: 24px; color: #1976d2;">↑</div>
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2; display: inline-block;">
+      <strong>up (y_pos)</strong><br>
+      grass.material
+    </div>
+    <div style="margin-top: 5px; font-size: 24px;">↓</div>
+  </div>
+  
+  <!-- Middle row: left, center, right -->
+  <div style="display: flex; align-items: center; gap: 15px; margin: 20px 0;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="font-size: 24px; color: #1976d2;">←</div>
+      <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+        <strong>left (x_neg)</strong><br>
+        grass.material
+      </div>
+    </div>
+    
+    <div style="font-size: 24px;">→</div>
+    
+    <div style="padding: 40px 50px; background-color: #90EE90; border-radius: 8px; border-left: 4px solid #28a745; font-size: 18px; font-weight: bold; text-align: center;">
+      GREEN<br>GRASS
+    </div>
+    
+    <div style="font-size: 24px;">←</div>
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+        <strong>right (x_pos)</strong><br>
+        grass.material
+      </div>
+      <div style="font-size: 24px; color: #1976d2;">→</div>
+    </div>
+  </div>
+  
+  <!-- Bottom socket (y_neg) -->
+  <div style="text-align: center; margin-top: 15px;">
+    <div style="margin-bottom: 5px; font-size: 24px;">↑</div>
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2; display: inline-block;">
+      <strong>down (y_neg)</strong><br>
+      grass.material
+    </div>
+    <div style="margin-top: 10px; font-size: 24px; color: #1976d2;">↓</div>
+  </div>
+</div>
+
+<p><strong>Vertical Axis (z direction)</strong></p>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 40px 0; font-family: monospace;">
+  <!-- Top socket (z_pos) -->
+  <div style="text-align: center; margin-bottom: 15px;">
+    <div style="margin-bottom: 10px; font-size: 24px; color: #ffc107;">↑</div>
+    <div style="padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; display: inline-block;">
+      <strong>top (z_pos)</strong><br>
+      grass.layer_up
+    </div>
+    <div style="margin-top: 5px; font-size: 24px;">↓</div>
+  </div>
+  
+  <!-- Center tile -->
+  <div style="padding: 40px 50px; background-color: #90EE90; border-radius: 8px; border-left: 4px solid #28a745; font-size: 18px; font-weight: bold; text-align: center; margin: 20px 0;">
+    GREEN<br>GRASS
+  </div>
+  
+  <!-- Bottom socket (z_neg) -->
+  <div style="text-align: center; margin-top: 15px;">
+    <div style="margin-bottom: 5px; font-size: 24px;">↑</div>
+    <div style="padding: 15px; background-color: #f0f0f0; border-radius: 8px; border-left: 4px solid #6c757d; display: inline-block;">
+      <strong>bottom (z_neg)</strong><br>
+      grass.layer_down
+    </div>
+    <div style="margin-top: 10px; font-size: 24px; color: #6c757d;">↓</div>
+  </div>
+</div>
+
+<p><strong>How does z-axis make sense in a 2D game?</strong></p>
+
+<p>Even though we’re building a 2D game, the z-axis represents <strong>layering</strong> - Imagine stacking transparent sheets on top of each other. Here’s how it works with our yellow grass example:</p>
+
+<p><strong>The Layering System:</strong></p>
+<ul>
+  <li><strong>Dirt tiles</strong> form the base layer (ground level)</li>
+  <li><strong>Green grass tiles</strong> can sit on top of dirt (one layer up)</li>
+  <li><strong>Yellow grass tiles</strong> can sit on top of green grass (another layer up)</li>
+</ul>
+
+<p>With multiple layers like dirt, grass, and yellow grass, we need a way to keep our models and their corresponding sprites organized.</p>
+
+<h2 id="keeping-models-and-sprites-in-sync">Keeping Models and Sprites in Sync</h2>
+
+<p>The WFC algorithm needs to know the placement rules (models), while the renderer needs to know which sprites to draw (assets).</p>
+
+<p>The challenge is that these are stored in separate collections that must stay synchronized by index:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Models and assets must stay aligned by index</span>
+<span class="k">let</span> <span class="k">mut</span> <span class="n">models</span> <span class="o">=</span> <span class="nn">ModelCollection</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+<span class="k">let</span> <span class="k">mut</span> <span class="n">assets</span> <span class="o">=</span> <span class="nn">Vec</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+
+<span class="n">models</span><span class="nf">.create</span><span class="p">(</span><span class="n">dirt_template</span><span class="p">);</span>     <span class="c1">// Model 0</span>
+<span class="n">assets</span><span class="nf">.push</span><span class="p">(</span><span class="nd">vec!</span><span class="p">[</span><span class="nn">SpawnableAsset</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="s">"dirt"</span><span class="p">)]);</span>  <span class="c1">// Asset 0 ✓</span>
+
+<span class="n">models</span><span class="nf">.create</span><span class="p">(</span><span class="n">grass_template</span><span class="p">);</span> <span class="c1">// Model 1  </span>
+<span class="n">assets</span><span class="nf">.push</span><span class="p">(</span><span class="nd">vec!</span><span class="p">[</span><span class="nn">SpawnableAsset</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="s">"grass"</span><span class="p">)]);</span> <span class="c1">// Asset 1 ✓</span>
+</code></pre></div></div>
+
+<p>If these lists get out of sync, the generator will place the wrong sprites or crash entirely. We need a system that keeps them together.</p>
+
+<h3 id="the-terrainmodelbuilder">The TerrainModelBuilder</h3>
+
+<p>Create a new file <code class="language-plaintext highlighter-rouge">models.rs</code> inside the <code class="language-plaintext highlighter-rouge">map</code> folder, and don’t forget to add <code class="language-plaintext highlighter-rouge">pub mod models;</code> to your <code class="language-plaintext highlighter-rouge">mod.rs</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/models.rs</span>
+<span class="k">use</span> <span class="nn">bevy_procedural_tilemaps</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+<span class="k">use</span> <span class="k">crate</span><span class="p">::</span><span class="nn">map</span><span class="p">::</span><span class="nn">assets</span><span class="p">::</span><span class="n">SpawnableAsset</span><span class="p">;</span>
+
+<span class="cd">/// Utility wrapper that ensures model declarations and their asset bindings stay aligned.</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">TerrainModelBuilder</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">models</span><span class="p">:</span> <span class="n">ModelCollection</span><span class="o">&lt;</span><span class="n">Cartesian3D</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="k">pub</span> <span class="n">assets</span><span class="p">:</span> <span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">SpawnableAsset</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">TerrainModelBuilder</code> holds both lists in one place:</p>
+<ol>
+  <li><strong><code class="language-plaintext highlighter-rouge">models</code></strong>: What the WFC algorithm uses</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">assets</code></strong>: The sprites for each model</li>
+</ol>
+
+<p>By bundling them together, you can’t add one without the other. Problem solved!</p>
+
+<p>Now let’s add the methods that make this builder useful:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/models.rs</span>
+<span class="k">impl</span> <span class="n">TerrainModelBuilder</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">new</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="k">Self</span> <span class="p">{</span>
+            <span class="n">models</span><span class="p">:</span> <span class="nn">ModelCollection</span><span class="p">::</span><span class="nf">new</span><span class="p">(),</span>
+            <span class="n">assets</span><span class="p">:</span> <span class="nn">Vec</span><span class="p">::</span><span class="nf">new</span><span class="p">(),</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">fn</span> <span class="n">create_model</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="o">&amp;</span><span class="k">mut</span> <span class="k">self</span><span class="p">,</span>
+        <span class="n">template</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span>
+        <span class="n">assets</span><span class="p">:</span> <span class="nb">Vec</span><span class="o">&lt;</span><span class="n">SpawnableAsset</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">-&gt;</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">Model</span><span class="o">&lt;</span><span class="n">Cartesian3D</span><span class="o">&gt;</span>
+    <span class="k">where</span>
+        <span class="n">T</span><span class="p">:</span> <span class="nb">Into</span><span class="o">&lt;</span><span class="n">ModelTemplate</span><span class="o">&lt;</span><span class="n">Cartesian3D</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="k">let</span> <span class="n">model_ref</span> <span class="o">=</span> <span class="k">self</span><span class="py">.models</span><span class="nf">.create</span><span class="p">(</span><span class="n">template</span><span class="p">);</span>
+        <span class="k">self</span><span class="py">.assets</span><span class="nf">.push</span><span class="p">(</span><span class="n">assets</span><span class="p">);</span>
+        <span class="n">model_ref</span>
+    <span class="p">}</span>
+
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">into_parts</span><span class="p">(</span><span class="k">self</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="p">(</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">SpawnableAsset</span><span class="o">&gt;&gt;</span><span class="p">,</span> <span class="n">ModelCollection</span><span class="o">&lt;</span><span class="n">Cartesian3D</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="p">(</span><span class="k">self</span><span class="py">.assets</span><span class="p">,</span> <span class="k">self</span><span class="py">.models</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">TerrainModelBuilder</code> provides three simple methods that solve our synchronization problem. The <code class="language-plaintext highlighter-rouge">new()</code> method creates an empty builder to start with.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">create_model()</code> method both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index, making it impossible to mismatch them.</p>
+
+<p>Finally, <code class="language-plaintext highlighter-rouge">into_parts()</code> splits the builder back into separate collections when you’re done building, so the assets can go to the renderer and the models can go to the WFC generator. This simple wrapper prevents us from making “wrong sprite for wrong model” mistakes.</p>
+
+<p><strong>What’s <code class="language-plaintext highlighter-rouge">&lt;T&gt;</code> doing in <code class="language-plaintext highlighter-rouge">pub fn create_model&lt;T&gt;</code>?</strong></p>
+
+<p>The <code class="language-plaintext highlighter-rouge">&lt;T&gt;</code> is Rust’s <strong>generic type parameter</strong> - it’s like a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (like simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them.</p>
+
+<p>Generics let us write one function that works with multiple types, as long as they can all be converted into a <code class="language-plaintext highlighter-rouge">ModelTemplate</code>. This is incredibly powerful because it means we can add new socket definition types in the future without changing our <code class="language-plaintext highlighter-rouge">TerrainModelBuilder</code> code - the compiler will automatically handle the type conversions for us!</p>
+
+<p><strong>What’s this <code class="language-plaintext highlighter-rouge">where T: Into&lt;ModelTemplate&lt;Cartesian3D&gt;&gt;</code>?</strong></p>
+
+<p>This is a <strong>trait bound</strong> that tells Rust what capabilities the generic type <code class="language-plaintext highlighter-rouge">T</code> must have. The <code class="language-plaintext highlighter-rouge">where</code> clause says “T must be able to convert itself into a <code class="language-plaintext highlighter-rouge">ModelTemplate&lt;Cartesian3D&gt;</code> (a 3D model template).”</p>
+
+<p><code class="language-plaintext highlighter-rouge">Into</code> is Rust’s way of saying “this type knows how to transform itself into that type” - like how a string can be converted into a number, or how our socket definitions can be converted into model templates. This means we can pass in any type that knows how to become a <code class="language-plaintext highlighter-rouge">ModelTemplate</code> - whether it’s simple single-socket tiles, complex multi-socket tiles, or even a custom socket type you create later.</p>
+
+<p>Rust automatically provides this conversion ability for compatible types, so this gives us maximum flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can’t be converted, preventing runtime errors!</p>
+
+<h2 id="building-the-foundation-dirt-layer-sockets">Building the Foundation: Dirt Layer Sockets</h2>
+
+<p>Now that we understand how to keep models and assets synchronized, let’s start building our procedural world from the ground up - literally! The dirt layer forms the foundation that everything else sits on.</p>
+
+<p><strong>Why Layers Make WFC Simpler:</strong></p>
+
+<p>Without layers, we’d need to cram all our rules into a single layer: “water connects to water and grass”, “grass connects to grass and dirt”, “trees connect to grass”, “dirt connects to dirt” - plus all the edge cases and special connections. This creates a massive web of interdependencies that makes the WFC algorithm struggle to find valid solutions.</p>
+
+<p>By using layers, we break this complexity into manageable pieces. Each layer only needs to worry about its own connections, making the WFC algorithm much more likely to find valid solutions quickly.</p>
+
+<p>Let’s see how this works in practice by examining our dirt layer implementation:</p>
+
+<p>Create a new file <code class="language-plaintext highlighter-rouge">sockets.rs</code> inside the <code class="language-plaintext highlighter-rouge">map</code> folder, and don’t forget to add <code class="language-plaintext highlighter-rouge">pub mod sockets;</code> to your <code class="language-plaintext highlighter-rouge">mod.rs</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/sockets.rs</span>
+<span class="k">use</span> <span class="nn">bevy_procedural_tilemaps</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">TerrainSockets</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">dirt</span><span class="p">:</span> <span class="n">DirtLayerSockets</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pub</span> <span class="k">struct</span> <span class="n">DirtLayerSockets</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="n">layer_up</span><span class="p">:</span> <span class="n">Socket</span><span class="p">,</span>      <span class="c1">// What can sit on top of dirt</span>
+    <span class="k">pub</span> <span class="n">layer_down</span><span class="p">:</span> <span class="n">Socket</span><span class="p">,</span>     <span class="c1">// What dirt can sit on</span>
+    <span class="k">pub</span> <span class="n">material</span><span class="p">:</span> <span class="n">Socket</span><span class="p">,</span>       <span class="c1">// What dirt connects to horizontally</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Understanding Dirt’s Socket System:</strong></p>
+
+<p>The dirt layer needs three types of sockets to function properly in our 3D world:</p>
+
+<ol>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">layer_up</code></strong> - This socket defines what can be placed in the layer above dirt. Remember layers are to seperate rule cram concerns (water can be above grass without touching it).</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">layer_down</code></strong> - This socket defines what layer the dirt itself can be placed on. For the base layer, this will connect to void (empty space).</p>
+  </li>
+  <li>
+    <p><strong><code class="language-plaintext highlighter-rouge">material</code></strong> - This socket handles horizontal connections between dirt tiles, ensuring they connect properly to form continuous ground.</p>
+  </li>
+</ol>
+
+<h2 id="creating-the-rules-building-the-dirt-layer">Creating the Rules: Building the Dirt Layer</h2>
+
+<p>Now that we have our socket system defined, we need to create the rules that tell the WFC algorithm how to use these sockets. This is where we define what tiles can be placed and how they connect to each other.</p>
+
+<p>Create a new file <code class="language-plaintext highlighter-rouge">rules.rs</code> inside the <code class="language-plaintext highlighter-rouge">map</code> folder, and don’t forget to add <code class="language-plaintext highlighter-rouge">pub mod rules;</code> to your <code class="language-plaintext highlighter-rouge">mod.rs</code>.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// src/map/rules.rs</span>
+<span class="k">use</span> <span class="k">crate</span><span class="p">::</span><span class="nn">map</span><span class="p">::</span><span class="nn">assets</span><span class="p">::</span><span class="n">SpawnableAsset</span><span class="p">;</span>
+<span class="k">use</span> <span class="k">crate</span><span class="p">::</span><span class="nn">map</span><span class="p">::</span><span class="nn">models</span><span class="p">::</span><span class="n">TerrainModelBuilder</span><span class="p">;</span>
+<span class="k">use</span> <span class="k">crate</span><span class="p">::</span><span class="nn">map</span><span class="p">::</span><span class="nn">sockets</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">bevy_procedural_tilemaps</span><span class="p">::</span><span class="nn">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+
+<span class="k">fn</span> <span class="nf">build_dirt_layer</span><span class="p">(</span>
+    <span class="n">terrain_model_builder</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">TerrainModelBuilder</span><span class="p">,</span>
+    <span class="n">terrain_sockets</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">TerrainSockets</span><span class="p">,</span>
+    <span class="n">socket_collection</span><span class="p">:</span> <span class="o">&amp;</span><span class="k">mut</span> <span class="n">SocketCollection</span><span class="p">,</span>
+<span class="p">)</span> <span class="p">{</span>
+    <span class="n">terrain_model_builder</span>
+        <span class="nf">.create_model</span><span class="p">(</span>
+            <span class="nn">SocketsCartesian3D</span><span class="p">::</span><span class="n">Simple</span> <span class="p">{</span>
+                <span class="n">x_pos</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">,</span>
+                <span class="n">x_neg</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">,</span>
+                <span class="n">z_pos</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.layer_up</span><span class="p">,</span>
+                <span class="n">z_neg</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.layer_down</span><span class="p">,</span>
+                <span class="n">y_pos</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">,</span>
+                <span class="n">y_neg</span><span class="p">:</span> <span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="nd">vec!</span><span class="p">[</span><span class="nn">SpawnableAsset</span><span class="p">::</span><span class="nf">new</span><span class="p">(</span><span class="s">"dirt"</span><span class="p">)],</span>
+        <span class="p">)</span>
+        <span class="nf">.with_weight</span><span class="p">(</span><span class="mf">20.</span><span class="p">);</span>
+
+    <span class="n">socket_collection</span><span class="nf">.add_connections</span><span class="p">(</span><span class="nd">vec!</span><span class="p">[(</span>
+        <span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">,</span>
+        <span class="nd">vec!</span><span class="p">[</span><span class="n">terrain_sockets</span><span class="py">.dirt.material</span><span class="p">],</span>
+    <span class="p">)]);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Understanding the Dirt Layer Rules:</strong></p>
+
+<ol>
+  <li><strong>Creates a dirt model</strong> - Defines a tile that <strong>exposes</strong> sockets on all six sides</li>
+  <li><strong>Exposes socket types</strong> - Horizontal sides expose <code class="language-plaintext highlighter-rouge">dirt.material</code>, vertical sides expose layer sockets</li>
+  <li><strong>Assigns a sprite</strong> - <code class="language-plaintext highlighter-rouge">SpawnableAsset::new("dirt")</code> tells the renderer which sprite to use</li>
+  <li><strong>Sets the weight</strong> - <code class="language-plaintext highlighter-rouge">.with_weight(20.)</code> makes dirt tiles 20 times more likely to be placed</li>
+  <li><strong>Defines connection rules</strong> - <code class="language-plaintext highlighter-rouge">add_connections</code> tells WFC that <code class="language-plaintext highlighter-rouge">dirt.material</code> can connect to other <code class="language-plaintext highlighter-rouge">dirt.material</code></li>
+</ol>
+
+<p>This creates a simple but effective foundation layer that can form continuous ground while supporting other layers on top!</p>
+
+<p>Now we need a function that the generator will call to get all our dirt layer rules and models:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pub</span> <span class="k">fn</span> <span class="nf">build_world</span><span class="p">()</span> <span class="k">-&gt;</span> <span class="p">(</span>
+    <span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">SpawnableAsset</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+    <span class="n">ModelCollection</span><span class="o">&lt;</span><span class="n">Cartesian3D</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="n">SocketCollection</span><span class="p">,</span>
+<span class="p">)</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">socket_collection</span> <span class="o">=</span> <span class="nn">SocketCollection</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+    <span class="k">let</span> <span class="n">terrain_sockets</span> <span class="o">=</span> <span class="nf">create_sockets</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span> <span class="n">socket_collection</span><span class="p">);</span>
+
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">terrain_model_builder</span> <span class="o">=</span> <span class="nn">TerrainModelBuilder</span><span class="p">::</span><span class="nf">new</span><span class="p">();</span>
+
+    <span class="c1">// Build dirt layer</span>
+    <span class="nf">build_dirt_layer</span><span class="p">(</span>
+        <span class="o">&amp;</span><span class="k">mut</span> <span class="n">terrain_model_builder</span><span class="p">,</span>
+        <span class="o">&amp;</span><span class="n">terrain_sockets</span><span class="p">,</span>
+        <span class="o">&amp;</span><span class="k">mut</span> <span class="n">socket_collection</span><span class="p">,</span>
+    <span class="p">);</span>
+
+    <span class="k">let</span> <span class="p">(</span><span class="n">assets</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span> <span class="o">=</span> <span class="n">terrain_model_builder</span><span class="nf">.into_parts</span><span class="p">();</span>
+
+    <span class="p">(</span><span class="n">assets</span><span class="p">,</span> <span class="n">models</span><span class="p">,</span> <span class="n">socket_collection</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>What This Function Does:</strong></p>
+
+<ol>
+  <li><strong>Creates the socket collection</strong> - This is where all our socket connection rules are stored</li>
+  <li><strong>Gets our socket definitions</strong> - Calls <code class="language-plaintext highlighter-rouge">create_sockets()</code> to get all the socket types we defined</li>
+  <li><strong>Creates the model builder</strong> - This keeps our models and assets synchronized</li>
+  <li><strong>Builds the dirt layer</strong> - Calls our <code class="language-plaintext highlighter-rouge">build_dirt_layer</code> function to create all the dirt models and rules</li>
+  <li><strong>Returns the three collections</strong> - Assets for rendering, models for WFC rules, and socket collection for connections</li>
+</ol>
+
+<p>This function is what the generator calls to get all the rules and models needed to create our procedural world!</p>
+
+          </div><div class="author-box">
+  <div class="columns is-vcentered">
+    <div class="column is-narrow">
+      <figure class="image is-96x96">
+        <img class="author-avatar" src="/assets/febin.png" alt="Febin John James">
+      </figure>
+    </div>
+    <div class="column">
+      <div class="author-info">
+        <h4 class="author-name title is-5">Febin John James</h4>
+        <p class="author-bio">
+          I love exploring and building intelligent systems.
+        </p>
+        <div class="author-social">
+          <a href="http://linkedin.com/in/febinjohnjames/" target="_blank" class="button is-small is-outlined">
+            <span class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
+              </svg>
+            </span>
+            <span>LinkedIn</span>
+          </a>
+          <a href="https://x.com/heyfebin" target="_blank" class="button is-small is-outlined">
+            <span class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path>
+              </svg>
+            </span>
+            <span>X / Twitter</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<a class="u-url" href="/posts/bevy-rust-game-development-chapter-2/" hidden=""></a>
+        </article>
+      </div>
+      <aside class="column is-3-desktop is-hidden-touch post-toc-column">
+        <div class="post-toc-wrapper">
+          <nav class="post-toc" aria-label="Table of contents">
+            <p class="post-toc__title">Table of Contents</p>
+            <div class="post-toc__links" id="post-toc-links"><ul class="post-toc__list"><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#procedural-generation">Procedural Generation</a></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#from-theory-to-implementation">From Theory to Implementation</a></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#setting-up-our-toolkit">Setting Up Our Toolkit</a></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#bevy-procedural-tilemaps">Bevy Procedural Tilemaps</a><ul class="post-toc__sublist"><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#what-the-library-handles">What the Library Handles</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link is-active" href="#what-we-need-to-provide" aria-current="true">What We Need to Provide</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#how-the-system-works-together">How the System Works Together</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#the-workflow">The Workflow</a></li></ul></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#the-map-module">The Map Module</a><ul class="post-toc__sublist"><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#building-the-map-system">Building the Map System</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#creating-spawnableasset">Creating SpawnableAsset</a></li></ul></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#loading-sprite-assets">Loading Sprite Assets</a><ul class="post-toc__sublist"><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#adding-the-dirt-tile">Adding the dirt tile</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#connecting-the-tilemap-to-asset-loading">Connecting the Tilemap to Asset Loading</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#step-1-creating-the-tilemaphandles-struct">Step 1: Creating the TilemapHandles Struct</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#step-2-loading-the-atlas-from-disk">Step 2: Loading the Atlas from Disk</a></li><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#step-3-converting-sprite-names-to-renderable-sprites">Step 3: Converting Sprite Names to Renderable Sprites</a></li></ul></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#from-tiles-to-models">From Tiles to Models</a><ul class="post-toc__sublist"><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#how-models-expose-sockets">How Models Expose Sockets</a></li></ul></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#keeping-models-and-sprites-in-sync">Keeping Models and Sprites in Sync</a><ul class="post-toc__sublist"><li class="post-toc__item post-toc__item--level3"><a class="post-toc__link" href="#the-terrainmodelbuilder">The TerrainModelBuilder</a></li></ul></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#building-the-foundation-dirt-layer-sockets">Building the Foundation: Dirt Layer Sockets</a></li><li class="post-toc__item post-toc__item--level2"><a class="post-toc__link" href="#creating-the-rules-building-the-dirt-layer">Creating the Rules: Building the Dirt Layer</a></li></ul></div>
+          </nav>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+  </main>
+
+
+
+
+<script type="text/javascript" crossorigin="anonymous" src="https://us-assets.i.posthog.com/static/surveys.js?v=1.275.0"></script><script type="text/javascript" crossorigin="anonymous" src="https://us-assets.i.posthog.com/array/phc_M2hQABXfUBGKUbRAtosTt5cOXp8SERKaXZ4lKixeTsS/config.js"></script><script type="text/javascript" crossorigin="anonymous" src="https://us-assets.i.posthog.com/static/web-vitals.js?v=1.275.0"></script><script type="text/javascript" crossorigin="anonymous" src="https://us-assets.i.posthog.com/static/dead-clicks-autocapture.js?v=1.275.0"></script></body>

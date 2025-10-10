@@ -129,3 +129,122 @@ body {
   max-height: 80vh !important;
   transform: scale(1.2) !important;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+.post-toc-column {
+  position: relative;
+}
+
+.post-toc-wrapper {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 6rem;
+  align-self: flex-start;
+  width: 100%;
+}
+
+.post-toc-wrapper.is-fixed {
+  position: fixed;
+  top: 6rem;
+  z-index: 3;
+}
+
+.post-toc-placeholder {
+  display: block;
+  width: 100%;
+}
+
+.post-toc {
+  width: 100%;
+  max-height: calc(100vh - 6rem);
+  font-size: 0.95rem;
+  color: #4a5568;
+  padding-left: 1.25rem;
+  padding-right: 0.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-toc__title {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 0.75rem;
+  color: #4a5568;
+}
+
+.post-toc__links {
+  max-height: inherit;
+  overflow-y: auto;
+  padding-left: 0;
+  padding-bottom: 0.75rem;
+  scrollbar-width: none;
+}
+
+.post-toc__links::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.post-toc:hover .post-toc__links {
+  scrollbar-width: thin;
+}
+
+.post-toc:hover .post-toc__links::-webkit-scrollbar {
+  width: 6px;
+}
+
+.post-toc:hover .post-toc__links::-webkit-scrollbar-thumb {
+  background-color: rgba(203, 213, 224, 0.8);
+}
+
+.post-toc__list,
+.post-toc__sublist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.post-toc__sublist {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.post-toc__item {
+  margin: 0;
+}
+
+.post-toc__item--level3 .post-toc__link {
+  padding-left: 1.5rem;
+}
+
+.post-toc__link {
+  display: block;
+  padding: 0.35rem 0 0.35rem 1rem;
+  border-left: 2px solid transparent;
+  color: #4a5568;
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  font-size: 0.75rem;
+}
+
+.post-toc__link:hover,
+.post-toc__link:focus {
+  color: #2d3748;
+  border-left-color: #cbd5e0;
+  outline: none;
+}
+
+.post-toc__link.is-active {
+  color: #2d3748;
+  border-left-color: #2d3748;
+  font-weight: 600;
+}
+
+.post-toc__link.is-active:focus {
+  border-left-color: #2d3748;
+}

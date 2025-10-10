@@ -4,8 +4,8 @@ layout: default
 
 <div class="container">
   <div class="section">
-    <div class="columns is-centered">
-      <div class="column is-8-desktop is-10-tablet is-full-mobile">
+    <div class="columns post-layout-columns is-variable is-6-desktop">
+      <div class="column post-main-column is-8-desktop is-offset-1-desktop is-10-tablet is-full-mobile">
         <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
           <header class="post-header">
@@ -44,6 +44,14 @@ layout: default
           <a class="u-url" href="{{ page.url | relative_url }}" hidden></a>
         </article>
       </div>
+      <aside class="column is-3-desktop is-hidden-touch post-toc-column">
+        <div class="post-toc-wrapper">
+          <nav class="post-toc" aria-label="Table of contents">
+            <p class="post-toc__title">Table of Contents</p>
+            <div class="post-toc__links" id="post-toc-links"></div>
+          </nav>
+        </div>
+      </aside>
     </div>
   </div>
 </div>
