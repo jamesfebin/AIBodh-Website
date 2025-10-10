@@ -268,7 +268,7 @@ Backtrack -> Pick
 
  Each placement immediately reduces the possibilities for neighboring cells. The cell with the fewest remaining possibilities becomes our next target. If any cell ends up with zero possibilities, we've hit a contradiction—in Sudoku, you backtrack and try a different value.
 
-**For our tile-based world:** Think of each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
+**For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
 
 Let's see this in action using the following water tiles. We'll learn how constraints propagate to form a coherent environment:
 
@@ -1296,246 +1296,36 @@ Models expose **sockets** - labeled connection points on each edge. Let's look a
 
 **How does z-axis make sense in a 2D game?**
 
-Even though we're building a 2D game, the z-axis represents **layering** - think of it like stacking transparent sheets on top of each other. Here's how it works with our yellow grass example:
+Even though we're building a 2D game, the z-axis represents **layering** - Imagine stacking transparent sheets on top of each other. Here's how it works with our yellow grass example:
 
 **The Layering System:**
 - **Dirt tiles** form the base layer (ground level)
 - **Green grass tiles** can sit on top of dirt (one layer up)
 - **Yellow grass tiles** can sit on top of green grass (another layer up)
 
-**Socket Connections for Layering:**
-```rust
-// Green grass can connect to yellow grass above it
-socket_collection.add_rotated_connection(
-    terrain_sockets.grass.layer_up,           // Green grass "top" socket
-    vec![terrain_sockets.yellow_grass.layer_down]  // Yellow grass "bottom" socket
-);
-```
-
-**Visual Result:**
-When the procedural generator places tiles, it can stack them vertically:
-1. **Bottom layer**: Dirt tile (z_neg = dirt.layer_down)
-2. **Middle layer**: Green grass tile (z_neg = grass.layer_down, z_pos = grass.layer_up)  
-3. **Top layer**: Yellow grass tile (z_neg = yellow_grass.layer_down)
-
-This creates the visual effect of yellow grass "sitting on top of" green grass, even though it's all rendered in 2D. The z-axis sockets ensure that only compatible layers can stack together - you can't have water floating in mid-air or grass growing underground!
-
-
-### Socket Labels vs Socket Rules
-
-This is a crucial distinction that can be confusing at first:
-
-**Socket Labels (What Each Side Has):**
-```rust
-// Grass model exposes these sockets
-SocketsCartesian2D::Simple {
-    x_pos: grass_material,    // Right side has "grass_material"
-    x_neg: grass_material,    // Left side has "grass_material"
-    y_pos: grass_material,    // Top side has "grass_material"
-    y_neg: grass_material,    // Bottom side has "grass_material"
-}
-```
-
-The `x_pos`, `y_pos` are just saying "which socket is on which side." They don't define compatibility!
-
-**Socket Rules (What Can Connect to What):**
-```rust
-// Separately, we define connection rules
-socket_collection.add_connection(
-    grass_material, 
-    vec![grass_material, dirt_material, water_edge]
-);
-```
-
-This says: "Tiles with `grass_material` socket can connect to tiles that have `grass_material`, `dirt_material`, or `water_edge` sockets."
-
-Let's see this with a real example using three tiles:
-
-```d2
-direction: down
-
-step1: {
-  label: "Step 1: Define Socket Labels for Each Model"
-  
-  grass: |md
-    **Grass Model**
-    y_pos: grass_material
-    y_neg: grass_material
-    x_pos: grass_material
-    x_neg: grass_material
-  |
-  
-  water: |md
-    **Water Model**
-    y_pos: water_edge
-    y_neg: water_edge
-    x_pos: water_edge
-    x_neg: water_edge
-  |
-  
-  dirt: |md
-    **Dirt Model**
-    y_pos: dirt_material
-    y_neg: dirt_material
-    x_pos: dirt_material
-    x_neg: dirt_material
-  |
-}
-
-step2: {
-  label: "Step 2: Define Socket Compatibility Rules (Separate!)"
-  
-  rules: |md
-    **Connection Rules:**
-    
-    grass_material can connect to:
-    • grass_material ✓
-    • dirt_material ✓
-    • water_edge ✓
-    
-    water_edge can connect to:
-    • water_edge ✓
-    • grass_material ✓
-    
-    dirt_material can connect to:
-    • dirt_material ✓
-    • grass_material ✓
-  |
-}
-
-step3: {
-  label: "Step 3: Generator Checks Both"
-  
-  process: |md
-    **When placing a tile:**
-    
-    1. Look at neighbor's socket label
-    2. Check connection rules
-    3. Place if compatible
-    
-    Example: Place next to grass?
-    - Neighbor has grass_material
-    - Check rules: grass_material → grass_material ✓
-    - Can place grass, dirt, or water!
-  |
-}
-
-step1 -> step2 -> step3
-```
-
-### Why This Two-Step System?
-
-You might wonder: "Why not just put the rules in the socket labels themselves?" Here's why separation is powerful:
-
-**Example: Creating shores**
-```rust
-// Step 1: Water tile exposes water_edge sockets
-let water_model = SocketsCartesian2D::Simple {
-    x_pos: water_edge,
-    x_neg: water_edge,
-    y_pos: water_edge,
-    y_neg: water_edge,
-};
-
-// Step 2: Separately define that water_edge can connect to grass
-socket_collection.add_connection(water_edge, vec![water_edge, grass_material]);
-```
-
-Now water creates natural shores with grass, but we didn't have to modify the water tile's socket structure - we just added a connection rule!
-
-### Visualizing How the Generator Uses This
-
-Let's see how the generator places tiles using both socket labels and connection rules:
-
-```d2
-direction: right
-
-scenario: {
-  label: "Scenario: Water tile already placed"
-  
-  placed_water: |md
-    **Water**
-    x_pos: water_edge
-  |
-}
-
-question: {
-  label: "What can go to the right?"
-  
-  unknown: "?"
-  
-  check: |md
-    Right side needs socket
-    that connects to water_edge
-  |
-}
-
-lookup: {
-  label: "Check Connection Rules"
-  
-  rules: |md
-    water_edge connects to:
-    • water_edge ✓
-    • grass_material ✓
-    
-    Look for tiles with these!
-  |
-}
-
-result: {
-  label: "Valid Options"
-  
-  options: |md
-    **Can Place:**
-    ✓ Water (has water_edge)
-    ✓ Grass (has grass_material)
-    
-    **Cannot Place:**
-    ✗ Dirt (has dirt_material, not in rules)
-  |
-}
-
-scenario -> question -> lookup -> result
-```
-
-**The key insight:** Socket labels (`x_pos`, `y_pos`) just tell us which edge has which socket. The connection rules tell us which sockets can actually touch. Both pieces are needed!
-
-Now that we understand how models work with their socket system, we face an important challenge: **keeping models and their corresponding assets synchronized**.
+With multiple layers like dirt, grass, and yellow grass, we need a way to keep our models and their corresponding sprites organized.
 
 ## Keeping Models and Sprites in Sync
 
-Here's the problem: models and assets are stored in separate collections, and they must stay aligned by index.
+The WFC algorithm needs to know the placement rules (models), while the renderer needs to know which sprites to draw (assets).
+
+The challenge is that these are stored in separate collections that must stay synchronized by index:
 
 ```rust
-// DANGEROUS: Separate lists that can drift apart
+// Models and assets must stay aligned by index
 let mut models = ModelCollection::new();
 let mut assets = Vec::new();
 
-models.create(...);  // Model 0
+models.create(dirt_template);     // Model 0
 assets.push(vec![SpawnableAsset::new("dirt")]);  // Asset 0 ✓
 
-models.create(...);  // Model 1
-assets.push(vec![SpawnableAsset::new("grass")]);  // Asset 1 ✓
-
-models.create(...);  // Model 2
-// Oops! Forgot to add assets for Model 2!
-
-models.create(...);  // Model 3
-assets.push(vec![SpawnableAsset::new("water")]);  // Goes to Asset 2, but belongs to Model 3! ✗
+models.create(grass_template); // Model 1  
+assets.push(vec![SpawnableAsset::new("grass")]); // Asset 1 ✓
 ```
 
-**What goes wrong:**
-- When the generator places Model 2, it looks up Asset 2 → gets water sprites instead of nothing
-- When it places Model 3, it looks up Asset 3 → finds nothing and crashes
-- The entire system breaks because the indices don't match
+If these lists get out of sync, the generator will place the wrong sprites or crash entirely. We need a system that keeps them together.
 
-**Why does this happen?**
-
-The `ModelCollection` (from the library) stores the WFC rules and compatibility data, while our `Vec<Vec<SpawnableAsset>>` stores the rendering information. They're completely separate data structures with no built-in connection - it's up to us to keep them aligned.
-
-**The solution:** Never let models and assets exist separately. Always create them together in a single operation that guarantees they stay synchronized.
-
-### Creating models.rs
+### The TerrainModelBuilder 
 
 Create a new file `models.rs` inside the `map` folder, and don't forget to add `pub mod models;` to your `mod.rs`.
 
@@ -1588,23 +1378,13 @@ impl TerrainModelBuilder {
 }
 ```
 
-**The three methods:**
+The `TerrainModelBuilder` provides three simple methods that solve our synchronization problem. The `new()` method creates an empty builder to start with. The `create_model()` method is the key - it takes both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index, making it impossible to mismatch them. Finally, `into_parts()` splits the builder back into separate collections when you're done building, so the assets can go to the renderer and the models can go to the WFC generator. This simple wrapper prevents us from making "wrong sprite for wrong model" mistakes.
 
-**`new()`** - Creates an empty builder.
+**What's `<T>` doing in `pub fn create_model<T>`?**
 
-**`create_model()`** - Adds a model AND its sprites at the same time:
-```rust
-builder.create_model(
-    socket_definition,                    // Model with rules
-    vec![SpawnableAsset::new("dirt")]    // Sprites for this model
-)
-```
-Both get added at the same index - impossible to mismatch!
-
-**`into_parts()`** - Splits into two lists when you're done:
-- `assets` → goes to `load_assets()`
-- `models` → goes to the generator
-
-That's it! This simple wrapper prevents the entire class of "wrong sprite for wrong model" bugs.
+The `<T>` is Rust's **generic type parameter** - it's like a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (like simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them. Generics let us write one function that works with multiple types, as long as they can all be converted into a `ModelTemplate`. This is incredibly powerful because it means we can add new socket definition types in the future without changing our `TerrainModelBuilder` code - the compiler will automatically handle the type conversions for us!
 
 
+**What's this `where T: Into<ModelTemplate<Cartesian3D>>`?**
+
+This is a **trait bound** that tells Rust what capabilities the generic type `T` must have. The `where` clause says "T must be able to convert itself into a `ModelTemplate<Cartesian3D>` (a 3D model template)." `Into` is Rust's way of saying "this type knows how to transform itself into that type" - like how a string can be converted into a number, or how our socket definitions can be converted into model templates. This means we can pass in any type that knows how to become a `ModelTemplate` - whether it's simple single-socket tiles, complex multi-socket tiles, or even a custom socket type you create later. Rust automatically provides this conversion ability for compatible types, so this gives us maximum flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
