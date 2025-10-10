@@ -1192,8 +1192,419 @@ After `load_assets` completes, we have a collection of `ModelAsset` objects in m
 
 **Important:** These are just data structures in memory - nothing is drawn on screen yet! The actual rendering happens later when the procedural generator uses these prepared `ModelAsset` objects to spawn entities.
 
-**When does this run?**
 
-This `load_assets` function runs once at game startup, converting all our sprite names into ready-to-use `Sprite` objects. We do this upfront so that when the procedural generator later creates the world, it can just grab the pre-loaded sprites and spawn them instantly - no need to do any lookups or conversions during generation.
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Great Progress!</strong> You've made it through the foundation layer - sprites, tilemaps, and asset loading. Now we have the visual pieces (assets), but how does the generator know which tiles can be placed next to each other? That's where models and sockets come in!
+</div>
+
+## From Tiles to Models
+
+We now have assets that know *how to render* tiles. But the procedural generator needs to know *which tiles can be placed next to which*. 
+
+You already understand **tiles** - the individual visual pieces like grass, dirt, and water. Now we need to add sockets to these tiles and define connection rules so the generator can figure out valid placements.
+
+**Models = Tiles + Sockets**
+
+**A two-step process:**
+1. Create model with socket labels (which side has which socket)
+2. Separately define connection rules (which sockets can connect)
+
+### How Models Expose Sockets
+
+Models expose **sockets** - labeled connection points on each edge. Let's look at a green grass tile and see how it exposes sockets in different directions.
+
+**Horizontal Plane (x and y directions)**
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 40px 0; font-family: monospace;">
+  <!-- Top socket (y_pos) -->
+  <div style="text-align: center; margin-bottom: 15px;">
+    <div style="margin-bottom: 10px; font-size: 24px; color: #1976d2;">↑</div>
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2; display: inline-block;">
+      <strong>up (y_pos)</strong><br>
+      grass.material
+    </div>
+    <div style="margin-top: 5px; font-size: 24px;">↓</div>
+  </div>
+  
+  <!-- Middle row: left, center, right -->
+  <div style="display: flex; align-items: center; gap: 15px; margin: 20px 0;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="font-size: 24px; color: #1976d2;">←</div>
+      <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+        <strong>left (x_neg)</strong><br>
+        grass.material
+      </div>
+    </div>
+    
+    <div style="font-size: 24px;">→</div>
+    
+    <div style="padding: 40px 50px; background-color: #90EE90; border-radius: 8px; border-left: 4px solid #28a745; font-size: 18px; font-weight: bold; text-align: center;">
+      GREEN<br>GRASS
+    </div>
+    
+    <div style="font-size: 24px;">←</div>
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+        <strong>right (x_pos)</strong><br>
+        grass.material
+      </div>
+      <div style="font-size: 24px; color: #1976d2;">→</div>
+    </div>
+  </div>
+  
+  <!-- Bottom socket (y_neg) -->
+  <div style="text-align: center; margin-top: 15px;">
+    <div style="margin-bottom: 5px; font-size: 24px;">↑</div>
+    <div style="padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2; display: inline-block;">
+      <strong>down (y_neg)</strong><br>
+      grass.material
+    </div>
+    <div style="margin-top: 10px; font-size: 24px; color: #1976d2;">↓</div>
+  </div>
+</div>
+
+
+**Vertical Axis (z direction)**
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 40px 0; font-family: monospace;">
+  <!-- Top socket (z_pos) -->
+  <div style="text-align: center; margin-bottom: 15px;">
+    <div style="margin-bottom: 10px; font-size: 24px; color: #ffc107;">↑</div>
+    <div style="padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; display: inline-block;">
+      <strong>top (z_pos)</strong><br>
+      grass.layer_up
+    </div>
+    <div style="margin-top: 5px; font-size: 24px;">↓</div>
+  </div>
+  
+  <!-- Center tile -->
+  <div style="padding: 40px 50px; background-color: #90EE90; border-radius: 8px; border-left: 4px solid #28a745; font-size: 18px; font-weight: bold; text-align: center; margin: 20px 0;">
+    GREEN<br>GRASS
+  </div>
+  
+  <!-- Bottom socket (z_neg) -->
+  <div style="text-align: center; margin-top: 15px;">
+    <div style="margin-bottom: 5px; font-size: 24px;">↑</div>
+    <div style="padding: 15px; background-color: #f0f0f0; border-radius: 8px; border-left: 4px solid #6c757d; display: inline-block;">
+      <strong>bottom (z_neg)</strong><br>
+      grass.layer_down
+    </div>
+    <div style="margin-top: 10px; font-size: 24px; color: #6c757d;">↓</div>
+  </div>
+</div>
+
+**How does z-axis make sense in a 2D game?**
+
+Even though we're building a 2D game, the z-axis represents **layering** - think of it like stacking transparent sheets on top of each other. Here's how it works with our yellow grass example:
+
+**The Layering System:**
+- **Dirt tiles** form the base layer (ground level)
+- **Green grass tiles** can sit on top of dirt (one layer up)
+- **Yellow grass tiles** can sit on top of green grass (another layer up)
+
+**Socket Connections for Layering:**
+```rust
+// Green grass can connect to yellow grass above it
+socket_collection.add_rotated_connection(
+    terrain_sockets.grass.layer_up,           // Green grass "top" socket
+    vec![terrain_sockets.yellow_grass.layer_down]  // Yellow grass "bottom" socket
+);
+```
+
+**Visual Result:**
+When the procedural generator places tiles, it can stack them vertically:
+1. **Bottom layer**: Dirt tile (z_neg = dirt.layer_down)
+2. **Middle layer**: Green grass tile (z_neg = grass.layer_down, z_pos = grass.layer_up)  
+3. **Top layer**: Yellow grass tile (z_neg = yellow_grass.layer_down)
+
+This creates the visual effect of yellow grass "sitting on top of" green grass, even though it's all rendered in 2D. The z-axis sockets ensure that only compatible layers can stack together - you can't have water floating in mid-air or grass growing underground!
+
+
+### Socket Labels vs Socket Rules
+
+This is a crucial distinction that can be confusing at first:
+
+**Socket Labels (What Each Side Has):**
+```rust
+// Grass model exposes these sockets
+SocketsCartesian2D::Simple {
+    x_pos: grass_material,    // Right side has "grass_material"
+    x_neg: grass_material,    // Left side has "grass_material"
+    y_pos: grass_material,    // Top side has "grass_material"
+    y_neg: grass_material,    // Bottom side has "grass_material"
+}
+```
+
+The `x_pos`, `y_pos` are just saying "which socket is on which side." They don't define compatibility!
+
+**Socket Rules (What Can Connect to What):**
+```rust
+// Separately, we define connection rules
+socket_collection.add_connection(
+    grass_material, 
+    vec![grass_material, dirt_material, water_edge]
+);
+```
+
+This says: "Tiles with `grass_material` socket can connect to tiles that have `grass_material`, `dirt_material`, or `water_edge` sockets."
+
+Let's see this with a real example using three tiles:
+
+```d2
+direction: down
+
+step1: {
+  label: "Step 1: Define Socket Labels for Each Model"
+  
+  grass: |md
+    **Grass Model**
+    y_pos: grass_material
+    y_neg: grass_material
+    x_pos: grass_material
+    x_neg: grass_material
+  |
+  
+  water: |md
+    **Water Model**
+    y_pos: water_edge
+    y_neg: water_edge
+    x_pos: water_edge
+    x_neg: water_edge
+  |
+  
+  dirt: |md
+    **Dirt Model**
+    y_pos: dirt_material
+    y_neg: dirt_material
+    x_pos: dirt_material
+    x_neg: dirt_material
+  |
+}
+
+step2: {
+  label: "Step 2: Define Socket Compatibility Rules (Separate!)"
+  
+  rules: |md
+    **Connection Rules:**
+    
+    grass_material can connect to:
+    • grass_material ✓
+    • dirt_material ✓
+    • water_edge ✓
+    
+    water_edge can connect to:
+    • water_edge ✓
+    • grass_material ✓
+    
+    dirt_material can connect to:
+    • dirt_material ✓
+    • grass_material ✓
+  |
+}
+
+step3: {
+  label: "Step 3: Generator Checks Both"
+  
+  process: |md
+    **When placing a tile:**
+    
+    1. Look at neighbor's socket label
+    2. Check connection rules
+    3. Place if compatible
+    
+    Example: Place next to grass?
+    - Neighbor has grass_material
+    - Check rules: grass_material → grass_material ✓
+    - Can place grass, dirt, or water!
+  |
+}
+
+step1 -> step2 -> step3
+```
+
+### Why This Two-Step System?
+
+You might wonder: "Why not just put the rules in the socket labels themselves?" Here's why separation is powerful:
+
+**Example: Creating shores**
+```rust
+// Step 1: Water tile exposes water_edge sockets
+let water_model = SocketsCartesian2D::Simple {
+    x_pos: water_edge,
+    x_neg: water_edge,
+    y_pos: water_edge,
+    y_neg: water_edge,
+};
+
+// Step 2: Separately define that water_edge can connect to grass
+socket_collection.add_connection(water_edge, vec![water_edge, grass_material]);
+```
+
+Now water creates natural shores with grass, but we didn't have to modify the water tile's socket structure - we just added a connection rule!
+
+### Visualizing How the Generator Uses This
+
+Let's see how the generator places tiles using both socket labels and connection rules:
+
+```d2
+direction: right
+
+scenario: {
+  label: "Scenario: Water tile already placed"
+  
+  placed_water: |md
+    **Water**
+    x_pos: water_edge
+  |
+}
+
+question: {
+  label: "What can go to the right?"
+  
+  unknown: "?"
+  
+  check: |md
+    Right side needs socket
+    that connects to water_edge
+  |
+}
+
+lookup: {
+  label: "Check Connection Rules"
+  
+  rules: |md
+    water_edge connects to:
+    • water_edge ✓
+    • grass_material ✓
+    
+    Look for tiles with these!
+  |
+}
+
+result: {
+  label: "Valid Options"
+  
+  options: |md
+    **Can Place:**
+    ✓ Water (has water_edge)
+    ✓ Grass (has grass_material)
+    
+    **Cannot Place:**
+    ✗ Dirt (has dirt_material, not in rules)
+  |
+}
+
+scenario -> question -> lookup -> result
+```
+
+**The key insight:** Socket labels (`x_pos`, `y_pos`) just tell us which edge has which socket. The connection rules tell us which sockets can actually touch. Both pieces are needed!
+
+Now that we understand how models work with their socket system, we face an important challenge: **keeping models and their corresponding assets synchronized**.
+
+## Keeping Models and Sprites in Sync
+
+Here's the problem: models and assets are stored in separate collections, and they must stay aligned by index.
+
+```rust
+// DANGEROUS: Separate lists that can drift apart
+let mut models = ModelCollection::new();
+let mut assets = Vec::new();
+
+models.create(...);  // Model 0
+assets.push(vec![SpawnableAsset::new("dirt")]);  // Asset 0 ✓
+
+models.create(...);  // Model 1
+assets.push(vec![SpawnableAsset::new("grass")]);  // Asset 1 ✓
+
+models.create(...);  // Model 2
+// Oops! Forgot to add assets for Model 2!
+
+models.create(...);  // Model 3
+assets.push(vec![SpawnableAsset::new("water")]);  // Goes to Asset 2, but belongs to Model 3! ✗
+```
+
+**What goes wrong:**
+- When the generator places Model 2, it looks up Asset 2 → gets water sprites instead of nothing
+- When it places Model 3, it looks up Asset 3 → finds nothing and crashes
+- The entire system breaks because the indices don't match
+
+**Why does this happen?**
+
+The `ModelCollection` (from the library) stores the WFC rules and compatibility data, while our `Vec<Vec<SpawnableAsset>>` stores the rendering information. They're completely separate data structures with no built-in connection - it's up to us to keep them aligned.
+
+**The solution:** Never let models and assets exist separately. Always create them together in a single operation that guarantees they stay synchronized.
+
+### Creating models.rs
+
+Create a new file `models.rs` inside the `map` folder, and don't forget to add `pub mod models;` to your `mod.rs`.
+
+```rust
+// src/map/models.rs
+use bevy_procedural_tilemaps::prelude::*;
+use crate::map::assets::SpawnableAsset;
+
+/// Utility wrapper that ensures model declarations and their asset bindings stay aligned.
+pub struct TerrainModelBuilder {
+    pub models: ModelCollection<Cartesian3D>,
+    pub assets: Vec<Vec<SpawnableAsset>>,
+}
+```
+
+The `TerrainModelBuilder` holds both lists in one place:
+- **`models`**: What the WFC algorithm uses
+- **`assets`**: The sprites for each model
+
+By bundling them together, you can't add one without the other. Problem solved!
+
+Now let's add the methods that make this builder useful:
+
+```rust
+// src/map/models.rs
+impl TerrainModelBuilder {
+    pub fn new() -> Self {
+        Self {
+            models: ModelCollection::new(),
+            assets: Vec::new(),
+        }
+    }
+
+    pub fn create_model<T>(
+        &mut self,
+        template: T,
+        assets: Vec<SpawnableAsset>,
+    ) -> &mut Model<Cartesian3D>
+    where
+        T: Into<ModelTemplate<Cartesian3D>>,
+    {
+        let model_ref = self.models.create(template);
+        self.assets.push(assets);
+        model_ref
+    }
+
+    pub fn into_parts(self) -> (Vec<Vec<SpawnableAsset>>, ModelCollection<Cartesian3D>) {
+        (self.assets, self.models)
+    }
+}
+```
+
+**The three methods:**
+
+**`new()`** - Creates an empty builder.
+
+**`create_model()`** - Adds a model AND its sprites at the same time:
+```rust
+builder.create_model(
+    socket_definition,                    // Model with rules
+    vec![SpawnableAsset::new("dirt")]    // Sprites for this model
+)
+```
+Both get added at the same index - impossible to mismatch!
+
+**`into_parts()`** - Splits into two lists when you're done:
+- `assets` → goes to `load_assets()`
+- `models` → goes to the generator
+
+That's it! This simple wrapper prevents the entire class of "wrong sprite for wrong model" bugs.
 
 
