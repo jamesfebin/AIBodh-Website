@@ -28,7 +28,7 @@ I respect artists who hand craft tiles to build game worlds. But I belong to the
 
 I went on an exploration and came across procedural generation. 
 
-Little did I know the complexities involved. I was in the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightment came three days ago, all the pieces fit together.
+Little did I know the complexities involved. I was on the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightenment came three days ago, all the pieces fit together.
 
 Basically it's about automatically fitting things together like a jigsaw puzzle. To solve this problem, let's again think in systems. 
 
@@ -441,7 +441,7 @@ Building a WFC algorithm from scratch is complex. You'd need to implement:
 - Grid coordinate management
 - Random selection with proper probability weights
 
-That's a lot of algorithmic complexity before we even get to the game-specific parts like sprites, rules, and world design.
+That's a lot of algorithmic complexity before we even get to the game-specific parts, like sprites, rules, and world design.
 
 **Our approach:**
 
@@ -1320,7 +1320,7 @@ pub struct DirtLayerSockets {
 
 The dirt layer needs three types of sockets.
 
-1. **`layer_up`** - This socket handles what can be placed in the layer above dirt. Remember layers are to seperate rule cram concerns (water can be above grass without touching it).
+1. **`layer_up`** - This socket handles what can be placed in the layer above dirt. Remember layers are to separate rule cram concerns (water can be above grass without touching it).
 
 2. **`layer_down`** - It handles what layer the dirt itself can be placed on. For the base layer, this will connect to void (empty space).
 
@@ -1676,7 +1676,7 @@ We need to make the player render on top of other layers we have.
 const PLAYER_Z: f32 = 20.0; 
 ```
 
-**Update the spawn function** to use this Z value and scale the player slightly down (for better visual proposition with our generated world).
+**Update the spawn function** to use this Z value and scale the player slightly down (for better visual proportion with our generated world).
 
 ```rust
 // src/player.rs - Update the Transform line in spawn_player
