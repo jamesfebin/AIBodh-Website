@@ -1524,3 +1524,142 @@ pub fn build_world() -> (
 5. **Returns the three collections** - Assets for rendering, models for WFC rules, and socket collection for connections
 
 This function is what the generator calls to get all the rules and models needed to create our procedural world!
+
+## The Generator: Bringing It All Together
+
+Now that we have all our components - assets, models, sockets, and rules - we need to configure the procedural generation engine. 
+
+Create a new file `generate.rs` inside the `map` folder, and don't forget to add `pub mod generate;` to your `mod.rs`.
+
+```rust
+// src/map/generate.rs
+use bevy_procedural_tilemaps::prelude::*;
+use bevy::prelude::*;
+
+use crate::map::{
+    assets::{load_assets, prepare_tilemap_handles},
+    rules::build_world,
+};
+
+// -----------------  Configurable values ---------------------------
+/// Modify these values to control the map size.
+pub const GRID_X: u32 = 25;
+pub const GRID_Y: u32 = 18;
+
+// ------------------------------------------------------------------
+
+const ASSETS_PATH: &str = "tile_layers";
+const TILEMAP_FILE: &str = "tilemap.png";
+/// Size of a block in world units (in Bevy 2d, 1 pixel is 1 world unit)
+pub const TILE_SIZE: f32 = 32.;
+/// Size of a grid node in world units
+const NODE_SIZE: Vec3 = Vec3::new(TILE_SIZE, TILE_SIZE, 1.);
+
+const ASSETS_SCALE: Vec3 = Vec3::ONE;
+/// Number of z layers in the map, derived from the default terrain layers.
+const GRID_Z: u32 = 1;
+
+pub fn map_pixel_dimensions() -> Vec2 {
+    Vec2::new(TILE_SIZE * GRID_X as f32, TILE_SIZE * GRID_Y as f32)
+}
+```
+
+**Understanding the Configuration Constants:**
+
+Let's break down what each of these constants controls:
+
+1. **`GRID_X` and `GRID_Y`** - These define the size of our generated world in tiles. A 25×18 grid means 450 total tiles (25 × 18 = 450). You can adjust these to create larger or smaller worlds, though larger grids may cause the WFC algorithm to struggle - we'll address scaling issues in a later chapter.
+
+2. **`TILE_SIZE`** - This is the size of each tile in world units. Since we're using 32×32 pixel sprites, each tile takes up 32 world units. This affects how big your world appears on screen.
+
+3. **`NODE_SIZE`** - This tells the generator how much space each grid cell occupies in the 3D world. Equal values = perfect tile fit, smaller NODE_SIZE = overlapping sprites, larger NODE_SIZE = gaps between tiles.
+
+4. **`GRID_Z`** - This defines how many layers our world has. We're currently using 1 layer for dirt, but we'll add more layers later to stack different terrain types on top of each other (dirt, grass, yellow grass, water, props).
+
+5. **`ASSETS_SCALE`** - This controls the size multiplier for sprites. `Vec3::ONE` means sprites render at their original size. 
+
+### The Generator Setup Function
+
+Now let's create the main function that sets up our procedural generation engine:
+
+```rust
+pub fn setup_generator(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
+    // 1. Rules Initialization - Get tile definitions and connection rules
+    let (assets_definitions, models, socket_collection) = build_world();
+
+    let rules = RulesBuilder::new_cartesian_3d(models, socket_collection)
+        // Use ZForward as the up axis (rotation axis for models) since we are using Bevy in 2D
+        .with_rotation_axis(Direction::ZForward)
+        .build()
+        .unwrap();
+
+    // 2. Grid - Create 3D world space with wrapping behavior (false, false, false)
+    let grid = CartesianGrid::new_cartesian_3d(GRID_X, GRID_Y, GRID_Z, false, false, false);
+
+    // 3. Configuring the Algorithm - Set up WFC behavior
+    let gen_builder = GeneratorBuilder::new()
+        .with_rules(rules)
+        .with_grid(grid.clone())
+        .with_rng(RngMode::RandomSeed)
+        .with_node_heuristic(NodeSelectionHeuristic::MinimumRemainingValue)
+        .with_model_heuristic(ModelSelectionHeuristic::WeightedProbability);
+    
+    let generator = gen_builder.build().unwrap();
+
+    // 4. Loading Assets - Load sprite atlas and convert to renderable assets
+    let tilemap_handles =
+        prepare_tilemap_handles(&asset_server, &mut atlas_layouts, ASSETS_PATH, TILEMAP_FILE);
+    let models_assets = load_assets(&tilemap_handles, assets_definitions);
+
+    // 5. Spawning the Generator - Create entity with Transform and NodesSpawner
+    commands.spawn((
+        Transform::from_translation(Vec3 {
+            x: -TILE_SIZE * grid.size_x() as f32 / 2.,
+            y: -TILE_SIZE * grid.size_y() as f32 / 2.,
+            z: 0.,
+        }),
+        grid,
+        generator,
+        NodesSpawner::new(models_assets, NODE_SIZE, ASSETS_SCALE).with_z_offset_from_y(true),
+    ));
+}
+```
+
+
+**Rules Initialization**
+
+This creates the **constraint solver** that the WFC algorithm uses. It takes our tile definitions and connection rules and converts them into a format the algorithm can understand.
+
+**Why `Direction::ZForward`?**
+
+Since we're building a 2D game, we need to tell the system which axis to use for rotations. `Direction::ZForward` means tiles rotate around the Z-axis (pointing toward/away from the screen), which makes sense for a 2D top-down view.
+
+**Grid**
+
+This creates our 3D world space where tiles will be placed. The three boolean parameters control wrapping behavior:
+
+- **`(false, false, false)`** - Most games like Minecraft, Terraria (hard boundaries)
+- **`(true, true, false)`** - Classic Asteroids or Pac-Man (wraps left-right and up-down)
+- **`(true, true, true)`** - Advanced simulations with infinite-feeling 3D worlds
+
+The grid uses a 3D coordinate system: X-axis (left-right), Y-axis (forward-backward), Z-axis (bottom-top layering).
+
+**Configuring the Algorithm**
+
+This is where we configure how the WFC algorithm behaves:
+
+- `RngMode::RandomSeed` - Uses random seeds (same seed = same world every time)
+- `NodeSelectionHeuristic::MinimumRemainingValue` - Always picks the most constrained cell (fewest valid tiles)
+- `ModelSelectionHeuristic::WeightedProbability` - Picks tiles based on their weights (higher weight = more likely)
+
+**Loading Assets and Spawning the Generator**
+
+`prepare_tilemap_handles()` loads our sprite atlas from disk, while `load_assets()` converts our sprite definitions into renderable assets. 
+
+The `commands.spawn()` creates the generator entity with a `Transform` that centers the world on screen and a `NodesSpawner` that handles the actual tile creation.
+
+The `with_z_offset_from_y(true)` setting uses Y coordinates for Z-layer positioning - tiles higher up on screen render in front, creating natural depth ordering (e.g., tree at Y=10 appears in front of rock at Y=5).
