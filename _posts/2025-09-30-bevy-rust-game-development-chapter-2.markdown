@@ -18,6 +18,9 @@ excerpt: "Continue building your video game with Bevy and Rust. This second chap
 
 Here's what you will be able to achieve by the end of this tutorial. 
 
+![Player Movement Demo]({{ "/assets/book_assets/chapter2/ch2.gif" | relative_url }})
+
+
 <div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
 <strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey enjoyable. Your feedback matters - share your frustrations, questions, or suggestions on Reddit/Discord/LinkedIn. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
 </div>
