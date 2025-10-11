@@ -19,7 +19,7 @@ excerpt: "Continue building your video game with Bevy and Rust. This second chap
 Here's what you will be able to achieve by the end of this tutorial. 
 
 <div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
-<strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey as enjoyable as possible! Your feedback matters - share your frustrations, questions, or suggestions on Reddit/Discord/LinkedIn. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
+<strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey enjoyable. Your feedback matters - share your frustrations, questions, or suggestions on Reddit/Discord/LinkedIn. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
 </div>
 
 ## Procedural Generation
@@ -217,7 +217,11 @@ Now let's find the next cell with the fewest options.
 </div>
 
 <div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-<strong>Key Insight:</strong> This is the essence of constraint propagation! Each placement immediately reduces the options for neighboring cells, making the puzzle progressively easier to solve. We continue this process: pick the most constrained cell → place the only possible value → propagate constraints → repeat.
+<strong>Key Insight</strong> <br> This is the essence of constraint propagation! Each placement immediately reduces the options for neighboring cells, making the puzzle progressively easier to solve. 
+<br><br>
+We continue this process: pick the most constrained cell → place the only possible value → propagate constraints → repeat. 
+<br><br>
+If any cell ends up with zero possibilities, we've hit a contradiction—in Sudoku, you backtrack and try a different value.
 </div>
 
 ```d2
@@ -266,7 +270,7 @@ Propagate -> Backtrack: if contradiction
 Backtrack -> Pick
 ```
 
- Each placement immediately reduces the possibilities for neighboring cells. The cell with the fewest remaining possibilities becomes our next target. If any cell ends up with zero possibilities, we've hit a contradiction—in Sudoku, you backtrack and try a different value.
+
 
 **For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
 
@@ -462,31 +466,31 @@ edition = "2024"
 
 [dependencies]
 bevy = "0.17.2" // Line update alert 
-bevy_procedural_tilemaps = "0.1.2" // Line update alert
+bevy_procedural_tilemaps = "0.1.3" // Line update alert
 ```
 
 ## Bevy Procedural Tilemaps
 
-The `bevy_procedural_tilemaps` library is a powerful tool that handles the complex logic of generating coherent, rule-based worlds. 
+The `bevy_procedural_tilemaps` library handles the complex logic of generating coherent, rule-based worlds. 
 
 ### What the Library Handles
 
 The library takes care of the **algorithmic complexity** of procedural generation:
 
-- **Rule Processing**: Converts our game rules into the library's internal format.
-- **Generator Creation**: Builds the procedural generation engine with our configuration.
-- **Constraint Solving**: Figures out which tiles can go where based on rules.
-- **Grid Management**: Handles the 2D grid system and coordinate transformations.  
-- **Entity Spawning**: Creates Bevy entities and positions them correctly.
+- **Rule Processing**: Converts our game rules into the library's internal format
+- **Generator Creation**: Builds the procedural generation engine with our configuration
+- **Constraint Solving**: Figures out which tiles can go where based on rules
+- **Grid Management**: Handles the 2D grid system and coordinate transformations
+- **Entity Spawning**: Creates Bevy entities and positions them correctly
 
 ### What We Need to Provide
 
 We need to give the library the **game-specific information** it needs:
 
-- **Sprite Definitions**: What sprites to use for each tile type.
-- **Compatibility Rules**: Which tiles can be placed next to each other.
-- **Generation Configuration**: The patterns and constraints for our specific game world.
-- **Asset Data**: Sprite information, positioning, and custom components.
+- **Sprite Definitions**: What sprites to use for each tile type
+- **Compatibility Rules**: Which tiles can be placed next to each other
+- **Generation Configuration**: The patterns and constraints for our specific game world
+- **Asset Data**: Sprite information, positioning, and custom components
 
 
 ```d2
@@ -557,9 +561,6 @@ Generation Engine: {
   shape: rectangle
 }
 
-Entity Creation: {
-  shape: rectangle
-}
 
 Bevy World: {
   Generated Entities: {
@@ -569,8 +570,7 @@ Bevy World: {
 
 Our Code -> Rule Processing: "Models & rules"
 Rule Processing -> Generation Engine: "Processed rules"
-Generation Engine -> Entity Creation: "Valid tile positions"
-Entity Creation -> Bevy World.Generated Entities: "Creates game objects"
+Generation Engine -> Bevy World.Generated Entities: "Creates game objects"
 ```
 
 Now that we understand how the procedural generation system works, let's build our map module.
@@ -612,32 +612,19 @@ pub mod assets;   // Exposes assets.rs as a module
 
 It's Rust convention, when you create a folder, Rust looks for `mod.rs` to understand the module structure.
 
-### Building the Map System
-
-Now that we've set up our module structure, we need to build the actual components. Our map system will consist of several interconnected files:
-
-1. **`assets.rs`** - Defines what sprites to spawn and how to position them
-2. **`tilemap.rs`** - Maps sprite names to their pixel coordinates in our atlas
-3. **`models.rs`** - Organizes tile models and keeps them synchronized with their assets
-4. **`sockets.rs`** - Defines connection points for tile compatibility
-5. **`rules.rs`** - Defines terrain layers, compatibility rules, and world generation logic
-6. **`generate.rs`** - Sets up the procedural generation engine
-
-We'll build these in a logical order, starting with the foundation and working our way up.
-
 ### Creating SpawnableAsset
 
 Let's start by creating our `assets.rs` file inside the `map` folder. This will be the foundation that defines how we spawn sprites in our world.
 
-The `bevy_procedural_tilemaps` library can generate complex worlds, but it needs to know **what to actually place** at each generated location. 
+The `bevy_procedural_tilemaps` library needs to know **what to actually place** at each generated location. 
 
-Think about it: when the algorithm decides "this should be a grass tile," it needs to know:
-- Which sprite to use from our tilemap?
-- Where exactly to position it?
-- What components to add (collision, physics, etc.)?
+It requires the following details:
+1. Which sprite to use from our tilemap?
+2. Where exactly to position it?
+3. What components to add (collision, physics, etc.)?
 
 The library expects us to provide this information in a very specific format. And doing 
-this for **every single tile type** in your game - grass, dirt, trees, rocks, water, etc will result in redundant code.
+this for every single tile type in your game - grass, dirt, trees, rocks, water, etc will result in redundant code.
 
 This is where `SpawnableAsset` comes in. It's our **abstraction layer** to help you avoid unnecessary boilerplate. 
 
@@ -667,7 +654,7 @@ The `SpawnableAsset` struct contains all the information needed to spawn a tile 
 
 The `grid_offset` is used for objects that span multiple tiles - it's a positioning within the tile grid itself. 
 
-For example, a tree might need two tiles: the bottom part at the original position, and the top part one tile up. The `offset` field is for fine-tuning the position in world coordinates - this is for precise positioning adjustments. 
+For example, the follow tree asset needs four tiles.
 
 <div class="columns is-mobile is-centered">
 <div class="column is-narrow">
@@ -723,88 +710,15 @@ Finally, the `components_spawner` is a function that adds custom behavior like c
 
 **Why is sprite name defined as `&'static str?`**
 
-To understand `&'static str`, we need to break down each part. Let's start with the `&` symbol - this creates a **reference** to data instead of owning it. References are much more memory-efficient because they don't copy the data, they just point to where it already exists.
+Let's break down `&'static str` piece by piece to understand why we use it for sprite names.
 
-Here's how memory works with our sprite names:
+The `&` symbol means "reference to" - instead of making a new copy of the text, we just note where the original text is located. 
 
-```d2
-# Memory visualization
-memory: {
-  shape: rectangle
-  
-  data_section: {
-    label: "Read-only Memory"
-    
-    string_data: {
-      label: "\"grass\"\n(actual data)"
-      shape: rectangle
-    }
-  }
-  
-  stack_section: {
-    label: "Stack"
-    
-    reference: {
-      label: "&str\n(just points, no copy)"
-      shape: rectangle
-    }
-  }
-}
-
-memory.stack_section.reference -> memory.data_section.string_data: "points to"
-```
-
-The diagram shows two different memory areas: **Stack** (where our reference lives) and **Read-only memory** (where the actual string data is stored). The reference is just metadata that says "the string 'grass' is stored at this memory address."
-
-Our sprite name `"grass"` lives in read-only memory because it's a string literal embedded in the compiled binary, while the reference `&str` lives on the stack because it's just a fixed-size pointer (address + length) to that read-only data.
-
-
-
-```d2
-# Comparison
-without_reference: {
-  label: "Without Reference (Copy)"
-  
-  original: "\"grass\""
-  copy1: "\"grass\""
-  copy2: "\"grass\""
-  copy3: "\"grass\""
-  
-  note: {
-    label: "Multiple copies\nwaste memory"
-    shape: text
-  }
-}
-
-with_reference: {
-  label: "With Reference (&)"
-  
-  data: "\"grass\"\n(one copy)"
-  ref1: "&str"
-  ref2: "&str"
-  ref3: "&str"
-  
-  ref1 -> data
-  ref2 -> data
-  ref3 -> data
-  
-  note: {
-    label: "One data, many pointers\nsaves memory"
-    shape: text
-  }
-}
-
-without_reference -> with_reference: "Better!"
-```
+The `'static` is a string literal that tells Rust "this text will exist for the entire duration of your game." When you write `"grass"` directly in your code, Rust bakes it into your game file when you build it. It's always there, from game startup to shutdown.
 
 **What's a string literal?**
 
-A string literal is text that's written directly in your code, surrounded by quotes. When you write `"grass"` in your Rust code, the compiler embeds this text directly into the compiled binary. This means:
-
-- The text `"grass"` becomes part of your executable file
-- It's loaded into read-only memory when your program starts
-- It exists for the entire duration of your program (hence `'static` lifetime)
-- Multiple references can point to the same literal without copying the text
+A string literal is text you write directly in quotes in your code: `"grass"`, `"dirt"`, `"tree"`. 
 
 
 **What's a lifetime and what has `'static` got to do with it?**
@@ -849,8 +763,6 @@ Rust's compiler analyzes your code and says "Hey, you're trying to use data that
 <br>
 Not quite. str represents text data, but you can only use it through a reference like &str (a view of text stored somewhere else). String is text you own and can modify. Our sprite names like "grass" are baked into the program, so &str just points to that text without copying it - much more efficient than using String.
 
-**Putting it all together**
-<br>
 `&'static str` means "a reference to a string slice that lives for the entire program duration." This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).
 
 **What's `GridDelta`?**
@@ -868,7 +780,6 @@ The function pointer allows us to customize what components get added to each sp
 
 Yes! In Rust, you need a mutable reference (`&mut`) when you want to modify something. `EntityCommands` needs to be mutable because it's used to add, remove, or modify components on entities.
 
-<br>
 Now let's add some helpful methods to our `SpawnableAsset` struct to make it easier to create and configure sprite assets.
 
 Append the following code to the same `assets.rs` file.
@@ -941,7 +852,7 @@ Now that we understand how to define our sprites with `SpawnableAsset`, **how do
 Our game uses a **sprite atlas** - a single large image containing all our sprites. Bevy needs to know where each sprite is located within this image, and we need to avoid reloading the same image multiple times.
 
 
-Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png` inside it, you can get it from the [github repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust). 
+Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png` inside it, you can get it from this [github repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust). 
 
 <div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
 <div style="text-align: center;">
@@ -977,6 +888,10 @@ The `TilemapSprite` struct represents a single sprite within our atlas. It store
 
 The `TilemapDefinition` struct serves as the "blueprint" that Bevy uses to understand how to slice up our atlas image into individual sprites.
 
+1. **`tile_width` and `tile_height`** - How big each individual sprite is (in our case, 32×32 pixels)
+2. **`atlas_width` and `atlas_height`** - The total size of your entire sprite atlas image (the big image containing all sprites)
+3. **`sprites`** - The list of all sprites in your atlas, each with its name and location
+
 Though our tilemap stores sprite names and pixel coordinates, Bevy's texture atlas system requires numeric indices and rectangular regions. These methods perform the necessary conversions.
 
 
@@ -1008,7 +923,7 @@ impl TilemapDefinition {
 
 The `tile_size()` method converts our tile dimensions into a `UVec2` (unsigned 2D vector), which Bevy uses for size calculations. Similarly, `atlas_size()` provides the total atlas dimensions as a `UVec2`, which Bevy uses to create the texture atlas layout.
 
-The `sprite_index()` method is crucial for finding sprites by name. When we want to render a "dirt" tile, this method searches through our sprite array and returns the index position of that sprite. 
+The `sprite_index()` method helps in finding sprites by name. When we want to render a "dirt" tile, this method searches through our sprite array and returns the index position of that sprite. 
 
 Finally, `sprite_rect()` takes a sprite index and calculates the exact rectangular region within our atlas that contains that sprite. It uses `URect` (unsigned rectangle) to define the boundaries, which Bevy's texture atlas system requires to know which part of the large image to display.
 
@@ -1016,7 +931,7 @@ Now let's put our tilemap definition to use by adding our first sprite - the dir
 
 ### Adding the dirt tile
 
-Let's start with a simple dirt tile to test our tilemap system. We'll add more sprites later as we build out our game world.
+Let's start with a simple dirt tile to test our tilemap system. The dirt tile sits at pixel coordinates (128, 0) in our 256x320 atlas image. We'll add more sprites later as we build out our game world.
 
 Append this code to `tilemap.rs`
 
@@ -1037,11 +952,11 @@ pub const TILEMAP: TilemapDefinition = TilemapDefinition {
 };
 ```
 
-Perfect! We now have a complete tilemap definition with our first sprite. Notice how we're using a const definition - this means all this sprite metadata is determined at compile time, making it very efficient. The dirt tile sits at pixel coordinates (128, 0) in our 256x320 atlas image.
+Notice how we're using a const definition - this means all this sprite metadata is determined at compile time, making it very efficient. 
 
 ### Connecting the Tilemap to Asset Loading
 
-Now that we've defined our tilemap and sprites in `tilemap.rs`, we need to connect this to our asset loading system in `assets.rs`. `tilemap.rs` knows *where* each sprite is in our atlas from disk, while `assets.rs` will handle *loading* the atlas and converting these coordinates into actual renderable sprites.
+Now that we've defined our tilemap and sprites in `tilemap.rs`, we need to connect this to our asset loading system in `assets.rs`. 
 
 Let's update the imports in `assets.rs` to bring in our `TILEMAP` definition:
 
@@ -1082,17 +997,16 @@ impl TilemapHandles {
 }
 ```
 
-**What's happening here:**
-
 The `TilemapHandles` struct is a container for two handles: `image` points to our loaded sprite sheet file, while `layout` points to the atlas layout that tells Bevy how to slice that image into individual sprites.
 
 The `sprite(atlas_index)` method is a convenience function that creates a ready-to-render `Sprite` by combining the image and layout with a specific index. For example, if the dirt tile is at index 0, calling `tilemap_handles.sprite(0)` gives us a `Sprite` configured to display just the dirt tile from our atlas.
 
 ### Step 2: Loading the Atlas from Disk
 
-Now let's create the function that actually loads the atlas image file and sets up the layout. This is where the connection to our `TILEMAP` definition becomes crucial.
+Now let's create the function that actually loads the atlas image file and sets up the layout. We will be using our `TILEMAP` definition from earlier.
 
 ```rust
+// src/map/assets.rs
 pub fn prepare_tilemap_handles(
     asset_server: &Res<AssetServer>,
     atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
@@ -1125,9 +1039,10 @@ This function loads the atlas into memory and sets up the layout structure, but 
 
 ### Step 3: Converting Sprite Names to Renderable Sprites
 
-Finally, we need a way to convert sprite names (like "dirt") into actual `Sprite` objects that can be rendered. This is the last piece that connects everything we've built so far.
+Finally, we need a way to convert sprite names (like "dirt") into `Sprite` objects that can be rendered. 
 
 ```rust
+// src/map/assets.rs
 pub fn load_assets(
     tilemap_handles: &TilemapHandles,
     assets_definitions: Vec<Vec<SpawnableAsset>>,
@@ -1171,7 +1086,7 @@ The outer loop says "for each type of tile," and the inner loop says "for each s
 
 1. We have: `SpawnableAsset { sprite_name: "dirt", ... }`
 2. The function asks TILEMAP: "Where is 'dirt'?" → TILEMAP replies: "Index 0"
-3. It then asks TilemapHandles: "Give me a Sprite for index 0" → Gets back a ready-to-render `Sprite`
+3. It then asks TilemapHandles: "Give me a Sprite for index 0" → Gets back a `Sprite` object
 4. Finally, it packages everything together with the positioning info and stores it
 
 **What does the final data look like?**
@@ -1199,19 +1114,12 @@ After `load_assets` completes, we have a collection of `ModelAsset` objects in m
 
 ## From Tiles to Models
 
-We now have assets that know *how to render* tiles. But the procedural generator needs to know *which tiles can be placed next to which*. 
+You already understand **tiles** - the individual visual pieces like grass, dirt, and water. Now we need to build models by adding sockets to these tiles and define connection rules so the generator can figure out valid placements.
 
-You already understand **tiles** - the individual visual pieces like grass, dirt, and water. Now we need to add sockets to these tiles and define connection rules so the generator can figure out valid placements.
-
-**Models = Tiles + Sockets**
-
-**A two-step process:**
-1. Create model with socket labels (which side has which socket)
-2. Separately define connection rules (which sockets can connect)
 
 ### How Models Expose Sockets
 
-Models expose **sockets** - labeled connection points on each edge. Let's look at a green grass tile and see how it exposes sockets in different directions.
+Models expose **sockets** - labeled connection points on each edge. Let's look at a green grass model and see how it exposes sockets in different directions.
 
 **Horizontal Plane (x and y directions)**
 
@@ -1270,8 +1178,8 @@ Models expose **sockets** - labeled connection points on each edge. Let's look a
 <div style="display: flex; flex-direction: column; align-items: center; margin: 40px 0; font-family: monospace;">
   <!-- Top socket (z_pos) -->
   <div style="text-align: center; margin-bottom: 15px;">
-    <div style="margin-bottom: 10px; font-size: 24px; color: #ffc107;">↑</div>
-    <div style="padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; display: inline-block;">
+    <div style="margin-bottom: 10px; font-size: 24px; color: #6c757d;">↑</div>
+    <div style="padding: 15px; background-color: #f0f0f0; border-radius: 8px; border-left: 4px solid #6c757d; display: inline-block;">
       <strong>top (z_pos)</strong><br>
       grass.layer_up
     </div>
@@ -1303,27 +1211,11 @@ Even though we're building a 2D game, the z-axis represents **layering** - Imagi
 - **Green grass tiles** can sit on top of dirt (one layer up)
 - **Yellow grass tiles** can sit on top of green grass (another layer up)
 
-With multiple layers like dirt, grass, and yellow grass, we need a way to keep our models and their corresponding sprites organized.
+## Building Models
 
-## Keeping Models and Sprites in Sync
+Now that we understand how models expose sockets in all six directions, we need a way to create these models and link them to their visual sprites.
 
-The WFC algorithm needs to know the placement rules (models), while the renderer needs to know which sprites to draw (assets).
-
-The challenge is that these are stored in separate collections that must stay synchronized by index:
-
-```rust
-// Models and assets must stay aligned by index
-let mut models = ModelCollection::new();
-let mut assets = Vec::new();
-
-models.create(dirt_template);     // Model 0
-assets.push(vec![SpawnableAsset::new("dirt")]);  // Asset 0 ✓
-
-models.create(grass_template); // Model 1  
-assets.push(vec![SpawnableAsset::new("grass")]); // Asset 1 ✓
-```
-
-If these lists get out of sync, the generator will place the wrong sprites or crash entirely. We need a system that keeps them together.
+We'll use a helper called `TerrainModelBuilder` that keeps models and sprites paired correctly as we build our world.
 
 ### The TerrainModelBuilder 
 
@@ -1341,13 +1233,11 @@ pub struct TerrainModelBuilder {
 }
 ```
 
-The `TerrainModelBuilder` holds both lists in one place:
+The `TerrainModelBuilder` holds:
 1. **`models`**: What the WFC algorithm uses
-2. **`assets`**: The sprites for each model
+2. **`assets`**: The sprites for the respective model
 
-By bundling them together, you can't add one without the other. Problem solved!
-
-Now let's add the methods that make this builder useful:
+Now let's add these methods to the builder.
 
 ```rust
 // src/map/models.rs
@@ -1378,17 +1268,17 @@ impl TerrainModelBuilder {
 }
 ```
 
-The `TerrainModelBuilder` provides three simple methods that solve our synchronization problem. The `new()` method creates an empty builder to start with. 
+The `new()` method creates an empty builder to start with. 
 
-The `create_model()` method both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index, making it impossible to mismatch them.
+The `create_model()` method both a socket definition and the corresponding sprites, then adds them to their respective collections at the same index.
 
-Finally, `into_parts()` splits the builder back into separate collections when you're done building, so the assets can go to the renderer and the models can go to the WFC generator. This simple wrapper prevents us from making "wrong sprite for wrong model" mistakes.
+Finally, `into_parts()` splits the builder back into separate collections when you're done building, so the assets can go to the renderer and the models can go to the WFC generator. 
 
 **What's `<T>` doing in `pub fn create_model<T>`?**
 
-The `<T>` is Rust's **generic type parameter** - it's like a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (like simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them. 
+The `<T>` is Rust's **generic type parameter** - it's a placeholder that gets filled in with the actual type when you call the function. In our case, we might pass in different types of socket definitions (simple single-socket tiles or complex multi-socket tiles), but we want to perform the same operation on all of them. 
 
-Generics let us write one function that works with multiple types, as long as they can all be converted into a `ModelTemplate`. This is incredibly powerful because it means we can add new socket definition types in the future without changing our `TerrainModelBuilder` code - the compiler will automatically handle the type conversions for us!
+Generics let us write one function that works with multiple types, as long as they can all be converted into a `ModelTemplate`. This is powerful because it means we can add new socket definition types in the future without changing our `TerrainModelBuilder` code.
 
 
 **What's this `where T: Into<ModelTemplate<Cartesian3D>>`?**
@@ -1397,21 +1287,21 @@ This is a **trait bound** that tells Rust what capabilities the generic type `T`
 
 `Into` is Rust's way of saying "this type knows how to transform itself into that type" - like how a string can be converted into a number, or how our socket definitions can be converted into model templates. This means we can pass in any type that knows how to become a `ModelTemplate` - whether it's simple single-socket tiles, complex multi-socket tiles, or even a custom socket type you create later.
 
-Rust automatically provides this conversion ability for compatible types, so this gives us maximum flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
+This gives us flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
 
 ## Building the Foundation: Dirt Layer Sockets
 
 Now that we understand how to keep models and assets synchronized, let's start building our procedural world from the ground up - literally! The dirt layer forms the foundation that everything else sits on.
 
-**Why Layers Make WFC Simpler:**
+**Layers Make WFC Simpler**
 
-Without layers, we'd need to cram all our rules into a single layer: "water connects to water and grass", "grass connects to grass and dirt", "trees connect to grass", "dirt connects to dirt" - plus all the edge cases and special connections. This creates a massive web of interdependencies that makes the WFC algorithm struggle to find valid solutions.
+Without layers, we'd need to cram all our rules into a single layer: "water connects to water and grass", "grass connects to grass and dirt", "trees connect to grass", "dirt connects to dirt" - plus all the edge cases and special connections. 
+
+This creates a massive web of interdependencies that makes the WFC algorithm struggle to find valid solutions.
 
 By using layers, we break this complexity into manageable pieces. Each layer only needs to worry about its own connections, making the WFC algorithm much more likely to find valid solutions quickly.
 
-Let's see how this works in practice by examining our dirt layer implementation:
-
-Create a new file `sockets.rs` inside the `map` folder, and don't forget to add `pub mod sockets;` to your `mod.rs`.
+Let's create our dirt layer, make a new file `sockets.rs` inside the `map` folder, and don't forget to add `pub mod sockets;` to your `mod.rs`.
 
 ```rust
 // src/map/sockets.rs
@@ -1420,9 +1310,7 @@ use bevy_procedural_tilemaps::prelude::*;
 pub struct TerrainSockets {
     pub dirt: DirtLayerSockets,
 }
-```
 
-```rust
 pub struct DirtLayerSockets {
     pub layer_up: Socket,      // What can sit on top of dirt
     pub layer_down: Socket,     // What dirt can sit on
@@ -1430,19 +1318,39 @@ pub struct DirtLayerSockets {
 }
 ```
 
-**Understanding Dirt's Socket System:**
+The dirt layer needs three types of sockets.
 
-The dirt layer needs three types of sockets to function properly in our 3D world:
+1. **`layer_up`** - This socket handles what can be placed in the layer above dirt. Remember layers are to seperate rule cram concerns (water can be above grass without touching it).
 
-1. **`layer_up`** - This socket defines what can be placed in the layer above dirt. Remember layers are to seperate rule cram concerns (water can be above grass without touching it).
+2. **`layer_down`** - It handles what layer the dirt itself can be placed on. For the base layer, this will connect to void (empty space).
 
-2. **`layer_down`** - This socket defines what layer the dirt itself can be placed on. For the base layer, this will connect to void (empty space).
+3. **`material`** - This takes care of horizontal connections between dirt tiles, ensuring they connect properly to form continuous ground.
 
-3. **`material`** - This socket handles horizontal connections between dirt tiles, ensuring they connect properly to form continuous ground.
+**Initializing the Sockets**
+
+Now we need to actually create these socket instances. Append this function to `sockets.rs`:
+
+```rust
+// src/map/sockets.rs
+pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSockets {
+    let mut new_socket = || -> Socket { socket_collection.create() };
+    
+    let sockets = TerrainSockets {
+        dirt: DirtLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+        },
+    };
+    sockets
+}
+```
+
+The `create_sockets` function takes a `SocketCollection` and creates all our socket instances. The `new_socket` closure is a helper that calls `socket_collection.create()` to generate unique socket IDs. Each socket gets a unique identifier that the WFC algorithm uses to track compatibility rules.
 
 ## Creating the Rules: Building the Dirt Layer
 
-Now that we have our socket system defined, we need to create the rules that tell the WFC algorithm how to use these sockets. This is where we define what tiles can be placed and how they connect to each other.
+Now that we have our socket system defined and initialized, we need to create the rules that tell the WFC algorithm how to use these sockets. This is where we define models and how they connect to each other.
 
 Create a new file `rules.rs` inside the `map` folder, and don't forget to add `pub mod rules;` to your `mod.rs`.
 
@@ -1461,12 +1369,12 @@ fn build_dirt_layer(
     terrain_model_builder
         .create_model(
             SocketsCartesian3D::Simple {
-                x_pos: terrain_sockets.dirt.material,
-                x_neg: terrain_sockets.dirt.material,
-                z_pos: terrain_sockets.dirt.layer_up,
-                z_neg: terrain_sockets.dirt.layer_down,
-                y_pos: terrain_sockets.dirt.material,
-                y_neg: terrain_sockets.dirt.material,
+                x_pos: terrain_sockets.dirt.material, // right
+                x_neg: terrain_sockets.dirt.material, // left
+                z_pos: terrain_sockets.dirt.layer_up, // top 
+                z_neg: terrain_sockets.dirt.layer_down, // bottom
+                y_pos: terrain_sockets.dirt.material, // up
+                y_neg: terrain_sockets.dirt.material, // down
             },
             vec![SpawnableAsset::new("dirt")],
         )
@@ -1489,9 +1397,10 @@ fn build_dirt_layer(
 
 This creates a simple but effective foundation layer that can form continuous ground while supporting other layers on top!
 
-Now we need a function that the generator will call to get all our dirt layer rules and models:
+Now let's append the `build_world` function that the generator will call to get all our dirt layer rules and models:
 
 ```rust
+// src/map/rules.rs
 pub fn build_world() -> (
     Vec<Vec<SpawnableAsset>>,
     ModelCollection<Cartesian3D>,
@@ -1580,9 +1489,10 @@ Let's break down what each of these constants controls:
 
 ### The Generator Setup Function
 
-Now let's create the main function that sets up our procedural generation engine:
+Now let's append the `setup_generator` function that sets up our procedural generation engine:
 
 ```rust
+// src/map/generate.rs
 pub fn setup_generator(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -1640,21 +1550,19 @@ Since we're building a 2D game, we need to tell the system which axis to use for
 
 **Grid**
 
-This creates our 3D world space where tiles will be placed. The three boolean parameters control wrapping behavior:
+This creates our world space where tiles will be placed. The three boolean parameters control wrapping behavior:
 
-- **`(false, false, false)`** - Most games like Minecraft, Terraria (hard boundaries)
-- **`(true, true, false)`** - Classic Asteroids or Pac-Man (wraps left-right and up-down)
-- **`(true, true, true)`** - Advanced simulations with infinite-feeling 3D worlds
-
-The grid uses a 3D coordinate system: X-axis (left-right), Y-axis (forward-backward), Z-axis (bottom-top layering).
+1. **`(false, false, false)`** - Most games like Minecraft, Terraria (hard boundaries)
+2. **`(true, true, false)`** - Classic Asteroids or Pac-Man (wraps left-right and up-down)
+3. **`(true, true, true)`** - Advanced simulations with infinite-feeling 3D worlds
 
 **Configuring the Algorithm**
 
 This is where we configure how the WFC algorithm behaves:
 
-- `RngMode::RandomSeed` - Uses random seeds (same seed = same world every time)
-- `NodeSelectionHeuristic::MinimumRemainingValue` - Always picks the most constrained cell (fewest valid tiles)
-- `ModelSelectionHeuristic::WeightedProbability` - Picks tiles based on their weights (higher weight = more likely)
+1. `RngMode::RandomSeed` - Uses random seeds (same seed = same world every time)
+2. `NodeSelectionHeuristic::MinimumRemainingValue` - Always picks the most constrained cell (fewest valid tiles)
+3. `ModelSelectionHeuristic::WeightedProbability` - Picks tiles based on their weights (higher weight = more likely)
 
 **Loading Assets and Spawning the Generator**
 
@@ -1663,3 +1571,600 @@ This is where we configure how the WFC algorithm behaves:
 The `commands.spawn()` creates the generator entity with a `Transform` that centers the world on screen and a `NodesSpawner` that handles the actual tile creation.
 
 The `with_z_offset_from_y(true)` setting uses Y coordinates for Z-layer positioning - tiles higher up on screen render in front, creating natural depth ordering (e.g., tree at Y=10 appears in front of rock at Y=5).
+
+## Final Module Structure
+
+Throughout this chapter, we've been building our procedural generation system across multiple files. Before we integrate everything into your main game, let's make sure your `src/map/mod.rs` file includes all the modules we've created:
+
+```rust
+// src/map/mod.rs
+pub mod generate;
+pub mod assets;
+pub mod models;
+pub mod rules;
+pub mod sockets;
+pub mod tilemap;
+```
+
+Make sure your `mod.rs` file matches this structure before proceeding to the integration step.
+
+## Integrating the Generator into Your Game
+
+Now that we've built our procedural generation system, we need to integrate it into our main game. We'll update the `main.rs` file to include the procedural generation plugin and set up the window size to match our generated world.
+
+**Updating main.rs**
+
+We need to add the procedural generation plugin and configure the window size to match our generated world. Update your `main.rs`:
+
+```rust
+// src/main.rs
+mod map;
+mod player;
+
+use bevy::{
+    prelude::*,
+    window::{Window, WindowPlugin, WindowResolution},
+};
+
+use bevy_procedural_tilemaps::prelude::*;
+
+use crate::map::generate::{map_pixel_dimensions, setup_generator};
+use crate::player::PlayerPlugin;
+
+fn main() {
+    let map_size = map_pixel_dimensions();
+
+    App::new()
+        .insert_resource(ClearColor(Color::WHITE))
+        .add_plugins(
+            DefaultPlugins
+                .set(AssetPlugin {
+                    file_path: "src/assets".into(),
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: WindowResolution::new(map_size.x as u32, map_size.y as u32),
+                        resizable: false,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
+        .add_plugins(ProcGenSimplePlugin::<Cartesian3D, Sprite>::default())
+        .add_systems(Startup, (setup_camera, setup_generator))
+        .add_plugins(PlayerPlugin)
+        .run();
+}
+
+fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+```
+
+**What's New:**
+
+1. **Map module import** - `mod map;` brings in our procedural generation code
+2. **Window sizing** - `map_pixel_dimensions()` calculates the window size based on our grid dimensions
+3. **Procedural generation plugin** - `ProcGenSimplePlugin` handles the WFC algorithm execution
+4. **Generator setup** - `setup_generator` runs at startup to create our world
+5. **Image filtering** - `ImagePlugin::default_nearest()` keeps pixel art crisp
+
+**Running Your Procedural World**
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+You should see a procedurally generated world with dirt tiles following the rules we defined! The world will be centered on screen, and the window size will match your grid dimensions (25×18 tiles = 800×576 pixels).
+
+![Dirt Layer]({{ "/assets/book_assets/chapter2/dirt_layer_without_player.png" | relative_url }})
+
+**Where's the player?**
+
+The player is actually there, but it's rendering behind the dirt tiles.
+
+We need to make the player render on top of other layers we have.
+
+**Add a Z position constant** 
+
+```rust
+// src/player.rs, please it below ANIM_DT const
+const PLAYER_Z: f32 = 20.0; 
+```
+
+**Update the spawn function** to use this Z value and scale the player slightly down (for better visual proposition with our generated world).
+
+```rust
+// src/player.rs - Update the Transform line in spawn_player
+Transform::from_translation(Vec3::new(0., 0., PLAYER_Z)).with_scale(Vec3::splat(0.8)),
+```
+
+Run your again:
+
+```bash
+cargo run
+```
+
+Your player renders in front of all tiles and looks proportional to the 32×32 tile world!
+
+![Dirt Layer]({{ "/assets/book_assets/chapter2/dirt_layer_with_player.png" | relative_url }})
+
+## Adding the Grass Layer
+
+Now that we have a working dirt foundation, let's add grass on top. The grass layer will create patches of green grass that sit on the dirt, with proper edge tiles for smooth transitions.
+
+### Step 1: Adding Grass Sprites to the Tilemap
+
+First, we need to add all the grass sprite coordinates to our tilemap. Append these sprites to the `sprites` array in `tilemap.rs`:
+
+```rust
+// src/map/tilemap.rs - Add these to the sprites array after the dirt sprite inside TilemapDefinition struct
+TilemapSprite {
+    name: "green_grass",
+    pixel_x: 160,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "green_grass_corner_in_tl",
+    pixel_x: 192,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "green_grass_corner_in_tr",
+    pixel_x: 224,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "green_grass_corner_in_bl",
+    pixel_x: 192,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "green_grass_corner_in_br",
+    pixel_x: 224,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "green_grass_corner_out_tl",
+    pixel_x: 0,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "green_grass_corner_out_tr",
+    pixel_x: 32,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "green_grass_corner_out_bl",
+    pixel_x: 0,
+    pixel_y: 96,
+},
+TilemapSprite {
+    name: "green_grass_corner_out_br",
+    pixel_x: 32,
+    pixel_y: 96,
+},
+TilemapSprite {
+    name: "green_grass_side_t",
+    pixel_x: 64,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "green_grass_side_r",
+    pixel_x: 96,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "green_grass_side_l",
+    pixel_x: 64,
+    pixel_y: 96,
+},
+TilemapSprite {
+    name: "green_grass_side_b",
+    pixel_x: 96,
+    pixel_y: 96,
+},
+```
+
+These sprites include the main grass tile, inner corners, outer corners, and side edges for smooth transitions between grass and dirt.
+
+### Step 2: Adding Grass Sockets
+
+Now we need to define the sockets for the grass layer. Update your `sockets.rs`:
+
+```rust
+// src/map/sockets.rs - Add this struct after DirtLayerSockets
+pub struct GrassLayerSockets {
+    pub layer_up: Socket,
+    pub layer_down: Socket,
+    pub material: Socket,
+    pub void_and_grass: Socket,
+    pub grass_and_void: Socket,
+    pub grass_fill_up: Socket,
+}
+```
+
+Then update the `TerrainSockets` struct to include grass:
+
+```rust
+// src/map/sockets.rs - Update TerrainSockets
+pub struct TerrainSockets {
+    pub dirt: DirtLayerSockets,
+    pub void: Socket, // line update alert
+    pub grass: GrassLayerSockets, // line update alert
+}
+```
+
+Finally, update the `create_sockets` function to initialize the grass sockets:
+
+```rust
+// src/map/sockets.rs - Update create_sockets function
+pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSockets {
+    let mut new_socket = || -> Socket { socket_collection.create() };
+    
+    let sockets = TerrainSockets {
+        dirt: DirtLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+        },
+         // line update alert
+        void: new_socket(), 
+         // lines update alert
+        grass: GrassLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+            void_and_grass: new_socket(),
+            grass_and_void: new_socket(),
+            grass_fill_up: new_socket(),
+        },
+    };
+    sockets
+}
+```
+
+**Why does grass need more sockets than dirt?**
+
+Dirt is simple - it fills the entire base layer, so every dirt tile connects to another dirt tile. Grass is different - it creates patches on top of dirt, which means grass tiles need to handle edges where grass meets empty space.
+
+Here's what each socket handles:
+
+- **`material`** - Connects grass to grass (like dirt's material socket)
+- **`layer_up` and `layer_down`** - Vertical connections (like dirt)
+- **`void_and_grass`** - Transitions from empty space (left) to grass (right)
+- **`grass_and_void`** - Transitions from grass (left) to empty space (right)
+- **`grass_fill_up`** - Allows layers above to fill down into grass areas
+
+These transition sockets (`void_and_grass` and `grass_and_void`) are what create smooth edges. Without them, grass patches would have hard, blocky borders instead of the curved corners and sides we want.
+
+### Step 3: Building the Grass Layer Rules
+
+Now let's create the function that builds the grass layer. Append this function to `rules.rs`:
+
+```rust
+// src/map/rules.rs - Add this function after build_dirt_layer
+fn build_grass_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    // Void model - empty space above dirt where no grass exists
+    terrain_model_builder.create_model(
+        SocketsCartesian3D::Simple {
+            x_pos: terrain_sockets.void,
+            x_neg: terrain_sockets.void,
+            z_pos: terrain_sockets.grass.layer_up,
+            z_neg: terrain_sockets.grass.layer_down,
+            y_pos: terrain_sockets.void,
+            y_neg: terrain_sockets.void,
+        },
+        Vec::new(),
+    );
+
+    // Main grass tile
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Multiple {
+                x_pos: vec![terrain_sockets.grass.material],
+                x_neg: vec![terrain_sockets.grass.material],
+                z_pos: vec![
+                    terrain_sockets.grass.layer_up,
+                    terrain_sockets.grass.grass_fill_up,
+                ],
+                z_neg: vec![terrain_sockets.grass.layer_down],
+                y_pos: vec![terrain_sockets.grass.material],
+                y_neg: vec![terrain_sockets.grass.material],
+            },
+            vec![SpawnableAsset::new("green_grass")],
+        )
+        .with_weight(5.);
+
+    // Outer corner template
+    let green_grass_corner_out = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.void_and_grass,
+        x_neg: terrain_sockets.void,
+        z_pos: terrain_sockets.grass.layer_up,
+        z_neg: terrain_sockets.grass.layer_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.grass.grass_and_void,
+    }
+    .to_template();
+
+    // Inner corner template
+    let green_grass_corner_in = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.grass_and_void,
+        x_neg: terrain_sockets.grass.material,
+        z_pos: terrain_sockets.grass.layer_up,
+        z_neg: terrain_sockets.grass.layer_down,
+        y_pos: terrain_sockets.grass.material,
+        y_neg: terrain_sockets.grass.void_and_grass,
+    }
+    .to_template();
+
+    // Side edge template
+    let green_grass_side = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.void_and_grass,
+        x_neg: terrain_sockets.grass.grass_and_void,
+        z_pos: terrain_sockets.grass.layer_up,
+        z_neg: terrain_sockets.grass.layer_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.grass.material,
+    }
+    .to_template();
+
+    // Create rotated versions of outer corners
+    terrain_model_builder.create_model(
+        green_grass_corner_out.clone(),
+        vec![SpawnableAsset::new("green_grass_corner_out_tl")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_out.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_out_bl")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_out.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_out_br")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_out.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_out_tr")],
+    );
+
+    // Create rotated versions of inner corners
+    terrain_model_builder.create_model(
+        green_grass_corner_in.clone(),
+        vec![SpawnableAsset::new("green_grass_corner_in_tl")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_in.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_in_bl")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_in.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_in_br")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_corner_in.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_corner_in_tr")],
+    );
+
+    // Create rotated versions of side edges
+    terrain_model_builder.create_model(
+        green_grass_side.clone(),
+        vec![SpawnableAsset::new("green_grass_side_t")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_side.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_side_l")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_side.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_side_b")],
+    );
+    terrain_model_builder.create_model(
+        green_grass_side.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("green_grass_side_r")],
+    );
+
+    // Add connection rules
+    socket_collection.add_rotated_connection(
+        terrain_sockets.dirt.layer_up,
+        vec![terrain_sockets.grass.layer_down],
+    );
+    socket_collection.add_connections(vec![
+        (terrain_sockets.void, vec![terrain_sockets.void]),
+        (
+            terrain_sockets.grass.material,
+            vec![terrain_sockets.grass.material],
+        ),
+        (
+            terrain_sockets.grass.void_and_grass,
+            vec![terrain_sockets.grass.grass_and_void],
+        ),
+    ]);
+}
+```
+
+**Understanding the Grass Layer Function**
+
+This function does several things - let's break it down step by step.
+
+**1. The Void Model - Empty Space**
+
+This creates an "invisible" tile - a spot where no grass grows. Notice `Vec::new()` means no sprite is rendered. The WFC algorithm needs this to create patches of grass rather than covering everything.
+
+**2. The Main Grass Tile**
+
+This is the center grass tile. All four horizontal sides use `grass.material`, meaning they connect to other grass tiles. The `z_pos` has two options - allowing either another layer above OR the special `grass_fill_up` socket for yellow grass later.
+
+
+A **template** is a reusable socket pattern. Instead of writing the same socket configuration four times (once for each rotation), we create it once and rotate it. The `.to_template()` converts it into a format that can be rotated.
+
+**4. Understanding Rotation - What's Actually Happening?**
+
+We're rotating the **socket pattern**.
+
+Each tile has a sprite (the visual) and sockets (the connection rules). When we rotate a template, the sockets shift to different edges.
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<div style="text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 16px; font-family: 'Space Mono', monospace;">How Socket Rotation Works</div>
+<table style="border-collapse: separate; border-spacing: 4px; font-family: 'Space Mono', monospace; font-size: 13px; border: none; display: inline-block; margin-bottom: 20px;">
+<tr>
+<td style="padding: 15px; text-align: center; background-color: #e3f2fd; border-radius: 8px;">
+<strong style="font-size: 15px;">Original Template (0°)</strong><br><br>
+<img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 70px; height: 70px;"><br><br>
+<div style="text-align: left; line-height: 1.6;">
+<strong>Sockets:</strong><br>
+Left: void<br>
+Right: void_and_grass<br>
+Forward: void<br>
+Backward: grass_and_void
+</div>
+</td>
+<td style="padding: 15px; text-align: center; background-color: #fff3e0; border-radius: 8px;">
+<strong style="font-size: 15px;">After 90° Rotation</strong><br><br>
+<img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 70px; height: 70px;"><br><br>
+<div style="text-align: left; line-height: 1.6;">
+<strong>Sockets:</strong><br>
+Left: void<br>
+Right: grass_and_void<br>
+Forward: void_and_grass<br>
+Backward: void
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+
+Notice: the sprites are different (top-left vs bottom-left corner), but the socket pattern shifted clockwise by 90°. The `void_and_grass` socket moved from the right edge to the forward edge.
+
+This is powerful because we define one socket pattern and pair it with different sprites at different rotations. The result: four unique corner models from one template definition.
+
+We do the same for corner inside and side edges of grass tiles as well.
+
+
+**5. How Simple Rules Create Coherent Shapes**
+
+Here's where the magic happens. We define only three connection rules, yet they create complex, natural-looking grass patches. Let's see how.
+
+**The Three Rules:**
+
+1. **`void` connects to `void`** - Empty space stays empty
+2. **`grass.material` connects to `grass.material`** - Grass centers connect to each other
+3. **`void_and_grass` connects to `grass_and_void`** - Transition sockets create smooth edges
+
+That's it! But how do these simple rules create coherent grass patches? Let's visualize a 3×3 grass patch forming:
+
+<div class="columns is-mobile is-centered">
+<div class="column is-narrow">
+<div style="text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 15px; font-family: 'Space Mono', monospace;">How a Grass Patch Forms</div>
+<table style="border-collapse: separate; border-spacing: 3px; border: none; display: inline-block; margin-bottom: 20px;">
+<tr>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+</tr>
+<tr>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_t.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tr.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+</tr>
+<tr>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_l.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_r.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+</tr>
+<tr>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_b.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_br.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+</tr>
+</table>
+</div>
+</div>
+
+**Why Every Edge Matches Perfectly:**
+
+Let's trace through the top row to understand how sockets work. Remember: each tile has sockets on its four edges that define what can connect to it.
+
+Look at the grass tile on the top left - **green_grass_corner_out_tl** tile (second row, second column in the grid above). This tile has a socket called `void_and_grass` on its **right edge**
+
+Now look at the **green_grass_side_t** tile immediately to its right. This tile has a socket called `grass_and_void` on its **left edge**. When these two tiles sit next to each other, their edges touch. The `void_and_grass` socket (from the corner) connects to the `grass_and_void` socket (from the side) because of Rule 3
+
+The same pattern repeats across the entire grid. **green_grass_side_t** has `grass_and_void` on its **right** edge. **green_grass_corner_out_tr** has `void_and_grass` on its **left** edge. Where they touch, these sockets match perfectly!
+
+The **green_grass** center tile has `material` sockets on all four edges, so it connects to any adjacent grass tile that also has `material` on the touching edge.
+
+The WFC algorithm uses these three simple rules to check every tile placement. Before placing a tile, it verifies that all its sockets match the sockets of neighboring tiles. The result: organic-looking grass patches with smooth, curved edges!
+
+**6. Layer Connections**
+
+This tells the WFC algorithm that grass can sit on top of dirt. The `add_rotated_connection` means this rule applies regardless of how the tiles are rotated - grass can always sit on dirt.
+
+
+### Step 4: Calling the Grass Layer Function
+
+Now update the `build_world` function to call `build_grass_layer`:
+
+```rust
+// src/map/rules.rs - Update build_world function
+pub fn build_world() -> (
+    Vec<Vec<SpawnableAsset>>,
+    ModelCollection<Cartesian3D>,
+    SocketCollection,
+) {
+    let mut socket_collection = SocketCollection::new();
+    let terrain_sockets = create_sockets(&mut socket_collection);
+
+    let mut terrain_model_builder = TerrainModelBuilder::new();
+
+    // Build dirt layer
+    build_dirt_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Line update alert
+    // Build grass layer
+    build_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    let (assets, models) = terrain_model_builder.into_parts();
+
+    (assets, models, socket_collection)
+}
+```
+
+### Step 5: Updating Grid Layers
+
+Finally, update `generate.rs` to use 2 layers instead of 1:
+
+```rust
+// src/map/generate.rs - Update GRID_Z constant
+const GRID_Z: u32 = 2;
+```
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+You should see patches of green grass growing on top of the dirt layer, with smooth edges and corners transitioning between grass and dirt!
+
+![Grass Layer]({{ "/assets/book_assets/chapter2/green_grass.png" | relative_url }})
