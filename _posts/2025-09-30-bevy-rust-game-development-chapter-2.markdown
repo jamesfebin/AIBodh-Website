@@ -2907,3 +2907,503 @@ cargo run
 You should see water bodies forming on your terrain, creating lakes and ponds alongside the grass patches!
 
 ![Water Layer]({{ "/assets/book_assets/chapter2/water.png" | relative_url }})
+
+## Adding the Props Layer
+
+Props are the final layer that brings our world to life! Trees, rocks, plants, and stumps should appear on land but not in water. 
+
+This layer sits at the top of our Z-stack and uses special connection rules to ensure props only spawn on solid ground.
+
+### Step 1: Add Props Sprites to Tilemap
+
+First, let's add all the props sprites to our tilemap definition. Open `src/map/tilemap.rs` and add these entries to the `sprites` array:
+
+```rust
+// src/map/tilemap.rs - Add these after the water sprites
+TilemapSprite {
+    name: "big_tree_1_tl",
+    pixel_x: 0,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "big_tree_1_tr",
+    pixel_x: 32,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "big_tree_1_bl",
+    pixel_x: 0,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "big_tree_1_br",
+    pixel_x: 32,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "big_tree_2_tl",
+    pixel_x: 64,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "big_tree_2_tr",
+    pixel_x: 96,
+    pixel_y: 0,
+},
+TilemapSprite {
+    name: "big_tree_2_bl",
+    pixel_x: 64,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "big_tree_2_br",
+    pixel_x: 96,
+    pixel_y: 32,
+},
+TilemapSprite {
+    name: "plant_1",
+    pixel_x: 128,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "plant_2",
+    pixel_x: 160,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "plant_3",
+    pixel_x: 192,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "plant_4",
+    pixel_x: 224,
+    pixel_y: 64,
+},
+TilemapSprite {
+    name: "rock_1",
+    pixel_x: 0,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "rock_2",
+    pixel_x: 32,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "rock_3",
+    pixel_x: 64,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "rock_4",
+    pixel_x: 96,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "small_tree_top",
+    pixel_x: 128,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "small_tree_bottom",
+    pixel_x: 128,
+    pixel_y: 160,
+},
+TilemapSprite {
+    name: "tree_stump_1",
+    pixel_x: 192,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "tree_stump_2",
+    pixel_x: 224,
+    pixel_y: 128,
+},
+TilemapSprite {
+    name: "tree_stump_3",
+    pixel_x: 0,
+    pixel_y: 192,
+},
+```
+
+### Step 2: Define Props Sockets
+
+Props need special socket handling because they must only appear on land, never in water. They also include multi-tile objects like big trees that span multiple grid positions.
+
+Add the socket structure to `src/map/sockets.rs`:
+
+```rust
+// src/map/sockets.rs - Add after WaterLayerSockets
+pub struct PropsLayerSockets {
+    pub layer_up: Socket,
+    pub layer_down: Socket,
+    pub props_down: Socket,
+    pub big_tree_1_base: Socket,
+    pub big_tree_2_base: Socket,
+}
+```
+
+Then update `TerrainSockets` to include props:
+
+```rust
+// src/map/sockets.rs - Update TerrainSockets
+pub struct TerrainSockets {
+    pub dirt: DirtLayerSockets,
+    pub void: Socket,
+    pub grass: GrassLayerSockets,
+    pub yellow_grass: YellowGrassLayerSockets,
+    pub water: WaterLayerSockets,
+    pub props: PropsLayerSockets, // Add this line
+}
+```
+
+Finally, initialize the props sockets in `create_sockets`:
+
+```rust
+// src/map/sockets.rs - Update create_sockets function
+pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSockets {
+    let mut new_socket = || -> Socket { socket_collection.create() };
+    
+    let sockets = TerrainSockets {
+        dirt: DirtLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+        },
+        void: new_socket(),
+        grass: GrassLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+            void_and_grass: new_socket(),
+            grass_and_void: new_socket(),
+            grass_fill_up: new_socket(),
+        },
+        yellow_grass: YellowGrassLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            yellow_grass_fill_down: new_socket(),
+        },
+        water: WaterLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            material: new_socket(),
+            void_and_water: new_socket(),
+            water_and_void: new_socket(),
+            ground_up: new_socket(),
+        },
+        props: PropsLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            props_down: new_socket(),
+            big_tree_1_base: new_socket(),
+            big_tree_2_base: new_socket(),
+        },
+    };
+    sockets
+}
+```
+
+**Understanding Props Sockets:**
+
+Props have 5 sockets with special purposes:
+1. **`layer_up` and `layer_down`** - Standard vertical connections
+2. **`props_down`** - Connects to water's `ground_up` socket (ensures props only on land)
+3. **`big_tree_1_base` and `big_tree_2_base`** - Special sockets for multi-tile trees that need to connect their base parts
+
+### Step 3: Building the Props Layer Rules
+
+Now let's create the function that builds the props layer. Add this function to `rules.rs`:
+
+```rust
+// src/map/rules.rs - Add this function after build_water_layer
+pub fn build_props_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    // Void model - represents areas where no props exist
+    terrain_model_builder.create_model(
+        SocketsCartesian3D::Multiple {
+            x_pos: vec![terrain_sockets.void],
+            x_neg: vec![terrain_sockets.void],
+            z_pos: vec![terrain_sockets.props.layer_up],
+            z_neg: vec![terrain_sockets.props.layer_down],
+            y_pos: vec![terrain_sockets.void],
+            y_neg: vec![terrain_sockets.void],
+        },
+        Vec::new(),
+    );
+
+    // Weight constants for different prop types
+    const PROPS_WEIGHT: f32 = 0.025;
+    const ROCKS_WEIGHT: f32 = 0.008;
+    const PLANTS_WEIGHT: f32 = 0.025;
+    const STUMPS_WEIGHT: f32 = 0.012;
+
+    // Base prop template - single tile props
+    let prop = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.void,
+        x_neg: terrain_sockets.void,
+        z_pos: terrain_sockets.props.layer_up,
+        z_neg: terrain_sockets.props.props_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.void,
+    }
+    .to_template()
+    .with_weight(PROPS_WEIGHT);
+
+    // Create different prop types with different weights
+    let plant_prop = prop.clone().with_weight(PLANTS_WEIGHT);
+    let stump_prop = prop.clone().with_weight(STUMPS_WEIGHT);
+    let rock_prop = prop.clone().with_weight(ROCKS_WEIGHT);
+
+    // Small tree (2 tiles high)
+    terrain_model_builder.create_model(
+        plant_prop.clone(),
+        vec![
+            SpawnableAsset::new("small_tree_bottom"),
+            SpawnableAsset::new("small_tree_top").with_grid_offset(GridDelta::new(0, 1, 0)),
+        ],
+    );
+
+    // Big tree 1 (2x2 tiles)
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.props.big_tree_1_base,
+                x_neg: terrain_sockets.void,
+                z_pos: terrain_sockets.props.layer_up,
+                z_neg: terrain_sockets.props.props_down,
+                y_pos: terrain_sockets.void,
+                y_neg: terrain_sockets.void,
+            },
+            vec![
+                SpawnableAsset::new("big_tree_1_bl"),
+                SpawnableAsset::new("big_tree_1_tl").with_grid_offset(GridDelta::new(0, 1, 0)),
+            ],
+        )
+        .with_weight(PROPS_WEIGHT);
+
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.void,
+                x_neg: terrain_sockets.props.big_tree_1_base,
+                z_pos: terrain_sockets.props.layer_up,
+                z_neg: terrain_sockets.props.props_down,
+                y_pos: terrain_sockets.void,
+                y_neg: terrain_sockets.void,
+            },
+            vec![
+                SpawnableAsset::new("big_tree_1_br"),
+                SpawnableAsset::new("big_tree_1_tr").with_grid_offset(GridDelta::new(0, 1, 0)),
+            ],
+        )
+        .with_weight(PROPS_WEIGHT);
+
+    // Big tree 2 (2x2 tiles)
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.props.big_tree_2_base,
+                x_neg: terrain_sockets.void,
+                z_pos: terrain_sockets.props.layer_up,
+                z_neg: terrain_sockets.props.props_down,
+                y_pos: terrain_sockets.void,
+                y_neg: terrain_sockets.void,
+            },
+            vec![
+                SpawnableAsset::new("big_tree_2_bl"),
+                SpawnableAsset::new("big_tree_2_tl").with_grid_offset(GridDelta::new(0, 1, 0)),
+            ],
+        )
+        .with_weight(PROPS_WEIGHT);
+
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.void,
+                x_neg: terrain_sockets.props.big_tree_2_base,
+                z_pos: terrain_sockets.props.layer_up,
+                z_neg: terrain_sockets.props.props_down,
+                y_pos: terrain_sockets.void,
+                y_neg: terrain_sockets.void,
+            },
+            vec![
+                SpawnableAsset::new("big_tree_2_br"),
+                SpawnableAsset::new("big_tree_2_tr").with_grid_offset(GridDelta::new(0, 1, 0)),
+            ],
+        )
+        .with_weight(PROPS_WEIGHT);
+
+    // Tree stumps
+    terrain_model_builder.create_model(
+        stump_prop.clone(),
+        vec![SpawnableAsset::new("tree_stump_1")],
+    );
+    terrain_model_builder.create_model(
+        stump_prop.clone(),
+        vec![SpawnableAsset::new("tree_stump_2")],
+    );
+    terrain_model_builder.create_model(
+        stump_prop.clone(),
+        vec![SpawnableAsset::new("tree_stump_3")],
+    );
+
+    // Rocks
+    terrain_model_builder.create_model(rock_prop.clone(), vec![SpawnableAsset::new("rock_1")]);
+    terrain_model_builder.create_model(rock_prop.clone(), vec![SpawnableAsset::new("rock_2")]);
+    terrain_model_builder.create_model(rock_prop.clone(), vec![SpawnableAsset::new("rock_3")]);
+    terrain_model_builder.create_model(rock_prop.clone(), vec![SpawnableAsset::new("rock_4")]);
+
+    // Plants
+    terrain_model_builder.create_model(plant_prop.clone(), vec![SpawnableAsset::new("plant_1")]);
+    terrain_model_builder.create_model(plant_prop.clone(), vec![SpawnableAsset::new("plant_2")]);
+    terrain_model_builder.create_model(plant_prop.clone(), vec![SpawnableAsset::new("plant_3")]);
+    terrain_model_builder.create_model(plant_prop.clone(), vec![SpawnableAsset::new("plant_4")]);
+
+    // Add connection rules
+    socket_collection.add_connections(vec![
+        (
+            terrain_sockets.props.big_tree_1_base,
+            vec![terrain_sockets.props.big_tree_1_base],
+        ),
+        (
+            terrain_sockets.props.big_tree_2_base,
+            vec![terrain_sockets.props.big_tree_2_base],
+        ),
+    ]);
+
+    // Connect props to water layer
+    socket_collection
+        .add_rotated_connection(
+            terrain_sockets.water.layer_up,
+            vec![terrain_sockets.props.layer_down],
+        )
+        .add_rotated_connection(
+            terrain_sockets.props.props_down,
+            vec![terrain_sockets.water.ground_up],
+        );
+}
+```
+
+**Key Points About Props:**
+
+1. **Multi-tile Objects** - Big trees use `GridDelta::new(0, 1, 0)` to place the top half one tile up
+2. **Weight System** - Different prop types have different spawn probabilities (rocks are rarer than plants)
+3. **Land-only Rule** - `props_down` connects to `water.ground_up`, ensuring props never spawn in water
+4. **Base Sockets** - Big trees use special base sockets to connect their left and right halves
+
+### Step 4: Calling the Props Layer Function
+
+Update `build_world` in `rules.rs` to call `build_props_layer`:
+
+```rust
+// src/map/rules.rs - Update build_world function
+pub fn build_world() -> (
+    Vec<Vec<SpawnableAsset>>,
+    ModelCollection<Cartesian3D>,
+    SocketCollection,
+) {
+    let mut socket_collection = SocketCollection::new();
+    let terrain_sockets = create_sockets(&mut socket_collection);
+
+    let mut terrain_model_builder = TerrainModelBuilder::new();
+
+    // Build dirt layer
+    build_dirt_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build grass layer
+    build_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build yellow grass layer
+    build_yellow_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build water layer
+    build_water_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Line update alert
+    // Build props layer
+    build_props_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    let (assets, models) = terrain_model_builder.into_parts();
+
+    (assets, models, socket_collection)
+}
+```
+
+### Step 5: Update GRID_Z for Props
+
+We need one final layer for props. Update the constant in `generate.rs`:
+
+```rust
+// src/map/generate.rs - Update GRID_Z
+const GRID_Z: u32 = 5; // Changed from 4 to 5
+```
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+You should see a complete procedural world with dirt, grass, water, and props! Trees and rocks will only appear on land, never in water, creating a realistic and varied landscape.
+
+![Props Layer]({{ "/assets/book_assets/chapter2/props.png" | relative_url }})
+
+### Congratulations!
+
+You've successfully built a complete procedural terrain generation system using Wave Function Collapse! Your world now has:
+
+- **Dirt base layer** - The foundation
+- **Green grass patches** - With smooth edges and corners
+- **Yellow grass variety** - Stacking on green grass
+- **Water bodies** - Creating lakes and ponds
+- **Props** - Trees, rocks, and plants that only appear on land
+
+This demonstrates the power of WFC for creating coherent, natural-looking game worlds with just a few simple rules!
+
+### Now let's try something
+
+Go to rules.rs and change the water weight.
+
+```rust
+const WATER_WEIGHT: f32 = 0.07;
+```
+
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+![Props Layer]({{ "/assets/book_assets/chapter2/water_weight.png" | relative_url }})
+
+Woah, with a simple modification you are able to change the world to have more water! This demonstrates the power of procedural generation—by tweaking just a few numbers, you can create completely different landscapes. 
+
+Try experimenting with the weight values for different layers to see how dramatically you can transform your world.
+
+Also notice our player can walk on water. And that too without any cheat code? We will work on collision detection also on approaches to build larger maps in our upcoming chapters.
