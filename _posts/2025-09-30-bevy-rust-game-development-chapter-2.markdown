@@ -285,11 +285,6 @@ Backtrack -> Pick
 
 **For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
 
-```comic 
-left_girl_surprised: Sockets? Like IKEA?
-right_guy_laugh: Except these fit on the first attempt!
-```
-
 Let's see this in action using the following water tiles. We'll learn how constraints propagate to form a coherent environment:
 
 <div class="columns is-mobile is-centered">
@@ -2122,7 +2117,7 @@ That's it! But how do these simple rules create coherent grass patches? Let's vi
 
 **Why Every Edge Matches Perfectly:**
 
-Let's trace through the top row to understand how sockets work. Remember: each tile has sockets on its four edges that define what can connect to it.
+Let's trace through the top row to understand how sockets work. Remember: each tile has sockets on its edges that define what can connect to it.
 
 Look at the grass tile on the top left - **green_grass_corner_out_tl** tile (second row, second column in the grid above). This tile has a socket called `void_and_grass` on its **right edge**
 
@@ -2130,7 +2125,7 @@ Now look at the **green_grass_side_t** tile immediately to its right. This tile 
 
 The same pattern repeats across the entire grid. **green_grass_side_t** has `grass_and_void` on its **right** edge. **green_grass_corner_out_tr** has `void_and_grass` on its **left** edge. Where they touch, these sockets match perfectly!
 
-The **green_grass** center tile has `material` sockets on all four edges, so it connects to any adjacent grass tile that also has `material` on the touching edge.
+The **green_grass** center tile has `material` sockets on all edges, so it connects to any adjacent grass tile that also has `material` on the touching edge.
 
 The WFC algorithm uses these three simple rules to check every tile placement. Before placing a tile, it verifies that all its sockets match the sockets of neighboring tiles. The result: organic-looking grass patches with smooth, curved edges!
 
