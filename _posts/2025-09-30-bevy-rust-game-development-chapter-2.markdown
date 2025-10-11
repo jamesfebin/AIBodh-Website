@@ -5,6 +5,8 @@ date: 2025-09-30 10:00:00 +0000
 category: rust
 tags: [rust, bevy, game development, tutorial]
 excerpt: "Continue building your video game with Bevy and Rust. This second chapter covers creating a game world, implementing collision detection, and adding interactive elements to your game environment."
+image: /assets/book_assets/chapter2/ch2.gif
+og_image: /assets/book_assets/chapter2/props.png
 ---
 
 <style>
@@ -16,7 +18,8 @@ excerpt: "Continue building your video game with Bevy and Rust. This second chap
 }
 </style>
 
-Here's what you will be able to achieve by the end of this tutorial. 
+By the end of this tutorial, you'll build a procedurally generated game world with layered terrain, water bodies, and props.
+
 
 ![Player Movement Demo]({{ "/assets/book_assets/chapter2/ch2.gif" | relative_url }})
 
@@ -43,7 +46,12 @@ Basically it's about automatically fitting things together like a jigsaw puzzle.
 
 **How does this magic algorithm work?**
 
-That “magic algorithm” has a name: Wave Function Collapse (WFC). The easiest way to see it is with a tiny Sudoku. Same idea: pick the cell with the fewest valid options, place a value, update neighbors, and repeat. If a choice leads to a dead end, undo that guess and try the next option.
+That "magic algorithm" has a name: Wave Function Collapse (WFC). The easiest way to see it is with a tiny Sudoku. Same idea: pick the cell with the fewest valid options, place a value, update neighbors, and repeat. If a choice leads to a dead end, undo that guess and try the next option.
+
+```comic 
+left_guy_anxious: So it's like Sudoku but for game worlds?
+right_girl_laugh: Yea, instead of numbers, you're placing tiles and hoping they don't fight!
+```
 
 **Small 4×4 Sudoku**
 
@@ -277,6 +285,11 @@ Backtrack -> Pick
 
 **For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
 
+```comic 
+left_girl_surprised: Sockets? Like IKEA?
+right_guy_laugh: Except these fit on the first attempt!
+```
+
 Let's see this in action using the following water tiles. We'll learn how constraints propagate to form a coherent environment:
 
 <div class="columns is-mobile is-centered">
@@ -476,7 +489,7 @@ bevy_procedural_tilemaps = "0.1.3" // Line update alert
 
 The `bevy_procedural_tilemaps` library handles the complex logic of generating coherent, rule-based worlds. 
 
-### What the Library Handles
+**What the library handles**
 
 The library takes care of the **algorithmic complexity** of procedural generation:
 
@@ -486,7 +499,7 @@ The library takes care of the **algorithmic complexity** of procedural generatio
 - **Grid Management**: Handles the 2D grid system and coordinate transformations
 - **Entity Spawning**: Creates Bevy entities and positions them correctly
 
-### What We Need to Provide
+**What we need to provide**
 
 We need to give the library the **game-specific information** it needs:
 
@@ -531,11 +544,9 @@ Model Organizer -> Library Interface: "Organized models"
 Generation Config -> Library Interface: "Generation settings"
 ```
 
-### How the System Works Together
+**How these systems work together**
 
 The library pipeline works in stages: first it processes our rules and builds a generator, then the constraint solver figures out valid tile placements, and finally the entity spawner creates the actual game objects in the Bevy world.
-
-### The Workflow
 
 1. **We Define**: Create tile definitions, compatibility rules, and generation patterns
 2. **Library Processes**: Runs the constraint-solving algorithm to find valid tile placements
@@ -728,6 +739,11 @@ A string literal is text you write directly in quotes in your code: `"grass"`, `
 
 A **lifetime** is Rust's way of tracking how long data lives in memory. Rust needs to know when it's safe to use data and when it might be deleted.
 
+```comic 
+left_girl_anxious: So Rust is like a helicopter parent for your data?
+right_guy_laugh: Nope, more like a nightclub bouncer with a PhD in memory safety.
+```
+
 Most data has a limited lifetime. For example:
 - Local variables live only while a function runs
 - Function parameters live only while the function executes
@@ -744,6 +760,11 @@ Most languages (like C, C++, Java, Python) handle memory safety differently:
 - **C/C++**: Don't track lifetimes at all - you can accidentally use deleted data, leading to crashes or security vulnerabilities
 - **Java/Python/C#**: Use garbage collection - the runtime automatically deletes unused data, but this adds overhead and unpredictable pauses
 - **Rust**: Tracks lifetimes at compile time - prevents crashes without runtime overhead
+
+```comic 
+left_guy_surprised: So other languages are like "YOLO, use whatever data you want!"
+right_girl_anxious: And Rust is like that friend who checks expiration dates on everything
+```
 
 Here's why this matters for game development:
 
@@ -820,6 +841,11 @@ We need this because our `SpawnableAsset` struct requires a `components_spawner`
 
 A **closure** is a function that can "capture" variables from its surrounding environment. An **anonymous function** means it doesn't have a name - you can't call it directly like `my_function()`. Instead, you define it inline where you need it.
 
+```comic 
+left_girl_sad: Nameless function that steals variables?
+right_guy_laugh: More like borrowing your friend's homework!
+```
+
 **Variable capture example:**
 ```rust
 let health = 100;
@@ -850,10 +876,9 @@ The fields are private (no `pub` keyword), which means they can only be accessed
 
 Now that we understand how to define our sprites with `SpawnableAsset`, **how do we load and use these sprites in our game?**
 
-## Loading Sprite Assets
+### Loading Sprite Assets
 
 Our game uses a **sprite atlas** - a single large image containing all our sprites. Bevy needs to know where each sprite is located within this image, and we need to avoid reloading the same image multiple times.
-
 
 Create a folder `tile_layers` in your `src/assets` folder and place `tilemap.png` inside it, you can get it from this [github repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust). 
 
@@ -932,7 +957,7 @@ Finally, `sprite_rect()` takes a sprite index and calculates the exact rectangul
 
 Now let's put our tilemap definition to use by adding our first sprite - the dirt tile.
 
-### Adding the dirt tile
+### Adding the Dirt Tile
 
 Let's start with a simple dirt tile to test our tilemap system. The dirt tile sits at pixel coordinates (128, 0) in our 256x320 atlas image. We'll add more sprites later as we build out our game world.
 
@@ -978,7 +1003,7 @@ With the import in place, we can now build the three key functions that helps ou
 
 Let's build these step by step.
 
-### Step 1: Creating the TilemapHandles Struct
+### Creating the TilemapHandles Struct
 
 First, we need a way to hold references to both the atlas image and its layout. Go ahead and append this code into your `assets.rs`:
 
@@ -1004,7 +1029,7 @@ The `TilemapHandles` struct is a container for two handles: `image` points to ou
 
 The `sprite(atlas_index)` method is a convenience function that creates a ready-to-render `Sprite` by combining the image and layout with a specific index. For example, if the dirt tile is at index 0, calling `tilemap_handles.sprite(0)` gives us a `Sprite` configured to display just the dirt tile from our atlas.
 
-### Step 2: Loading the Atlas from Disk
+### Loading the Atlas from Disk
 
 Now let's create the function that actually loads the atlas image file and sets up the layout. We will be using our `TILEMAP` definition from earlier.
 
@@ -1040,7 +1065,7 @@ This is where `TILEMAP.atlas_size()` and `TILEMAP.sprite_rect()` from our tilema
 This function loads the atlas into memory and sets up the layout structure, but it doesn't actually generate the game world yet. We're just preparing the tools that the procedural generator will use later to create the map.
 </div>
 
-### Step 3: Converting Sprite Names to Renderable Sprites
+### Converting Sprite Names to Renderable Sprites
 
 Finally, we need a way to convert sprite names (like "dirt") into `Sprite` objects that can be rendered. 
 
@@ -1214,7 +1239,7 @@ Even though we're building a 2D game, the z-axis represents **layering** - Imagi
 - **Green grass tiles** can sit on top of dirt (one layer up)
 - **Yellow grass tiles** can sit on top of green grass (another layer up)
 
-## Building Models
+### Building Models
 
 Now that we understand how models expose sockets in all six directions, we need a way to create these models and link them to their visual sprites.
 
@@ -1292,7 +1317,7 @@ This is a **trait bound** that tells Rust what capabilities the generic type `T`
 
 This gives us flexibility while ensuring type safety. The compiler will catch any attempts to pass in a type that can't be converted, preventing runtime errors!
 
-## Building the Foundation: Dirt Layer Sockets
+## Building the Foundation
 
 Now that we understand how to keep models and assets synchronized, let's start building our procedural world from the ground up - literally! The dirt layer forms the foundation that everything else sits on.
 
@@ -1351,7 +1376,7 @@ pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSocket
 
 The `create_sockets` function takes a `SocketCollection` and creates all our socket instances. The `new_socket` closure is a helper that calls `socket_collection.create()` to generate unique socket IDs. Each socket gets a unique identifier that the WFC algorithm uses to track compatibility rules.
 
-## Creating the Rules: Building the Dirt Layer
+### Building the Dirt Layer
 
 Now that we have our socket system defined and initialized, we need to create the rules that tell the WFC algorithm how to use these sockets. This is where we define models and how they connect to each other.
 
@@ -1437,7 +1462,7 @@ pub fn build_world() -> (
 
 This function is what the generator calls to get all the rules and models needed to create our procedural world!
 
-## The Generator: Bringing It All Together
+### Generating Dirt
 
 Now that we have all our components - assets, models, sockets, and rules - we need to configure the procedural generation engine. 
 
@@ -1489,8 +1514,6 @@ Let's break down what each of these constants controls:
 4. **`GRID_Z`** - This defines how many layers our world has. We're currently using 1 layer for dirt, but we'll add more layers later to stack different terrain types on top of each other (dirt, grass, yellow grass, water, props).
 
 5. **`ASSETS_SCALE`** - This controls the size multiplier for sprites. `Vec3::ONE` means sprites render at their original size. 
-
-### The Generator Setup Function
 
 Now let's append the `setup_generator` function that sets up our procedural generation engine:
 
@@ -1575,7 +1598,7 @@ The `commands.spawn()` creates the generator entity with a `Transform` that cent
 
 The `with_z_offset_from_y(true)` setting uses Y coordinates for Z-layer positioning - tiles higher up on screen render in front, creating natural depth ordering (e.g., tree at Y=10 appears in front of rock at Y=5).
 
-## Final Module Structure
+#### Final Module Structure
 
 Throughout this chapter, we've been building our procedural generation system across multiple files. Before we integrate everything into your main game, let's make sure your `src/map/mod.rs` file includes all the modules we've created:
 
@@ -1591,7 +1614,7 @@ pub mod tilemap;
 
 Make sure your `mod.rs` file matches this structure before proceeding to the integration step.
 
-## Integrating the Generator into Your Game
+#### Integrating the Generator into Your Game
 
 Now that we've built our procedural generation system, we need to integrate it into our main game. We'll update the `main.rs` file to include the procedural generation plugin and set up the window size to match our generated world.
 
@@ -2021,7 +2044,7 @@ Each tile has a sprite (the visual) and sockets (the connection rules). When we 
 <tr>
 <td style="padding: 15px; text-align: center; background-color: #e3f2fd; border-radius: 8px;">
 <strong style="font-size: 15px;">Original Template (0°)</strong><br><br>
-<img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 70px; height: 70px;"><br><br>
+<img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 70px; height: 70px; pointer-events: none;"><br><br>
 <div style="text-align: left; line-height: 1.6;">
 <strong>Sockets:</strong><br>
 Left: void<br>
@@ -2032,7 +2055,7 @@ Backward: grass_and_void
 </td>
 <td style="padding: 15px; text-align: center; background-color: #fff3e0; border-radius: 8px;">
 <strong style="font-size: 15px;">After 90° Rotation</strong><br><br>
-<img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 70px; height: 70px;"><br><br>
+<img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 70px; height: 70px; pointer-events: none;"><br><br>
 <div style="text-align: left; line-height: 1.6;">
 <strong>Sockets:</strong><br>
 Left: void<br>
@@ -2077,21 +2100,21 @@ That's it! But how do these simple rules create coherent grass patches? Let's vi
 </tr>
 <tr>
 <td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_t.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tr.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_t.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_tr.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
 </tr>
 <tr>
 <td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_l.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_r.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_l.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_r.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
 </tr>
 <tr>
 <td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #f5f5f5; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_b.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
-<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_br.png" style="width: 65px; height: 65px; display: block; border-radius: 8px;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_bl.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_side_b.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
+<td style="padding: 0; text-align: center; width: 65px; height: 65px; background-color: #e8f5e9; border-radius: 8px;"><img src="/assets/book_assets/tile_layers/green_grass_corner_out_br.png" style="width: 65px; height: 65px; display: block; border-radius: 8px; pointer-events: none;"></td>
 </tr>
 </table>
 </div>
@@ -2503,7 +2526,7 @@ pub fn build_world() -> (
 }
 ```
 
-### Step 5: Update GRID_Z for Yellow Grass
+### Step 5: Updating Grid Layers
 
 We need one more layer for yellow grass. Update the constant in `generate.rs`:
 
@@ -2892,7 +2915,7 @@ pub fn build_world() -> (
 }
 ```
 
-### Step 5: Update GRID_Z for Water
+### Step 5: Updating Grid Layers
 
 We need one more layer for water. Update the constant in `generate.rs`:
 
@@ -3357,7 +3380,7 @@ pub fn build_world() -> (
 }
 ```
 
-### Step 5: Update GRID_Z for Props
+### Step 5: Updating Grid Layers
 
 We need one final layer for props. Update the constant in `generate.rs`:
 
@@ -3388,7 +3411,7 @@ You've successfully built a complete procedural terrain generation system using 
 
 This demonstrates the power of WFC for creating coherent, natural-looking game worlds with just a few simple rules!
 
-### Now let's try something
+## Wait, Just one more thing!
 
 Go to rules.rs and change the water weight.
 
@@ -3409,4 +3432,4 @@ Woah, with a simple modification you are able to change the world to have more w
 
 Try experimenting with the weight values for different layers to see how dramatically you can transform your world.
 
-Also notice our player can walk on water. And that too without any cheat code? We will work on collision detection also on approaches to build larger maps in our upcoming chapters.
+Also notice our player can walk on water. And that too without any cheat code? We will work on collision detection and also on approaches to build larger maps in our upcoming chapters.
