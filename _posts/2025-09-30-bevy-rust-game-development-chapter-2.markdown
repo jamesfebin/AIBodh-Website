@@ -2168,3 +2168,742 @@ cargo run
 You should see patches of green grass growing on top of the dirt layer, with smooth edges and corners transitioning between grass and dirt!
 
 ![Grass Layer]({{ "/assets/book_assets/chapter2/green_grass.png" | relative_url }})
+
+## Adding the Yellow Grass Layer
+
+Now that we have green grass, let's add yellow grass patches that can grow on top of it! Yellow grass creates visual variety and demonstrates how layers can stack.
+
+### Step 1: Add Yellow Grass Sprites to Tilemap
+
+First, let's add the yellow grass sprites to our tilemap definition. Open `src/map/tilemap.rs` and add these entries to the `sprites` array:
+
+```rust
+// src/map/tilemap.rs - Add these after the water sprites
+TilemapSprite {
+    name: "yellow_grass",
+    pixel_x: 0,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_in_tl",
+    pixel_x: 32,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_in_tr",
+    pixel_x: 64,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_in_bl",
+    pixel_x: 32,
+    pixel_y: 288,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_in_br",
+    pixel_x: 64,
+    pixel_y: 288,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_out_tl",
+    pixel_x: 96,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_out_tr",
+    pixel_x: 128,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_out_bl",
+    pixel_x: 96,
+    pixel_y: 288,
+},
+TilemapSprite {
+    name: "yellow_grass_corner_out_br",
+    pixel_x: 128,
+    pixel_y: 288,
+},
+TilemapSprite {
+    name: "yellow_grass_side_t",
+    pixel_x: 160,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_side_r",
+    pixel_x: 192,
+    pixel_y: 256,
+},
+TilemapSprite {
+    name: "yellow_grass_side_l",
+    pixel_x: 160,
+    pixel_y: 288,
+},
+TilemapSprite {
+    name: "yellow_grass_side_b",
+    pixel_x: 192,
+    pixel_y: 288,
+},
+```
+
+### Step 2: Define Yellow Grass Sockets
+
+Yellow grass has a special behavior - it sits **on top of green grass**, not on dirt. This means it needs different socket connections.
+
+Add the socket structure to `src/map/sockets.rs`:
+
+```rust
+// src/map/sockets.rs - Add after GrassLayerSockets
+pub struct YellowGrassLayerSockets {
+    pub layer_up: Socket,
+    pub layer_down: Socket,
+    pub yellow_grass_fill_down: Socket,
+}
+```
+
+Then update `TerrainSockets` to include yellow grass:
+
+```rust
+// src/map/sockets.rs - Update TerrainSockets
+pub struct TerrainSockets {
+    pub dirt: DirtLayerSockets,
+    pub void: Socket,
+    pub grass: GrassLayerSockets,
+    pub yellow_grass: YellowGrassLayerSockets, // Add this line
+}
+```
+
+Finally, initialize the yellow grass sockets in `create_sockets`:
+
+```rust
+// src/map/sockets.rs - Update create_sockets function
+pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSockets {
+    let mut new_socket = || -> Socket { socket_collection.create() };
+    
+    let sockets = TerrainSockets {
+        dirt: DirtLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+        },
+        void: new_socket(),
+        grass: GrassLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+            void_and_grass: new_socket(),
+            grass_and_void: new_socket(),
+            grass_fill_up: new_socket(),
+        },
+        yellow_grass: YellowGrassLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            yellow_grass_fill_down: new_socket(),
+        },
+    };
+    sockets
+}
+```
+
+**Why does yellow grass only need 3 sockets?**
+
+Unlike green grass, yellow grass doesn't need `void_and_grass` transition sockets. Why? Because yellow grass **reuses the green grass edges**. When yellow grass meets empty space, the green grass layer below provides the edge tiles. Yellow grass only appears where green grass already exists, so it uses green grass's `material` socket for horizontal connections.
+
+The `yellow_grass_fill_down` socket is special - it connects to green grass's `grass_fill_up` socket, allowing yellow grass to "fill down" into the green grass layer below.
+
+### Step 3: Building the Yellow Grass Layer Rules
+
+Now let's create the function that builds the yellow grass layer. Add this function to `rules.rs`:
+
+```rust
+// src/map/rules.rs - Add this function after build_grass_layer
+fn build_yellow_grass_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    // Void model - empty space where no yellow grass exists
+    terrain_model_builder.create_model(
+        SocketsCartesian3D::Simple {
+            x_pos: terrain_sockets.void,
+            x_neg: terrain_sockets.void,
+            z_pos: terrain_sockets.yellow_grass.layer_up,
+            z_neg: terrain_sockets.yellow_grass.layer_down,
+            y_pos: terrain_sockets.void,
+            y_neg: terrain_sockets.void,
+        },
+        Vec::new(),
+    );
+
+    // Main yellow grass tile
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.grass.material,
+                x_neg: terrain_sockets.grass.material,
+                z_pos: terrain_sockets.yellow_grass.layer_up,
+                z_neg: terrain_sockets.yellow_grass.yellow_grass_fill_down,
+                y_pos: terrain_sockets.grass.material,
+                y_neg: terrain_sockets.grass.material,
+            },
+            vec![SpawnableAsset::new("yellow_grass")],
+        )
+        .with_weight(5.);
+
+    // Outer corner template
+    let yellow_grass_corner_out = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.void_and_grass,
+        x_neg: terrain_sockets.void,
+        z_pos: terrain_sockets.yellow_grass.layer_up,
+        z_neg: terrain_sockets.yellow_grass.yellow_grass_fill_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.grass.grass_and_void,
+    }
+    .to_template();
+
+    // Inner corner template
+    let yellow_grass_corner_in = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.grass_and_void,
+        x_neg: terrain_sockets.grass.material,
+        z_pos: terrain_sockets.yellow_grass.layer_up,
+        z_neg: terrain_sockets.yellow_grass.yellow_grass_fill_down,
+        y_pos: terrain_sockets.grass.material,
+        y_neg: terrain_sockets.grass.void_and_grass,
+    }
+    .to_template();
+
+    // Side edge template
+    let yellow_grass_side = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.grass.void_and_grass,
+        x_neg: terrain_sockets.grass.grass_and_void,
+        z_pos: terrain_sockets.yellow_grass.layer_up,
+        z_neg: terrain_sockets.yellow_grass.yellow_grass_fill_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.grass.material,
+    }
+    .to_template();
+
+    // Create rotated versions of outer corners
+    terrain_model_builder.create_model(
+        yellow_grass_corner_out.clone(),
+        vec![SpawnableAsset::new("yellow_grass_corner_out_tl")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_out.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_out_bl")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_out.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_out_br")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_out.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_out_tr")],
+    );
+
+    // Create rotated versions of inner corners
+    terrain_model_builder.create_model(
+        yellow_grass_corner_in.clone(),
+        vec![SpawnableAsset::new("yellow_grass_corner_in_tl")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_in.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_in_bl")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_in.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_in_br")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_corner_in.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_corner_in_tr")],
+    );
+
+    // Create rotated versions of side edges
+    terrain_model_builder.create_model(
+        yellow_grass_side.clone(),
+        vec![SpawnableAsset::new("yellow_grass_side_t")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_side.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_side_l")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_side.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_side_b")],
+    );
+    terrain_model_builder.create_model(
+        yellow_grass_side.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("yellow_grass_side_r")],
+    );
+
+    // Add connection rules
+    socket_collection
+        .add_rotated_connection(
+            terrain_sockets.grass.layer_up,
+            vec![terrain_sockets.yellow_grass.layer_down],
+        )
+        .add_rotated_connection(
+            terrain_sockets.yellow_grass.yellow_grass_fill_down,
+            vec![terrain_sockets.grass.grass_fill_up],
+        );
+}
+```
+
+Notice how the yellow grass models reuse green grass's transition sockets (`void_and_grass` and `grass_and_void`) for horizontal connections. This is the clever part - yellow grass doesn't define its own edges, it borrows them from green grass!
+
+The connection rules establish two important relationships:
+1. `grass.layer_up` connects to `yellow_grass.layer_down` - Yellow grass sits on top of green grass
+2. `yellow_grass_fill_down` connects to `grass_fill_up` - This allows yellow grass to appear where green grass has the special "fill up" socket
+
+### Step 4: Calling the Yellow Grass Layer Function
+
+Update `build_world` in `rules.rs` to call `build_yellow_grass_layer`:
+
+```rust
+// src/map/rules.rs - Update build_world function
+pub fn build_world() -> (
+    Vec<Vec<SpawnableAsset>>,
+    ModelCollection<Cartesian3D>,
+    SocketCollection,
+) {
+    let mut socket_collection = SocketCollection::new();
+    let terrain_sockets = create_sockets(&mut socket_collection);
+
+    let mut terrain_model_builder = TerrainModelBuilder::new();
+
+    // Build dirt layer
+    build_dirt_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build grass layer
+    build_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Line update alert
+    // Build yellow grass layer
+    build_yellow_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    let (assets, models) = terrain_model_builder.into_parts();
+
+    (assets, models, socket_collection)
+}
+```
+
+### Step 5: Update GRID_Z for Yellow Grass
+
+We need one more layer for yellow grass. Update the constant in `generate.rs`:
+
+```rust
+// src/map/generate.rs - Update GRID_Z
+const GRID_Z: u32 = 3; // Changed from 2 to 3
+```
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+You should see yellow grass patches appearing on top of green grass, creating a beautiful layered terrain!
+
+![Yellow Grass Layer]({{ "/assets/book_assets/chapter2/yellow_grass.png" | relative_url }})
+
+## Adding the Water Layer
+
+Water adds life to our procedural world! Unlike grass layers that stack on top of each other, water appears **alongside** yellow grass at the same layer level. This creates interesting terrain where water bodies can form near grassy areas.
+
+### Step 1: Add Water Sprites to Tilemap
+
+First, let's add the water sprites to our tilemap definition. Open `src/map/tilemap.rs` and add these entries to the `sprites` array:
+
+```rust
+// src/map/tilemap.rs - Add these after the tree stump sprites
+TilemapSprite {
+    name: "water",
+    pixel_x: 32,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_corner_in_tl",
+    pixel_x: 64,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_corner_in_tr",
+    pixel_x: 96,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_corner_in_bl",
+    pixel_x: 64,
+    pixel_y: 224,
+},
+TilemapSprite {
+    name: "water_corner_in_br",
+    pixel_x: 96,
+    pixel_y: 224,
+},
+TilemapSprite {
+    name: "water_corner_out_tl",
+    pixel_x: 128,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_corner_out_tr",
+    pixel_x: 160,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_corner_out_bl",
+    pixel_x: 128,
+    pixel_y: 224,
+},
+TilemapSprite {
+    name: "water_corner_out_br",
+    pixel_x: 160,
+    pixel_y: 224,
+},
+TilemapSprite {
+    name: "water_side_t",
+    pixel_x: 192,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_side_r",
+    pixel_x: 224,
+    pixel_y: 192,
+},
+TilemapSprite {
+    name: "water_side_l",
+    pixel_x: 192,
+    pixel_y: 224,
+},
+TilemapSprite {
+    name: "water_side_b",
+    pixel_x: 224,
+    pixel_y: 224,
+},
+```
+
+### Step 2: Define Water Sockets
+
+Water goes on the next Z-layer above yellow grass. "Layer" here refers to the Z-coordinate in our 3D grid, not geological layers. 
+
+We've been stacking these: dirt at `Z=0`, green grass at `Z=1`, yellow grass at `Z=2`, and now water at `Z=3`. 
+
+At any grid position, you can have dirt at the bottom Z-level and water at a higher Z-level—they occupy the same X,Y position but different Z heights.
+
+Add the socket structure to `src/map/sockets.rs`:
+
+```rust
+// src/map/sockets.rs - Add after YellowGrassLayerSockets
+pub struct WaterLayerSockets {
+    pub layer_up: Socket,
+    pub layer_down: Socket,
+    pub material: Socket,
+    pub void_and_water: Socket,
+    pub water_and_void: Socket,
+    pub ground_up: Socket,
+}
+```
+
+Then update `TerrainSockets` to include water:
+
+```rust
+// src/map/sockets.rs - Update TerrainSockets
+pub struct TerrainSockets {
+    pub dirt: DirtLayerSockets,
+    pub void: Socket,
+    pub grass: GrassLayerSockets,
+    pub yellow_grass: YellowGrassLayerSockets,
+    pub water: WaterLayerSockets, // Add this line
+}
+```
+
+Finally, initialize the water sockets in `create_sockets`:
+
+```rust
+// src/map/sockets.rs - Update create_sockets function
+pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSockets {
+    let mut new_socket = || -> Socket { socket_collection.create() };
+    
+    let sockets = TerrainSockets {
+        dirt: DirtLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+        },
+        void: new_socket(),
+        grass: GrassLayerSockets {
+            layer_up: new_socket(),
+            material: new_socket(),
+            layer_down: new_socket(),
+            void_and_grass: new_socket(),
+            grass_and_void: new_socket(),
+            grass_fill_up: new_socket(),
+        },
+        yellow_grass: YellowGrassLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            yellow_grass_fill_down: new_socket(),
+        },
+        water: WaterLayerSockets {
+            layer_up: new_socket(),
+            layer_down: new_socket(),
+            material: new_socket(),
+            void_and_water: new_socket(),
+            water_and_void: new_socket(),
+            ground_up: new_socket(),
+        },
+    };
+    sockets
+}
+```
+
+Water has 6 sockets because it behaves like green grass - it creates patches with transitions:
+1. **`material`** - Connects water to water (like grass's material socket)
+2. **`layer_up` and `layer_down`** - Vertical connections
+3. **`void_and_water`** and **`water_and_void`** - Transition sockets for smooth edges
+4. **`ground_up`** - Special socket that allows props above to know they're not on water
+
+### Step 3: Building the Water Layer Rules
+
+Now let's create the function that builds the water layer. Add this function to `rules.rs`:
+
+```rust
+// src/map/rules.rs - Add this function after build_yellow_grass_layer
+pub fn build_water_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    // Void model - represents land areas where no water exists
+    terrain_model_builder.create_model(
+        SocketsCartesian3D::Multiple {
+            x_pos: vec![terrain_sockets.void],
+            x_neg: vec![terrain_sockets.void],
+            z_pos: vec![
+                terrain_sockets.water.layer_up,
+                terrain_sockets.water.ground_up,
+            ],
+            z_neg: vec![terrain_sockets.water.layer_down],
+            y_pos: vec![terrain_sockets.void],
+            y_neg: vec![terrain_sockets.void],
+        },
+        Vec::new(),
+    );
+
+    // Main water tile
+    const WATER_WEIGHT: f32 = 0.02;
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.water.material,
+                x_neg: terrain_sockets.water.material,
+                z_pos: terrain_sockets.water.layer_up,
+                z_neg: terrain_sockets.water.layer_down,
+                y_pos: terrain_sockets.water.material,
+                y_neg: terrain_sockets.water.material,
+            },
+            vec![SpawnableAsset::new("water")],
+        )
+        .with_weight(10. * WATER_WEIGHT);
+
+    // Outer corner template
+    let water_corner_out = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.water.void_and_water,
+        x_neg: terrain_sockets.void,
+        z_pos: terrain_sockets.water.layer_up,
+        z_neg: terrain_sockets.water.layer_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.water.water_and_void,
+    }
+    .to_template()
+    .with_weight(WATER_WEIGHT);
+
+    // Inner corner template
+    let water_corner_in = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.water.water_and_void,
+        x_neg: terrain_sockets.water.material,
+        z_pos: terrain_sockets.water.layer_up,
+        z_neg: terrain_sockets.water.layer_down,
+        y_pos: terrain_sockets.water.material,
+        y_neg: terrain_sockets.water.void_and_water,
+    }
+    .to_template()
+    .with_weight(WATER_WEIGHT);
+
+    // Side edge template
+    let water_side = SocketsCartesian3D::Simple {
+        x_pos: terrain_sockets.water.void_and_water,
+        x_neg: terrain_sockets.water.water_and_void,
+        z_pos: terrain_sockets.water.layer_up,
+        z_neg: terrain_sockets.water.layer_down,
+        y_pos: terrain_sockets.void,
+        y_neg: terrain_sockets.water.material,
+    }
+    .to_template()
+    .with_weight(WATER_WEIGHT);
+
+    // Create rotated versions of outer corners
+    terrain_model_builder.create_model(
+        water_corner_out.clone(),
+        vec![SpawnableAsset::new("water_corner_out_tl")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_out.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_out_bl")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_out.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_out_br")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_out.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_out_tr")],
+    );
+
+    // Create rotated versions of inner corners
+    terrain_model_builder.create_model(
+        water_corner_in.clone(),
+        vec![SpawnableAsset::new("water_corner_in_tl")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_in.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_in_bl")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_in.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_in_br")],
+    );
+    terrain_model_builder.create_model(
+        water_corner_in.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("water_corner_in_tr")],
+    );
+
+    // Create rotated versions of side edges
+    terrain_model_builder.create_model(
+        water_side.clone(),
+        vec![SpawnableAsset::new("water_side_t")],
+    );
+    terrain_model_builder.create_model(
+        water_side.rotated(ModelRotation::Rot90, Direction::ZForward),
+        vec![SpawnableAsset::new("water_side_l")],
+    );
+    terrain_model_builder.create_model(
+        water_side.rotated(ModelRotation::Rot180, Direction::ZForward),
+        vec![SpawnableAsset::new("water_side_b")],
+    );
+    terrain_model_builder.create_model(
+        water_side.rotated(ModelRotation::Rot270, Direction::ZForward),
+        vec![SpawnableAsset::new("water_side_r")],
+    );
+
+    // Add connection rules
+    socket_collection.add_connections(vec![
+        (
+            terrain_sockets.water.material,
+            vec![terrain_sockets.water.material],
+        ),
+        (
+            terrain_sockets.water.water_and_void,
+            vec![terrain_sockets.water.void_and_water],
+        ),
+    ]);
+
+    // Connect water layer to yellow grass layer
+    socket_collection.add_rotated_connection(
+        terrain_sockets.yellow_grass.layer_up,
+        vec![terrain_sockets.water.layer_down],
+    );
+}
+```
+
+**Key Points About Water:**
+
+1. **Low Weight Values** - Notice `WATER_WEIGHT: f32 = 0.02`. This makes water appear less frequently than grass, creating occasional water bodies instead of covering everything.
+
+2. **Multiple z_pos Options** - The void model has two options for `z_pos`: `water.layer_up` (another water layer could go here) and `water.ground_up` (props can sit here). This prepares us for the props layer we'll add next.
+
+3. **Same Pattern as Grass** - Water uses the same template and rotation approach as grass, demonstrating how the WFC pattern scales to different terrain types.
+
+### Step 4: Calling the Water Layer Function
+
+Update `build_world` in `rules.rs` to call `build_water_layer`:
+
+```rust
+// src/map/rules.rs - Update build_world function
+pub fn build_world() -> (
+    Vec<Vec<SpawnableAsset>>,
+    ModelCollection<Cartesian3D>,
+    SocketCollection,
+) {
+    let mut socket_collection = SocketCollection::new();
+    let terrain_sockets = create_sockets(&mut socket_collection);
+
+    let mut terrain_model_builder = TerrainModelBuilder::new();
+
+    // Build dirt layer
+    build_dirt_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build grass layer
+    build_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Build yellow grass layer
+    build_yellow_grass_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    // Line update alert
+    // Build water layer
+    build_water_layer(
+        &mut terrain_model_builder,
+        &terrain_sockets,
+        &mut socket_collection,
+    );
+
+    let (assets, models) = terrain_model_builder.into_parts();
+
+    (assets, models, socket_collection)
+}
+```
+
+### Step 5: Update GRID_Z for Water
+
+We need one more layer for water. Update the constant in `generate.rs`:
+
+```rust
+// src/map/generate.rs - Update GRID_Z
+const GRID_Z: u32 = 4; // Changed from 3 to 4
+```
+
+Now run your game:
+
+```bash
+cargo run
+```
+
+You should see water bodies forming on your terrain, creating lakes and ponds alongside the grass patches!
+
+![Water Layer]({{ "/assets/book_assets/chapter2/water.png" | relative_url }})
