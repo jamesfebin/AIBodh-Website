@@ -834,37 +834,26 @@ We need this because our `SpawnableAsset` struct requires a `components_spawner`
 
 **What's a closure? What do you mean by anonymous function?**
 
-A **closure** is a function that can "capture" variables from its surrounding environment. An **anonymous function** means it doesn't have a name - you can't call it directly like `my_function()`. Instead, you define it inline where you need it.
+A closure is a function that can "capture" variables from its surrounding environment. An anonymous function means it doesn't have a name - you define it inline where you need it, rather than declaring it separately like fn my_function().
 
-```comic 
-left_girl_sad: Nameless function that steals variables?
-right_guy_laugh: More like borrowing your friend's homework!
-```
+**Example usage**
 
-**Variable capture example:**
 ```rust
-let health = 100;
-let damage = 25;
+let mut player_health = 100;
 
-// This closure captures 'health' and 'damage' by reference (default behavior)
-let attack_by_ref = |_| {
-    health - damage  // Uses captured variables
+// This closure captures 'player_health' by mutable reference
+let mut take_damage = || {
+    player_health -= 25;  // Modifies the original variable
+    player_health
 };
 
-// This closure captures by value (copies the values)
-let attack_by_val = move |_| {
-    health - damage  // Uses copied values
-};
+// The closure can modify the original variable
+take_damage();  // player_health is now 75
+take_damage();  // player_health is now 50
 ```
-
-**What this means:**
-- **By reference (default)**: The closure `attack_by_ref` "remembers" the binding to `health` and `damage`. If these variables change later, the closure sees the new values.
-- **By value (with `move`)**: The closure `attack_by_val` copies the current values of `health` and `damage` into itself, so it keeps the original values even if the outer variables change later.
-- The `move` keyword forces the closure to take ownership of captured variables, copying `Copy` types or moving non-`Copy` types.
 
 **Why use closures here?**
-<br>
-Closures are perfect because they can capture game state (like player health, enemy types, or configuration settings) and use that information when spawning sprites. This allows each sprite to be customized based on the current game context.
+In our SpawnableAsset struct closure can be used to allow each sprite to have custom behavior when spawned. For example, a tree might need collision components, while a decorative flower might need different components. The closure can capture game state and configuration to customize spawning behavior for each sprite type.
 
 **Why is semicolon missing in the last line of these functions?**
 
