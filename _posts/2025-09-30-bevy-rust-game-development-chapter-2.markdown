@@ -853,6 +853,7 @@ take_damage();  // player_health is now 50
 ```
 
 **Why use closures here?**
+
 In our SpawnableAsset struct closure can be used to allow each sprite to have custom behavior when spawned. For example, a tree might need collision components, while a decorative flower might need different components. The closure can capture game state and configuration to customize spawning behavior for each sprite type.
 
 **Why is semicolon missing in the last line of these functions?**
