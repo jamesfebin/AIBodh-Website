@@ -846,16 +846,21 @@ right_guy_laugh: More like borrowing your friend's homework!
 let health = 100;
 let damage = 25;
 
-// This closure captures 'health' and 'damage' from the surrounding scope
-let attack = |_| {
+// This closure captures 'health' and 'damage' by reference (default behavior)
+let attack_by_ref = |_| {
     health - damage  // Uses captured variables
+};
+
+// This closure captures by value (copies the values)
+let attack_by_val = move |_| {
+    health - damage  // Uses copied values
 };
 ```
 
 **What this means:**
-- The closure `attack` "remembers" the values of `health` and `damage` from when it was created
-- Even if `health` and `damage` change later, the closure still has the original values
-- The closure can use these captured variables when it's called later.
+- **By reference (default)**: The closure `attack_by_ref` "remembers" the binding to `health` and `damage`. If these variables change later, the closure sees the new values.
+- **By value (with `move`)**: The closure `attack_by_val` copies the current values of `health` and `damage` into itself, so it keeps the original values even if the outer variables change later.
+- The `move` keyword forces the closure to take ownership of captured variables, copying `Copy` types or moving non-`Copy` types.
 
 **Why use closures here?**
 <br>
