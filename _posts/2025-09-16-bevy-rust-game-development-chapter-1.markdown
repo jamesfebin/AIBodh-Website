@@ -3,7 +3,6 @@ layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 1 - Let There Be a Player"
 date: 2025-09-16 10:00:00 +0000
 category: rust
-tags: [rust, bevy, game development, tutorial]
 excerpt: "Learn to build a video game from scratch using Rust and Bevy. This first chapter covers setting up your game world, creating a player character, and implementing movement and animations."
 ---
 

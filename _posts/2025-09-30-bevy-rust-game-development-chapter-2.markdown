@@ -3,7 +3,6 @@ layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 2 - Let There Be a World"
 date: 2025-10-11 10:00:00 +0000
 category: rust
-tags: [rust, bevy, game development, tutorial]
 excerpt: "Continue building your video game with Bevy and Rust. This second chapter covers creating a game world, implementing collision detection, and adding interactive elements to your game environment."
 image: /assets/book_assets/chapter2/ch2.gif
 og_image: /assets/book_assets/chapter2/props.png
@@ -20,6 +19,7 @@ og_image: /assets/book_assets/chapter2/props.png
 
 By the end of this tutorial, you'll build a procedurally generated game world with layered terrain, water bodies, and props.
 
+> **Prerequisites**: This is Chapter 2 of our Bevy tutorial series. If you haven't completed [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), please start there first to set up your basic game structure.
 
 ![Player Movement Demo]({{ "/assets/book_assets/chapter2/ch2.gif" | relative_url }})
 
