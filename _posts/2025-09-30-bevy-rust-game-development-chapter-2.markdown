@@ -3,7 +3,7 @@ layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 2 - Let There Be a World"
 date: 2025-10-11 10:00:00 +0000
 category: rust
-excerpt: "Continue building your video game with Bevy and Rust. This second chapter covers creating a game world, implementing collision detection, and adding interactive elements to your game environment."
+excerpt: "Continue building your video game with Bevy and Rust. This second chapter covers procedural world generation using Wave Function Collapse, creating layered terrain with tiles, and building a complete game world with dirt, grass, water, and props."
 image: /assets/book_assets/chapter2/ch2.gif
 og_image: /assets/book_assets/chapter2/props.png
 ---
