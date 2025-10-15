@@ -14,14 +14,26 @@
   --bulma-background: #ffffff;
 }
 
+/* Night Shift CSS Variables */
+:root.night-shift {
+  --bulma-scheme-main: #fef7e6;
+  --bulma-scheme-main-bis: #fef7e6;
+  --bulma-scheme-main-ter: #f4e4bc;
+  --bulma-text: #3d2914;
+  --bulma-text-strong: #2d1a0a;
+  --bulma-background: #fef7e6;
+}
+
 /* Override Bulma body and main elements */
 body {
   background-color: #ffffff !important;
   color: #2d3748 !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .section {
   background-color: #ffffff !important;
+  transition: background-color 0.3s ease;
 }
 
 .container {
@@ -31,6 +43,241 @@ body {
 /* Override Bulma content class */
 .content {
   color: #2d3748 !important;
+  transition: color 0.3s ease;
+}
+
+/* Navbar base styling with transitions */
+.navbar {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-item {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-burger {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Night Shift Theme Overrides */
+:root.night-shift body {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+:root.night-shift .section {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .content {
+  color: #3d2914 !important;
+}
+
+/* Night Shift Navbar Styling */
+:root.night-shift .navbar {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+/* Ensure consistent navbar item styling in night shift */
+:root.night-shift .navbar-item {
+  color: #3d2914 !important;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+/* Override Bulma's default navbar background */
+:root.night-shift .navbar.has-shadow {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .navbar.is-fixed-top {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .navbar.is-fixed-bottom {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .navbar-menu {
+  background-color: #fef7e6 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-end {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+
+:root.night-shift .navbar-item:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  color: #3d2914 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-brand .navbar-item {
+  color: #3d2914 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-brand .navbar-item:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-burger {
+  color: #3d2914 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-burger:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+:root.night-shift .navbar-burger span {
+  background-color: #3d2914 !important;
+}
+
+/* Additional Bulma navbar overrides for night shift */
+:root.night-shift .navbar.is-white {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+:root.night-shift .navbar.is-light {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+:root.night-shift .navbar .navbar-brand .navbar-item {
+  color: #3d2914 !important;
+}
+
+:root.night-shift .navbar .navbar-menu .navbar-item {
+  color: #3d2914 !important;
+}
+
+:root.night-shift .navbar .navbar-menu .navbar-item:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  color: #3d2914 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+/* Force navbar background override for all possible Bulma variants */
+:root.night-shift nav.navbar {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .navbar.is-transparent {
+  background-color: #fef7e6 !important;
+}
+
+:root.night-shift .navbar.is-spaced {
+  background-color: #fef7e6 !important;
+}
+
+/* Ultra-specific override to ensure navbar styling */
+html:root.night-shift body nav.navbar {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+html:root.night-shift body nav.navbar .navbar-item {
+  color: #3d2914 !important;
+}
+
+html:root.night-shift body nav.navbar .navbar-item:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  color: #3d2914 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+}
+
+/* Final override - should work no matter what */
+html.night-shift body nav.navbar {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+/* Ultra-specific shadow removal for any remaining shadows */
+html.night-shift body nav.navbar .navbar-item,
+html.night-shift body nav.navbar .navbar-item:hover,
+html.night-shift body nav.navbar .navbar-item:focus,
+html.night-shift body nav.navbar .navbar-item:active,
+html.night-shift body nav.navbar .navbar-item::before,
+html.night-shift body nav.navbar .navbar-item::after {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  text-shadow: none !important;
+  -webkit-text-shadow: none !important;
+  -moz-text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+html.night-shift body nav.navbar .navbar-item {
+  color: #3d2914 !important;
+}
+
+html.night-shift body nav.navbar .navbar-item:hover {
+  background-color: rgba(61, 41, 20, 0.1) !important;
+  color: #3d2914 !important;
+}
+
+/* Night Shift Toggle Button Styling */
+.night-shift-toggle {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d3748;
+}
+
+.night-shift-toggle:hover {
+  background-color: rgba(45, 55, 72, 0.1);
+  transform: scale(1.05);
+}
+
+.night-shift-toggle:active {
+  transform: scale(0.95);
+}
+
+.night-shift-icon {
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+:root.night-shift .night-shift-toggle {
+  color: #3d2914;
+}
+
+:root.night-shift .night-shift-toggle:hover {
+  background-color: rgba(61, 41, 20, 0.1);
 }
 
 /* D2 Diagram Styling */
@@ -44,6 +291,7 @@ body {
   height: auto;
   font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace !important;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 /* Comic Panel Styling */
@@ -106,6 +354,7 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
   object-fit: contain !important;
   transform: scale(1.2) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Override any D2-specific styling in popup */
@@ -114,6 +363,7 @@ body {
   color: #2d3748 !important;
   width: auto !important;
   height: auto !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Force SVG background in popup */
@@ -128,6 +378,28 @@ body {
   max-width: 80vw !important;
   max-height: 80vh !important;
   transform: scale(1.2) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Night Shift D2 Diagram Styling */
+:root.night-shift .d2-svg {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+:root.night-shift .image-popup-image.d2-svg {
+  background-color: #fef7e6 !important;
+  border: 2px solid #f4e4bc !important;
+}
+
+:root.night-shift .image-popup-content .d2-svg {
+  background-color: #fef7e6 !important;
+  color: #3d2914 !important;
+}
+
+:root.night-shift .image-popup-image[src*="d2_"] {
+  background-color: #fef7e6 !important;
+  border: 2px solid #f4e4bc !important;
 }
 
 html {
@@ -247,4 +519,36 @@ html {
 
 .post-toc__link.is-active:focus {
   border-left-color: #2d3748;
+}
+
+/* Night Shift Table of Contents Styling */
+:root.night-shift .post-toc {
+  color: #5a3d1f;
+}
+
+:root.night-shift .post-toc__title {
+  color: #5a3d1f;
+}
+
+:root.night-shift .post-toc__link {
+  color: #5a3d1f;
+}
+
+:root.night-shift .post-toc__link:hover,
+:root.night-shift .post-toc__link:focus {
+  color: #3d2914;
+  border-left-color: #d4a574;
+}
+
+:root.night-shift .post-toc__link.is-active {
+  color: #3d2914;
+  border-left-color: #3d2914;
+}
+
+:root.night-shift .post-toc__link.is-active:focus {
+  border-left-color: #3d2914;
+}
+
+:root.night-shift .post-toc:hover .post-toc__links::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 165, 116, 0.8);
 }
