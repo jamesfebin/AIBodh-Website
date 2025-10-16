@@ -12,7 +12,11 @@
   <link rel="mask-icon" href="{{ "/assets/logo.svg" | relative_url }}" color="#000000">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ "/assets/apple-touch-icon.png" | relative_url }}">
   
-  {%- seo -%}
+  {%- if page.url == '/' -%}
+    <title>AIBodh</title>
+  {%- else -%}
+    {%- seo -%}
+  {%- endif -%}
   
   <!-- Bulma CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
