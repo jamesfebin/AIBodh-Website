@@ -19,7 +19,7 @@ og_image: /assets/book_assets/chapter2/props.png
 
 By the end of this tutorial, you'll build a procedurally generated game world with layered terrain, water bodies, and props.
 
-> **Prerequisites**: This is Chapter 2 of our Bevy tutorial series. If you haven't completed [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), please start there first to set up your basic game structure.
+> **Prerequisites**: This is Chapter 2 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) to be updated on new releases on this series. If you haven't completed [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), please start there first to set up your basic game structure.
 
 ![Player Movement Demo]({{ "/assets/book_assets/chapter2/ch2.gif" | relative_url }})
 
