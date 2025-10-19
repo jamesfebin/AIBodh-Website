@@ -19,7 +19,7 @@ og_image: /assets/book_assets/chapter2/props.png
 
 By the end of this tutorial, you'll build a procedurally generated game world with layered terrain, water bodies, and props.
 
-> **Prerequisites**: This is Chapter 2 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) to be updated on new releases on this series. If you haven't completed [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), please start there first to set up your basic game structure.
+> **Prerequisites**: This is Chapter 2 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) for updates on new releases. Before starting, complete [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), or clone the Chapter 1 code from [this repository](https://github.com/jamesfebin/ImpatientProgrammerBevyRust) to follow along.
 
 ![Player Movement Demo]({{ "/assets/book_assets/chapter2/ch2.gif" | relative_url }})
 
@@ -34,7 +34,7 @@ I respect artists who hand craft tiles to build game worlds. But I belong to the
 
 I went on an exploration and came across procedural generation. 
 
-Little did I know the complexities involved. I was on the verge of giving up, however because of the comments and messages from readers of chapter 1, I kept going. And the enlightenment came three days ago, all the pieces fit together.
+Little did I know the complexities involved. I was on the verge of giving up, however because of the comments and messages from readers of previous chapter, I kept going. And the enlightenment came three days ago, all the pieces fit together.
 
 Basically it's about automatically fitting things together like a jigsaw puzzle. To solve this problem, let's again think in systems. 
 
