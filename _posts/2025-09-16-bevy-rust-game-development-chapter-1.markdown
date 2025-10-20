@@ -13,7 +13,6 @@ Here's what you will be able to achieve by the end of this tutorial.
 
 ![Final Chapter Result]({{ "/assets/book_assets/chapter-final.gif" | relative_url }})
 
-
 <br>
 ## **Setup** Instructions
 
@@ -115,7 +114,6 @@ fn setup(mut commands: Commands) {
 
 `mut` is short for mutate. In Rust we need to explicitly mention that we are planning to change this value. By default, Rust treats declared values as read only. `mut` tells Rust we plan to change the value. Rust uses this knowledge to prevent a whole class of bugs.
 
-<!-- ![Mutate Comic]({{ "/assets/book_assets/chapter1-comic-1.png" | relative_url }}) -->
 
 ```comic 
 left_girl_sad: Why do I need to tell Rust I'm going to change something?
@@ -139,6 +137,11 @@ right_girl_surprised: Rust is like those grammar nazis.
 **What's a type?**
 
 A type tells Rust what kind of value you are handling—numbers, text, timers, Bevy commands, and so on. Once the compiler knows the type, it can check that every operation you perform on it actually makes sense.
+
+```comic 
+left_guy_anxious: Types for EVERYTHING?
+right_girl_laugh: Welcome to adulting, but for code!
+```
 
 **Isn't this too much work?**
 
@@ -204,14 +207,12 @@ With 1000 game entities, this difference becomes dramatic:
 | Dynamic language | ~48KB+ | 6x overhead |
 
 
-This isn't just about memory usage - it's about performance. Smaller, predictable memory layouts mean better CPU cache utilization, which directly translates to faster frame rates in games where you're processing thousands of entities every frame.
-The compiler catches type errors before your game runs, and the tight memory packing keeps it running fast.
+This isn't just about memory usage - it's about performance. Smaller, predictable memory layouts mean better CPU cache utilization, which directly translates to faster frame rates in games where you're processing thousands of entities every frame. The compiler catches type errors before your game runs, and the tight memory packing keeps it running fast.
 
 ```comic 
-left_guy_anxious: Other languages treat memory like it's unlimited!
-right_girl_anxious:  Memory doesn't grow on trees! 
+left_girl_surprised: JavaScript uses 48KB for what Rust does in 8KB?
+right_guy_laugh: JavaScript is the friend who overpacks for a weekend trip!
 ```
-
 
 ### Setting up a Camera
 
@@ -333,6 +334,11 @@ cargo run
 ```
 
 ![Simple World Setup]({{ "/assets/book_assets/simple-world.png" | relative_url }})
+
+```comic 
+left_girl_angry: I coded for an hour and got a blank screen!
+right_guy_anxious: Achievement unlocked: Professional developer experience!
+```
 
 A blank screen? Yup, we have only setup the camera, now let's add our player. 
 
@@ -478,6 +484,11 @@ An entity is the unique ID Bevy uses to tie components together. By itself it ho
 | #43 | `Text2d("@")`, `TextFont`, `TextColor`, `Transform`, `Player` |
 
 Once the queue flushes, those entities live in the world, ready for systems to discover them by the tags (components) they carry. We will be using this later when we want to do things like moving or animating them, or making them attack enemies, etc.
+
+```comic 
+left_guy_anxious: Entities are just... numbers?
+right_girl_surprised: Your existence reduced to a database entry. Relatable.
+```
 
 
 ### Implementing Player Movement
@@ -868,6 +879,11 @@ This approach is efficient because:
 
 In our case, `asset_server.load("sprites/player.png")` requests the spritesheet and returns a handle to track its loading status.
 
+```comic 
+left_girl_anxious: It loads in the background?
+right_guy_smile: Like your motivation. Eventually shows up.
+```
+
 
 
 ### Movement System
@@ -1023,7 +1039,12 @@ fn row_zero_based(facing: Facing) -> usize {
 
 `let Ok((mut anim, mut timer, mut sprite)) = query.single_mut() else { return; };` both checks the result and names the pieces we need. If the query succeeds, the code binds `anim`, `timer`, and `sprite` so we can use them later. If it fails (no player, or more than one), we hit the `else` branch and exit immediately. Rust uses the `Result` type for this: `Ok` means "query returned exactly one result," `Err` means "something about that query didn't match."
 
-After that we `match` on an `Option`, which is Rust’s "maybe there is a value" type. `Some(atlas)` means the texture atlas exists and we can tweak it; `None` means it hasn’t loaded yet, so we skip and let the next frame try again. It’s the same pattern you’d use when checking a map or cache: only use the value when the lookup returns something.
+After that we `match` on an `Option`, which is Rust's "maybe there is a value" type. `Some(atlas)` means the texture atlas exists and we can tweak it; `None` means it hasn't loaded yet, so we skip and let the next frame try again. It's the same pattern you'd use when checking a map or cache: only use the value when the lookup returns something.
+
+```comic 
+left_girl_sad: Ok, Err, Some, None... so many ways to fail!
+right_guy_anxious: Rust is pessimistic. Like your relatives.
+```
 
 `animate_player` pulls the animation state, timer, and sprite handle for the player. It figures out which row of the atlas matches the current facing, snaps to that row when direction changes, and uses the timer to step through columns at a steady pace. When movement stops we reset the timer so the animation rests on the last frame shown. The helper functions map a facing to the correct row and frame index so the math stays readable.
 
@@ -1085,3 +1106,18 @@ cargo run
 ```
 
 ![Final Chapter Result]({{ "/assets/book_assets/chapter-final.gif" | relative_url }})
+
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Next up</strong> <br> <a href="/posts/bevy-rust-game-development-chapter-2/"> Chapter 2, Let There Be a World (Procedural Generation)</a>
+
+<br><br>
+<strong>Let's stay connected! Here are some ways:</strong>
+<ul>
+<li><a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when new chapters drop. </li>
+<li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
+<li>Join the discussion and share your progress on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
+<li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-1-let-there-be-a-player-launching-activity-7374071458878337024-n08p?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
+<li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
+</ul>
+</div>

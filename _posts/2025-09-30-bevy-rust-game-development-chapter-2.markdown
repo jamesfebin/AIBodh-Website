@@ -48,10 +48,6 @@ Basically it's about automatically fitting things together like a jigsaw puzzle.
 
 That "magic algorithm" has a name: Wave Function Collapse (WFC). The easiest way to see it is with a tiny Sudoku. Same idea: pick the cell with the fewest valid options, place a value, update neighbors, and repeat. If a choice leads to a dead end, undo that guess and try the next option.
 
-```comic 
-left_guy_anxious: So it's like Sudoku but for game worlds?
-right_girl_laugh: Yea, instead of numbers, you're placing tiles and hoping they don't fight!
-```
 
 **Small 4×4 Sudoku**
 
@@ -602,7 +598,7 @@ Let's start by creating our `assets.rs` file inside the `map` folder. This will 
 The `bevy_procedural_tilemaps` library needs to know **what to actually place** at each generated location. 
 
 It requires the following details:
-1. Which sprite to use from our tilemap?
+1. Which sprite to use from our tilemap atlas?
 2. Where exactly to position it?
 3. What components to add (collision, physics, etc.)?
 
@@ -708,10 +704,6 @@ A string literal is text you write directly in quotes in your code: `"grass"`, `
 
 A **lifetime** is Rust's way of tracking how long data lives in memory. Rust needs to know when it's safe to use data and when it might be deleted.
 
-```comic 
-left_girl_anxious: So Rust is like a helicopter parent for your data?
-right_guy_laugh: Nope, more like a nightclub bouncer with a PhD in memory safety.
-```
 
 Most data has a limited lifetime. For example:
 - Local variables live only while a function runs
@@ -730,10 +722,6 @@ Most languages (like C, C++, Java, Python) handle memory safety differently:
 - **Java/Python/C#**: Use garbage collection - the runtime automatically deletes unused data, but this adds overhead and unpredictable pauses
 - **Rust**: Tracks lifetimes at compile time - prevents crashes without runtime overhead
 
-```comic 
-left_guy_surprised: So other languages are like "YOLO, use whatever data you want!"
-right_girl_anxious: And Rust is like that friend who checks expiration dates on everything
-```
 
 **The Problem Other Languages Have**
 ```rust
@@ -755,6 +743,13 @@ Rust's compiler analyzes your code and says "Hey, you're trying to use data that
 Not quite. str represents text data, but you can only use it through a reference like &str (a view of text stored somewhere else). String is text you own and can modify. Our sprite names like "grass" are baked into the program, so &str just points to that text without copying it - much more efficient than using String.
 
 `&'static str` means "a reference to a string slice that lives for the entire program duration." This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).
+
+
+```comic 
+left_guy_more_sand: Why does the string need a lifetime? 
+right_girl_surprised: Because Rust has trust issues!
+```
+
 
 **What's `GridDelta`?**
 
@@ -1201,6 +1196,11 @@ Even though we're building a 2D game, the z-axis represents **layering** - Imagi
 - **Dirt tiles** form the base layer (ground level)
 - **Green grass tiles** can sit on top of dirt (one layer up)
 - **Yellow grass tiles** can sit on top of green grass (another layer up)
+
+```comic 
+left_guy_sad: I understood sprites... now sockets? 
+right_girl_laugh: Think of it as Tinder for tiles!
+```
 
 ### Building Models
 
@@ -1651,6 +1651,11 @@ cargo run
 You should see a procedurally generated world with dirt tiles following the rules we defined! The world will be centered on screen, and the window size will match your grid dimensions (25×18 tiles = 800×576 pixels).
 
 ![Dirt Layer]({{ "/assets/book_assets/chapter2/dirt_layer_without_player.png" | relative_url }})
+
+```comic 
+left_guy_smile: IT WORKS! ALL BROWN! BEAUTIFUL! 
+right_girl_laugh: Your parents are so proud!
+```
 
 **Where's the player?**
 
@@ -2158,6 +2163,11 @@ You should see patches of green grass growing on top of the dirt layer, with smo
 
 ![Grass Layer]({{ "/assets/book_assets/chapter2/green_grass.png" | relative_url }})
 
+```comic 
+left_guy_anxious: How many more layers? 
+right_girl_surprised: Enough to make an onion jealous!
+```
+
 ## Adding the Yellow Grass Layer
 
 Now that we have green grass, let's add yellow grass patches that can grow on top of it! Yellow grass creates visual variety and demonstrates how layers can stack.
@@ -2167,7 +2177,7 @@ Now that we have green grass, let's add yellow grass patches that can grow on to
 First, let's add the yellow grass sprites to our tilemap definition. Open `src/map/tilemap.rs` and add these entries to the `sprites` array:
 
 ```rust
-// src/map/tilemap.rs - Add these after the water sprites
+// src/map/tilemap.rs - Add these to the sprites array after the dirt sprite inside TilemapDefinition struct
 TilemapSprite {
     name: "yellow_grass",
     pixel_x: 0,
@@ -3395,4 +3405,28 @@ Woah, with a simple modification you are able to change the world to have more w
 
 Try experimenting with the weight values for different layers to see how dramatically you can transform your world.
 
+
+```comic
+ left_guy_smile: I flooded everything! 
+right_girl_laugh: Calm down, Noah!
+```
+
 Also notice our player can walk on water. And that too without any cheat code? We will work on collision detection and also on approaches to build larger maps in our upcoming chapters.
+
+```comic 
+left_guy_more_sand: My player walks on water without cheat codes! 
+right_girl_laugh: Found Jesus mode!
+```
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Don't miss Chapter 3!</strong> <br> <a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when the next chapter drops and share your amazing procedural world creations with fellow developers.
+<br><br>
+<strong>Let's stay connected! Here are some ways</strong>
+<ul>
+<li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
+<li>Join the discussion and share your progress on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
+<li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-2-let-there-be-a-world-continuing-activity-7382797407824039936-WXFD?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
+<li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
+</ul>
+</div>
+
