@@ -4,10 +4,10 @@
 			"path": ".."
 		},
 		{
-			"path": "../../bevy_game"
+			"path": "../../LibraryUpdates/bevy_procedural_tilemaps"
 		},
 		{
-			"path": "../../LibraryUpdates/bevy_procedural_tilemaps"
+			"path": "../../bevy_book_game"
 		}
 	],
 	"settings": {}

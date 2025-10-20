@@ -735,8 +735,6 @@ left_guy_surprised: So other languages are like "YOLO, use whatever data you wan
 right_girl_anxious: And Rust is like that friend who checks expiration dates on everything
 ```
 
-Here's why this matters for game development:
-
 **The Problem Other Languages Have**
 ```rust
 // Psuedo code warning, don't use
@@ -813,6 +811,7 @@ A closure is a function that can "capture" variables from its surrounding enviro
 **Example usage**
 
 ```rust
+// Psuedo code warning, don't use
 let mut player_health = 100;
 
 // This closure captures 'player_health' by mutable reference
@@ -944,7 +943,7 @@ pub const TILEMAP: TilemapDefinition = TilemapDefinition {
 };
 ```
 
-Notice how we're using a const definition - this means all this sprite metadata is determined at compile time, making it very efficient. 
+Notice how we're using a const definition - this means all this sprite metadata is determined at compile time. 
 
 ### Connecting the Tilemap to Asset Loading
 
@@ -962,7 +961,7 @@ use crate::map::tilemap::TILEMAP; // <--- line update alert
 With the import in place, we can now build the three key functions that helps our procedural rendering system:
 
 1. `TilemapHandles` - Container that holds our loaded atlas and layout data
-2. `prepare_tilemap_handles` - Loads the atlas image from disk and builds the layout structure
+2. `prepare_tilemap_handles` - Loads the atlas image from disk and creates the texture atlas layout defining each sprite's rectangular region
 3. `load_assets` - Converts sprite names into `Sprite` data structures ready for rendering
 
 Let's build these step by step.
@@ -1283,7 +1282,7 @@ This gives us flexibility while ensuring type safety. The compiler will catch an
 
 ## Building the Foundation
 
-Now that we understand how to keep models and assets synchronized, let's start building our procedural world from the ground up - literally! The dirt layer forms the foundation that everything else sits on.
+Now that we understand how to keep models and assets synchronized, let's start building our procedural world from the ground up. The dirt layer forms the foundation that everything else sits on.
 
 **Layers Make WFC Simpler**
 
