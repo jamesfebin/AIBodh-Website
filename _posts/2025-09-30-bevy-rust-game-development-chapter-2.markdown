@@ -3405,13 +3405,7 @@ Woah, with a simple modification you are able to change the world to have more w
 
 Try experimenting with the weight values for different layers to see how dramatically you can transform your world.
 
-
-```comic
- left_guy_smile: I flooded everything! 
-right_girl_laugh: Calm down, Noah!
-```
-
-Also notice our player can walk on water. And that too without any cheat code? We will work on collision detection and also on approaches to build larger maps in our upcoming chapters.
+Also notice our player can walk on water. We will work on collision detection and also on approaches to build larger maps in our upcoming chapters.
 
 ```comic 
 left_guy_more_sand: My player walks on water without cheat codes! 
