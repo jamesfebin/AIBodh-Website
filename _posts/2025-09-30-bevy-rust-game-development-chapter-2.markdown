@@ -59,7 +59,7 @@ Let's solve this step by step, focusing on the most constrained cells first.
 
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
-<div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007acc;">
+<div style="margin: 20px 0; padding: 15px; background-color: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
 <strong>Initial Puzzle:</strong> We need to fill in the empty cells (marked with dots) following Sudoku rules.
 </div>
 
@@ -184,7 +184,7 @@ Now let's find the next cell with the fewest options.
 </div>
 </div>
 
-<div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #6c757d;">
+<div style="margin: 20px 0; padding: 15px; background-color: #d1ecf1; border-radius: 8px; border-left: 4px solid #17a2b8;">
 <strong>Analysis for the position:</strong>
 <ul>
 <li>Row 1 already has: 1, 2</li>
@@ -283,9 +283,15 @@ Backtrack -> Pick
 
 
 
-**For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. Each tile has sockets, and we define constraint rules about which socket types can connect to each other.
+**For our tile-based world:** Imagine each grid cell as a Sudoku cell, but instead of numbers, we're placing tiles. 
 
-Let's see this in action using the following water tiles. We'll learn how constraints propagate to form a coherent environment:
+Then we craft rules for valid connections:
+- **Rule 1**: Water center tiles connect to other water tiles on all sides
+- **Rule 2**: Water edge tiles have two types of sides - water-facing sides connect to other water tiles, land-facing sides connect to the shore
+
+The algorithm uses these rules to ensure tiles fit together properly, creating coherent water bodies with natural-looking shorelines.
+
+Let's see this in action:
 
 <div class="columns is-mobile is-centered">
 <div class="column is-narrow">
@@ -358,7 +364,7 @@ We start with an empty grid where every cell can potentially hold any tile. The 
 </div>
 </div>
 
-The algorithm starts by placing the initial water center tile (almost). This placement immediately constrains the neighboring cells - they now know they need to connect to water on at least one side.
+The algorithm starts by placing the initial water center tile. Following **Rule 1**, this center tile needs other water tiles on all sides. This immediately constrains the neighboring cells - they must be water tiles that can connect to the center.
 
 **Step 3 - Propagate Constraints**
 
@@ -381,7 +387,7 @@ The algorithm starts by placing the initial water center tile (almost). This pla
 </div>
 </div>
 
-Constraint propagation kicks in! The algorithm expands the water area by placing more center tiles, and the edge tiles are constrained to have water-facing sides where they connect to the water body.
+Constraint propagation kicks in! The algorithm expands the water area by placing more center tiles. The edge tiles at the top follow **Rule 2** - their bottom sides (water-facing) connect to the center tiles, while their top sides (land-facing) will connect to the shore. 
 
 **Step 4 - Final Result**
 
@@ -404,7 +410,7 @@ Constraint propagation kicks in! The algorithm expands the water area by placing
 </div>
 </div>
 
-The algorithm completes by filling the edges with appropriate boundary tiles. Notice how each tile connects perfectly - center tiles have water on all sides, edge tiles have water facing inward and grass edges facing outward, creating a coherent geography.
+The algorithm completes by filling the edges with appropriate boundary tiles. Notice how our rules create perfect connections - center tiles (**Rule 1**) have water on all sides, while edge and corner tiles (**Rule 2**) have water-facing sides connecting inward and land-facing sides connecting to the shore, creating a coherent geography.
 
 This demonstrates the core Wave Function Collapse algorithm in action:
 1. **Find the most constrained cell** - the one with the fewest valid tiles that could fit
@@ -441,7 +447,8 @@ We'll address these limitations in a later chapter. For now, we'll focus on buil
 
 ## From Theory to Implementation
 
-Now that we understand **how** Wave Function Collapse works—the constraint propagation, socket compatibility, and tile placement logic—it's time to transform this knowledge into actual running code.
+Now that we understand **how** Wave Function Collapse works—the constraint propagation, socket compatibility, and tile placement logic. It's time to transform this knowledge into actual running code.
+
 
 **The reality of implementation:**
 
@@ -539,50 +546,17 @@ Model Organizer -> Library Interface: "Organized models"
 Generation Config -> Library Interface: "Generation settings"
 ```
 
-**How these systems work together**
-
-The library pipeline works in stages: first it processes our rules and builds a generator, then the constraint solver figures out valid tile placements, and finally the entity spawner creates the actual game objects in the Bevy world.
-
-1. **We Define**: Create tile definitions, compatibility rules, and generation patterns
-2. **Library Processes**: Runs the constraint-solving algorithm to find valid tile placements
-3. **Library Spawns**: Creates Bevy entities with the correct sprites, positions, and components
-4. **Result**: A coherent, rule-based world appears in our game
-
-The beauty of this system is that we focus on **what we want** (environment design), while the library handles **how to achieve it** (complex algorithms). This separation of concerns makes procedural generation accessible to game developers without requiring deep knowledge of constraint-solving algorithms.
-
-**What's a generator?**
-
-A generator is the core engine that runs the procedural generation algorithm. It's a puzzle solver that takes our rules (which tiles can go where) and our grid (the empty world), then systematically figures out how to fill every position with valid tiles. It uses constraint-solving algorithms to ensure that every tile placement follows our compatibility rules, creating a coherent world that makes sense according to our game's logic.
-
-```d2
-
-direction: right
-
-Our Code: {
-  shape: rectangle
-}
-
-Rule Processing: {
-  shape: rectangle
-}
-
-Generation Engine: {
-  shape: rectangle
-}
-
-
-Bevy World: {
-  Generated Entities: {
-    shape: rectangle
-  }
-}
-
-Our Code -> Rule Processing: "Models & rules"
-Rule Processing -> Generation Engine: "Processed rules"
-Generation Engine -> Bevy World.Generated Entities: "Creates game objects"
-```
-
 Now that we understand how the procedural generation system works, let's build our map module.
+
+
+<div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+<strong>Important Note</strong> <br> <br> Unlike Chapter 1 where you could see immediate results, procedural generation requires doing some ground work. You'll create asset loaders, tile spawning infrastructure before seeing your generated world.  <br> <br>
+
+The payoff comes when you finish the grass layer, at that point, you've learned the complete pattern. Adding water and props becomes straightforward repetition with different sprites and connection rules. Along the way, you'll understand Rust concepts (lifetimes, trait bounds, closures) that apply to any Rust project.
+  <br> <br>
+
+<b>Don't give up if concepts feel unclear on first read. That's normal with procedural generation. Revisit confusing sections, experiment with the code, and understanding will emerge. Mastery comes through tinkering, not perfect comprehension on the first pass.</b>
+</div>
 
 
 ## The Map Module
@@ -591,10 +565,10 @@ We'll create a dedicated `map` folder inside the `src` folder to house all our w
 
 **Why create a separate folder for map generation?**
 
-The map system is complex and requires multiple specialized components working together. World generation involves:
+The map system requires multiple components working together. World generation involves:
 
 - **Asset management** - Loading and organizing hundreds of tile images.
-- **Rule definitions** - Complex compatibility rules between different terrain types.
+- **Rule definitions** - Compatibility rules between different terrain types.
 - **Grid setup** - Configuring map dimensions and coordinate systems.
 
 Trying to fit all this logic into a single file would create a large file that can become difficult to navigate.
