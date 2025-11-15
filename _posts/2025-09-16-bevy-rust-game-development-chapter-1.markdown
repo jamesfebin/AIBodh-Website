@@ -1116,7 +1116,7 @@ cargo run
 <ul>
 <li><a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when new chapters drop. </li>
 <li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
-<li>Join the discussion and share your progress on <a href="https://www.reddit.com/r/bevy/comments/1njd57k/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
+<li>Join the discussion and on <a href="https://www.reddit.com/r/bevy/comments/1njd57k/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
 <li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-1-let-there-be-a-player-launching-activity-7374071458878337024-n08p?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
 <li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
 </ul>

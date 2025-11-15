@@ -3418,7 +3418,7 @@ right_girl_laugh: Found Jesus mode!
 <strong>Let's stay connected! Here are some ways</strong>
 <ul>
 <li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
-<li>Join the discussion and share your progress on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
+<li>Join the discussion on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
 <li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-2-let-there-be-a-world-continuing-activity-7382797407824039936-WXFD?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
 <li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
 </ul>
