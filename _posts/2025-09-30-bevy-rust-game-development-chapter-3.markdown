@@ -159,4 +159,41 @@ While the data-driven approach opens up all these possibilities, we'll start wit
 
 Ready to build this data-driven character system? Let's dive in! 
 
+## Structuring the Character Data
 
+In Chapter 1 we hardcoded the player attributes directly into Rust. In this chapter we move that information into `src/assets/characters/characters.ron`, and our systems simply read whatever is defined there.
+
+### Step 1 — Copy the sprites
+
+Find the Chapter 3 project files from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust) and copy these spritesheets into your project’s `src/assets/` directory:
+
+- `male_spritesheet.png`
+- `female_spritesheet.png`
+- `crimson_count_spritesheet.png`
+- `graveyard_reaper_spritesheet.png`
+- `lantern_warden_spritesheet.png`
+- `starlit_oracle_spritesheet.png`
+
+If you already have `src/assets/` from earlier chapters, just drop the files there. Bevy’s asset server will discover them automatically.
+
+### Step 2 — Understand the schema
+
+Every entry in `characters.ron` follows the same structure:
+
+- `name`: Identifier that shows up in logs/UI.
+- `max_health`, `base_move_speed`, `run_speed_multiplier`: Gameplay attributes.
+- `texture_path`: Which spritesheet to load.
+- `tile_size`: Each frame’s width/height in pixels.
+- `atlas_columns`: How many columns exist in the spritesheet grid.
+- `animations`: Map where the key is an `AnimationType` (`Walk`, `Run`, `Jump`) and the value is:
+  - `start_row`: Row number in the spritesheet grid, counting from 0 at the top.
+  - `frame_count`: Number of frames for that animation.
+  - `frame_time`: Seconds per frame.
+  - `directional`: `true` when the spritesheet contains four direction rows (Up, Left, Down, Right) stacked vertically for that animation. If `false`, Bevy uses the same row regardless of facing direction.
+
+### Step 3 — Create the file
+
+Make a folder `src/assets/characters/` and copy `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust), it includes data of all 6 characters.
+
+
+//Todo next we need to help user make the characters module, but here in the next section we are only focusing on the initialize_player_character, and spawn_player functions and anything else required to make it. We need to instruct remove player.rs from chapter 1, even removing the plugin of it from main.rs then update it with characters plugin, we also have to create the mod.rs 
