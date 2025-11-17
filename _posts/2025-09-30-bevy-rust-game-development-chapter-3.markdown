@@ -27,8 +27,6 @@ By the end of this tutorial, you'll have a flexible, data-driven character syste
 
 In Chapter 1, we built a player with movement and animation, however **everything was hardcoded and tightly coupled**.
 
-Looking back at our `player.rs` from Chapter 1, every character property was baked directly into the code:
-
 ```rust
 // Pseudo code warning, don't use
 // From Chapter 1 player.rs - Everything is hardcoded!
@@ -86,7 +84,7 @@ Instead of tightly coupling character attributes with character-specific code, w
 Move character properties into a single external `.ron` configuration file:
 
 ```ron
-// characters.ron - All characters in one file!
+// characters.ron, All characters in one file!
 (
     characters: [
         (
@@ -107,7 +105,7 @@ Move character properties into a single external `.ron` configuration file:
 
 **What's a `.ron` file?**
 
-RON stands for **Rusty Object Notation** - a data format similar to JSON but designed for Rust. It's human-readable, supports Rust types like tuples and structs, and allows comments. Think of it as JSON that feels native to Rust developers.
+RON stands for **Rusty Object Notation**, a data format similar to JSON but designed for Rust. It's human-readable, supports Rust types like tuples and structs, and allows comments. Think of it as JSON that feels native to Rust developers.
 
 | JSON | RON |
 |------|-----|
@@ -135,7 +133,7 @@ fn animate_characters(...) {
 }
 ```
 
-**Benefits of Separation:**
+**Benefits of Separation**
 
 When data lives separately from code, the same animation system adapts to any character automatically.
 
@@ -145,7 +143,7 @@ But the benefits extend far beyond maintenance. This separation helps with power
 
 You can load characters from a network server at runtime, enabling downloadable content and live game updates without redistributing your entire game binary. 
 
-Players can create their own custom characters by simply editing the `.ron` file, no Rust knowledge or recompilation required, opening the door to user-generated content and modding communities.
+Players can create their own custom characters by simply editing the `.ron` file, opening the door to user-generated content.
 
  Game designers can experiment with character balance through A/B testing by swapping different data files, gathering player feedback and iterating on game balance without touching a single line of code.
 
@@ -159,25 +157,22 @@ While the data-driven approach opens up all these possibilities, we'll start wit
 
 Ready to build this data-driven character system? Let's dive in! 
 
-## Structuring the Character Data
+## Building the Characters Module
 
-In Chapter 1 we hardcoded the player attributes directly into Rust. In this chapter we move that information into `src/assets/characters/characters.ron`, and our systems simply read whatever is defined there.
-
-### Step 1 — Copy the sprites
+In Chapter 1 we hardcoded the player attributes directly into Rust. In this chapter we move that information into `src/assets/characters/characters.ron`.
 
 Find the Chapter 3 project files from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust) and copy these spritesheets into your project’s `src/assets/` directory:
 
-- `male_spritesheet.png`
-- `female_spritesheet.png`
-- `crimson_count_spritesheet.png`
-- `graveyard_reaper_spritesheet.png`
-- `lantern_warden_spritesheet.png`
-- `starlit_oracle_spritesheet.png`
 
-If you already have `src/assets/` from earlier chapters, just drop the files there. Bevy’s asset server will discover them automatically.
-
-### Step 2 — Understand the schema
-
+```bash
+male_spritesheet.png
+female_spritesheet.png
+crimson_count_spritesheet.png
+graveyard_reaper_spritesheet.png
+lantern_warden_spritesheet.png
+starlit_oracle_spritesheet.png
+```
+### Character Schema
 Every entry in `characters.ron` follows the same structure:
 
 - `name`: Identifier that shows up in logs/UI.
@@ -191,9 +186,94 @@ Every entry in `characters.ron` follows the same structure:
   - `frame_time`: Seconds per frame.
   - `directional`: `true` when the spritesheet contains four direction rows (Up, Left, Down, Right) stacked vertically for that animation. If `false`, Bevy uses the same row regardless of facing direction.
 
-### Step 3 — Create the file
-
 Make a folder `src/assets/characters/` and copy `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust), it includes data of all 6 characters.
 
+### Setting up the module
 
-//Todo next we need to help user make the characters module, but here in the next section we are only focusing on the initialize_player_character, and spawn_player functions and anything else required to make it. We need to instruct remove player.rs from chapter 1, even removing the plugin of it from main.rs then update it with characters plugin, we also have to create the mod.rs 
+With our data file in place, we need code that reads it and spawns the player. We’re going to replace the Chapter 1 `player.rs` with a new `characters` module. 
+
+Hence Delete `src/player.rs` and remove `mod player;` and `PlayerPlugin` usage from `main.rs`.
+
+Create a new folder `src/characters/` with the following files:
+
+```
+characters/
+├── mod.rs
+├── config.rs
+└── spawn.rs
+```
+
+Let's start by focusing on `config.rs`
+
+First we need to define what type of animation are possible. Presently we only support `Walk`, `Run` and `Jump` animations. `AnimationDefinition` captures where each animation lives in the spritesheet, how many frames it has, and how fast it should play.
+
+```rust
+// characters/config.rs
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AnimationType {
+    Walk,
+    Run,
+    Jump
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnimationDefinition {
+    pub start_row: usize,
+    pub frame_count: usize,
+    pub frame_time: f32,
+    pub directional: bool, // true = 4 rows (one per direction), false = 1 row
+}
+```
+
+**What's `Hash`, `Serialize`, and `Deserialize`?**  
+`Hash` lets us use `AnimationType` as a key inside `HashMap`, so retrieving the settings for `AnimationType::Run` is just a dictionary lookup. `Serialize` and `Deserialize` allow Rust to turn these structs into `.ron` text (and back) automatically when you load or save character data.
+
+With the animation schema in place we can define `CharacterEntry`, the asset we load from `characters.ron`. It bundles character attributes, sprite metadata, and the animation map so every system pulls the info it needs from a single struct record.
+
+Append the following code to `characters/config.rs`.
+
+```rust
+// Append this to characters/config.rs
+#[derive(Component, Asset, TypePath, Debug, Clone, Serialize, Deserialize)]
+pub struct CharacterEntry {
+    pub name: String,
+    pub max_health: f32,
+    pub base_move_speed: f32,
+    pub run_speed_multiplier: f32,
+    pub texture_path: String,
+    pub tile_size: u32,
+    pub atlas_columns: usize,
+    pub animations: HashMap<AnimationType, AnimationDefinition>,
+}
+
+impl CharacterEntry {
+    pub fn calculate_max_animation_row(&self) -> usize {
+        self.animations
+            .values()
+            .map(|def| if def.directional { def.start_row + 3 } else { def.start_row })
+            .max()
+            .unwrap_or(0)
+    }
+}
+
+#[derive(Asset, TypePath, Debug, Clone, Serialize, Deserialize)]
+pub struct CharactersList {
+    pub characters: Vec<CharacterEntry>,
+}
+```
+
+The `calculate_max_animation_row` helper inspects every animation definition to figure out how many rows the texture atlas needs. 
+
+Directional animations like `Walk` often consume four stacked rows (Up, Left, Down, Right), while others, say a climb animation, may only need a single row regardless of facing. This helper keeps those differences data-driven so atlas loading code can stay generic.
+
+`CharactersList` groups all your `CharacterEntry` configs into one loadable asset, so Bevy can read every character’s data from a single JSON/RON file instead of loading many separate files.
+
+**What's the purpose of using `Asset`, `TypePath` macros?**  
+`Asset` simply tells Bevy “this struct is something you can load from disk and store in the asset server.” `TypePath` gives Bevy a unique name for the type so it knows exactly which asset you’re asking for later. Together they turn `CharacterEntry`/`CharactersList` into first-class loadable data, the same way textures or audio files already work.
+
+**What's `HashMap<AnimationType, AnimationDefinition>` doing?**  
+Each character needs different timing and sprite rows for `Walk`, `Run`, `Jump`, etc. The `HashMap` is simply a lookup table with key as `AnimationType`, so when the animation system asks for `AnimationType::Run`, it instantly receives the corresponding `AnimationDefinition` (start row, frame count, frame speed, directional flag). 
