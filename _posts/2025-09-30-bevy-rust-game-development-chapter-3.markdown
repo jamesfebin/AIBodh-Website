@@ -152,11 +152,11 @@ Players can create their own custom characters by simply editing the `.ron` file
 **What We'll Build in This Chapter:**
 
 While the data-driven approach opens up all these possibilities, we'll start with the foundation:
-- **External `.ron` file** containing all character data
-- **Generic animation system** that works with any character
-- **Runtime character switching** with number keys (1-9)
-- **Multiple animation types** (Walk, Run, Jump) per character
+1. **Creating & loading external `.ron` file** containing all character data
+2. **Generic animation system** that works with any character
+3. **Runtime character switching** with number keys (1-6)
+4. **Multiple animation types** (Walk, Run, Jump) per character
 
-Ready to build this data-driven system? Let's dive in! 
+Ready to build this data-driven character system? Let's dive in! 
 
 
