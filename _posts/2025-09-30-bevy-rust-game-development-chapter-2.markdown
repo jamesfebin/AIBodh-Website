@@ -693,7 +693,7 @@ Let's break down `&'static str` piece by piece to understand why we use it for s
 
 The `&` symbol means "reference to" - instead of making a new copy of the text, we just note where the original text is located. 
 
-The `'static` is a string literal that tells Rust "this text will exist for the entire duration of your game." When you write `"grass"` directly in your code, Rust bakes it into your game file when you build it. It's always there, from game startup to shutdown.
+The `'static` is a special lifetime annotation that tells Rust "this text will exist for the entire duration of your game." When you write `"grass"` directly in your code, Rust bakes it into your game file when you build it. It's always there, from game startup to shutdown.
 
 **What's a string literal?**
 
@@ -740,9 +740,9 @@ Rust's compiler analyzes your code and says "Hey, you're trying to use data that
 
 **Does `str` mean String data type?**
 <br>
-Not quite. str represents text data, but you can only use it through a reference like &str (a view of text stored somewhere else). String is text you own and can modify. Our sprite names like "grass" are baked into the program, so &str just points to that text without copying it - much more efficient than using String.
+Not quite. `str` represents text data, known as a **string slice**, but you can only use it through a reference like `&str` (a view of text stored somewhere else). `String` is text you own and can modify. Our sprite names like "grass" are baked into the program, so `&str` just points to that text without copying it - much more efficient than using `String`.
 
-`&'static str` means "a reference to a string slice that lives for the entire program duration." This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).
+`&'static str` means "a reference (`&`), to a string slice (`str`) that lives for the entire program duration (`'static`)." This gives us the best of all worlds: memory efficiency (no copying), performance (direct access), and safety (Rust knows the data will always be valid).
 
 
 ```comic 
@@ -830,7 +830,7 @@ In Rust, the last expression in a function is automatically returned without nee
 
 **Why can't you manipulate or retrieve `grid_offset` directly?**
 
-The fields are private (no `pub` keyword), which means they can only be accessed from within the same module. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide the public method `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
+The fields of `GridDelta` are private (they have no `pub` keyword), which means they can only be accessed from within the module where `GridDelta` is defined. This is called "encapsulation" - it prevents developers from making mistakes by modifying the struct's data directly, which could break the internal logic. We provide the public method `with_grid_offset()` to safely modify it while maintaining the struct's integrity.
 
 Now that we understand how to define our sprites with `SpawnableAsset`, **how do we load and use these sprites in our game?**
 
