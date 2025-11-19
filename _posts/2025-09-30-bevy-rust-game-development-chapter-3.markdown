@@ -259,6 +259,9 @@ pub struct CharactersList {
 }
 ```
 
+> [!IMPORTANT]
+> Make sure to include `Asset` and `TypePath` in the derive macro for `CharactersList`. Without these, Bevy won't be able to load the `.ron` file as an asset, and you'll get a compilation error when using `RonAssetPlugin`.
+
 The `calculate_max_animation_row` helper inspects every animation definition to figure out how many rows the texture atlas needs. 
 
 Directional animations like `Walk` often consume four stacked rows (Up, Left, Down, Right), while others, say a climb animation, may only need a single row regardless of facing. This helper keeps those differences data-driven so atlas loading code can stay generic.
@@ -313,9 +316,13 @@ We need to translate "moving in this direction" into "show this specific row of 
 Add this to `src/characters/animation.rs`:
 
 ```rust
+// src/characters/animation.rs
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use crate::characters::config::{CharacterEntry, AnimationType};
+
+// Default animation timing (10 FPS = 0.1 seconds per frame)
+pub const DEFAULT_ANIMATION_FRAME_TIME: f32 = 0.1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Facing {
@@ -374,6 +381,7 @@ We need these components to track the *current* state of the animation.
 Add these components to `src/characters/animation.rs`:
 
 ```rust
+// Append this to src/characters/animation.rs
 // Component that holds animation configuration
 #[derive(Component)]
 pub struct AnimationController {
@@ -411,6 +419,7 @@ Think of the spritesheet as a numbered grid, reading left-to-right, top-to-botto
 We'll create an `AnimationClip` struct to handle this math for us.
 
 ```rust
+//Append this to src/characters/animation.rs
 // Runtime animation clip helper
 #[derive(Clone, Copy)]
 pub struct AnimationClip {
@@ -444,12 +453,19 @@ impl AnimationClip {
             index + 1
         }
     }
+    
+    // Check if animation has completed (used for non-looping animations like Jump)
+    pub fn is_complete(self, current_index: usize, timer_finished: bool) -> bool {
+        current_index >= self.last && timer_finished
+    }
 }
 ```
 
 The `AnimationClip` struct stores just two numbers: the `first` and `last` frame indices for a specific animation sequence. The `new` method calculates these indices from the row, frame count, and atlas width. 
 
 The `start` method returns where the animation begins. The `contains` method checks if a given frame index belongs to this clip (useful for detecting if we've wandered into the wrong animation). The `next` method advances to the next frame, automatically looping back to the start when we reach the end.
+
+ The `is_complete` method checks if we've reached the last frame and the timer has finished—this is crucial for non-looping animations like Jump, where we need to know when to transition back to Walk.
 
 **Connecting Clips to Controllers**
 
@@ -458,6 +474,7 @@ Now that we have a way to represent frame ranges, we need to connect it to our `
 Now we can add a method to `AnimationController` to easily get the current clip based on the character's config:
 
 ```rust
+// Append this to src/characters/animation.rs
 impl AnimationController {
     pub fn get_clip(&self, config: &CharacterEntry) -> Option<AnimationClip> {
         // 1. Get the definition (e.g. "Walk" data)
@@ -484,6 +501,7 @@ Finally, the system that ties it all together. This system runs every frame and:
 3. If not changed, ticks the timer and advances the frame.
 
 ```rust
+// Append this to src/characters/animation.rs
 // Generic animation system - works for ALL entities
 pub fn animate_characters(
     time: Res<Time>,
@@ -517,6 +535,7 @@ pub fn animate_characters(
         let just_started_jumping = state.is_jumping && !state.was_jumping;
         let just_stopped_jumping = !state.is_jumping && state.was_jumping;
         
+        let should_animate = state.is_jumping || state.is_moving;
         let animation_changed = just_started_moving || just_started_jumping 
                               || just_stopped_moving || just_stopped_jumping;
         
@@ -525,11 +544,16 @@ pub fn animate_characters(
             atlas.index = clip.start();
             timer.0.set_duration(std::time::Duration::from_secs_f32(anim_def.frame_time));
             timer.0.reset();
-        } else if state.is_moving || state.is_jumping {
+        } else if should_animate {
             // Advance animation
             timer.tick(time.delta());
             if timer.just_finished() {
                 atlas.index = clip.next(atlas.index);
+            }
+        } else {
+            // When idle (not moving or jumping), stay on frame 0
+            if atlas.index != clip.start() {
+                atlas.index = clip.start();
             }
         }
     }
@@ -542,13 +566,630 @@ pub fn update_animation_flags(mut query: Query<&mut AnimationState>) {
         state.was_jumping = state.is_jumping;
     }
 }
+}
 ```
 
-**Detecting State Changes**
+**How the Animation System Works**
 
-`is_moving` tells us the current state ("am I moving right now?"), while `was_moving` tells us the previous frame's state ("was I moving last frame?"). When `is_moving` is true but `was_moving` is false, we know the player *just* pressed a movement key. That's when we reset the animation to frame 0.
+The animation system has three branches that handle different scenarios:
 
-Without this detection, animations would continue from wherever they left off, creating jarring transitions. Imagine your character's walk cycle is on frame 5, then you press jump without resetting, the jump animation would start at frame 5 instead of frame 0, looking broken.
+1. **Animation changed** (starting/stopping movement or jumping): Reset to frame 0 and update the timer duration for the new animation.
+2. **Should animate** (actively moving or jumping): Tick the timer and advance through frames.
+3. **Idle state** (standing still): Ensure we stay on frame 0, the neutral standing pose.
+
+**Why State Change Detection Matters**
+
+The first branch relies on detecting the *exact moment* a state changes. `is_moving` tells us the current state ("am I moving right now?"), while `was_moving` tells us the previous frame's state ("was I moving last frame?"). When `is_moving` is true but `was_moving` is false, we know the player *just* pressed a movement key.
+
+This detection is crucial for smooth transitions. Without it, animations would continue from wherever they left off. Imagine your character's walk cycle is on frame 5, then you press jump—without resetting, the jump animation would start at frame 5 instead of frame 0, looking broken.
+
+The third branch (idle state) handles a different case: when the player *stops* moving, we transition to Walk animation but need to ensure we display the idle pose (frame 0), not whatever frame the walk cycle was on when they stopped.
 
 **Why do we need `update_animation_flags`?**<br>
 We need `update_animation_flags` to run *after* all logic is done, so that in the *next* frame, `was_moving` correctly reflects the previous frame's state. This allows us to detect the exact moment a state changes.
+
+## The Movement System
+
+Our animation engine can display the right frames, but it needs to know *what* the player is doing. The `AnimationController` we built earlier stores the *current* animation state ("I'm running left"), but something needs to *update* that state based on player input. That's where the movement system comes in. It reads keyboard input, moves the character, and tells the `AnimationController` which animation to play.
+
+Create a new file `src/characters/movement.rs`:
+
+```
+characters/
+├── config.rs
+├── animation.rs
+├── movement.rs  <- Create this
+```
+
+The movement system has three responsibilities:
+
+1. **Input Reading**: Convert arrow key presses into a direction vector
+2. **Movement Calculation**: Apply speed and delta time to move the character smoothly
+3. **Animation Coordination**: Tell the animation system when to switch between Walk, Run, and Jump
+
+Here's how we'll tackle this:
+
+### Reading Player Input
+
+When the player presses arrow keys, we need to convert those discrete button presses into a continuous direction vector. If they press Up and Right simultaneously, we want `Vec2 { x: 1.0, y: 1.0 }` for diagonal movement.
+
+Add this to `src/characters/movement.rs`:
+
+```rust
+// src/characters/movement.rs
+use bevy::prelude::*;
+use crate::characters::animation::*;
+use crate::characters::config::{CharacterEntry, AnimationType};
+
+/// Read directional input and return a direction vector
+fn read_movement_input(input: &ButtonInput<KeyCode>) -> Vec2 {
+    const MOVEMENT_KEYS: [(KeyCode, Vec2); 4] = [
+        (KeyCode::ArrowLeft, Vec2::NEG_X),
+        (KeyCode::ArrowRight, Vec2::X),
+        (KeyCode::ArrowUp, Vec2::Y),
+        (KeyCode::ArrowDown, Vec2::NEG_Y),
+    ];
+    
+    MOVEMENT_KEYS.iter()
+        .filter(|(key, _)| input.pressed(*key))
+        .map(|(_, dir)| *dir)
+        .sum()
+}
+```
+
+**What's happening here?**
+
+We define a constant array mapping each arrow key to its direction vector. `Vec2::NEG_X` means "negative X direction" (left), `Vec2::X` means "positive X direction" (right), and so on.
+
+Then we iterate through all four keys, filter to only the ones currently pressed, extract their direction vectors, and sum them. If both Up and Right are pressed, we get `Vec2::Y + Vec2::X` = `Vec2 { x: 1.0, y: 1.0 }`.
+
+### Calculating Movement Speed
+
+Different characters move at different speeds. The Male character might be slower, while the Female character is faster. We also need to support running (holding Shift).
+
+Add this helper function:
+
+```rust
+// Append this to src/characters/movement.rs
+/// Calculate movement speed based on character config and running state
+fn calculate_movement_speed(character: &CharacterEntry, is_running: bool) -> f32 {
+    if is_running {
+        character.base_move_speed * character.run_speed_multiplier
+    } else {
+        character.base_move_speed
+    }
+}
+```
+
+This reads the character's `base_move_speed` from our data file and multiplies it by `run_speed_multiplier` if the player is holding Shift. All the speed values are data-driven—no hardcoded constants!
+
+### The Player Marker
+
+We need a way to identify which entity is the player. We'll use a simple marker component:
+
+```rust
+// Append this to src/characters/movement.rs
+/// Marker component for the player entity
+#[derive(Component)]
+pub struct Player;
+```
+
+This component has no data, it's just a tag. When we spawn the player entity, we'll attach this component. Then our movement system can query for entities with `Player` to find the player. We have already studied this in the first chapter.
+
+### The Movement System
+
+Now we tie it all together. This system runs every frame, reads input, calculates movement, and updates the animation state:
+
+```rust
+// Append this to src/characters/movement.rs
+/// Handle player movement input and update transform/animation
+pub fn move_player(
+    input: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
+    mut query: Query<(
+        &mut Transform, 
+        &mut AnimationController,
+        &mut AnimationState,
+        &CharacterEntry,
+    ), With<Player>>,
+) {
+    let Ok((mut transform, mut animated, mut state, character)) = query.single_mut() else {
+        return;
+    };
+    
+    let direction = read_movement_input(&input);
+    
+    // Check for jump input (space key)
+    if input.just_pressed(KeyCode::Space) {
+        state.is_jumping = true;
+        animated.current_animation = AnimationType::Jump;
+    }
+    
+    // Check if running
+    let is_running = input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight);
+    
+    // Handle movement
+    if direction != Vec2::ZERO {
+        let move_speed = calculate_movement_speed(character, is_running);
+        let delta = direction.normalize() * move_speed * time.delta_secs();
+        transform.translation += delta.extend(0.0);
+        
+        animated.facing = Facing::from_direction(direction);
+        
+        // Only update animation if not jumping
+        if !state.is_jumping {
+            state.is_moving = true;
+            animated.current_animation = if is_running {
+                AnimationType::Run
+            } else {
+                AnimationType::Walk
+            };
+        }
+    } else if !state.is_jumping {
+        state.is_moving = false;
+        animated.current_animation = AnimationType::Walk;
+    }
+}
+```
+
+**Breaking it down:**
+
+1. **Query for the player**: `With<Player>` filters to only entities with the `Player` component. `single_mut()` gets the one player entity.
+2. **Read input**: Get the direction vector from arrow keys.
+3. **Handle jumping**: If Space was just pressed, set `is_jumping` and switch to the Jump animation.
+4. **Check for running**: Are either Shift keys pressed?
+5. **Move the character**: If there's input, normalize the direction (so diagonal movement isn't faster), multiply by speed and delta time, and update the transform.
+6. **Update facing**: Use our `Facing::from_direction` helper to determine which way to face.
+7. **Update animation**: If not jumping, set the animation to Run or Walk based on whether `Shift` is held.
+
+### Handling Jump Completion
+
+Jump animations are special, they have a beginning and an end. Unlike Walk or Run, which loop forever, Jump plays once and then we need to return to the idle state.
+
+Add this system:
+
+```rust
+// Append this to src/characters/movement.rs
+/// Monitor jump animation completion and reset state
+pub fn update_jump_state(
+    mut query: Query<(
+        &mut AnimationController,
+        &mut AnimationState,
+        &AnimationTimer,
+        &Sprite,
+        &CharacterEntry,
+    ), With<Player>>,
+) {
+    for (mut animated, mut state, timer, sprite, config) in query.iter_mut() {
+        if !state.is_jumping {
+            continue;
+        }
+        
+        let Some(atlas) = sprite.texture_atlas.as_ref() else {
+            continue;
+        };
+        
+        let Some(clip) = animated.get_clip(config) else {
+            continue;
+        };
+        
+        // Check if jump animation has completed
+        if clip.is_complete(atlas.index, timer.just_finished()) {
+            state.is_jumping = false;
+            animated.current_animation = AnimationType::Walk;
+        }
+    }
+}
+```
+
+This system checks if the jump animation has reached its last frame and the timer has finished (using the `is_complete` method we defined earlier in `AnimationClip`). If so, it resets `is_jumping` to false and switches back to the Walk animation. The player can then move normally again.
+
+**What's `.as_ref()`?**
+
+In the animation system, we used `.as_mut()` to get a mutable reference to the texture atlas so we could change the frame index. Here, we only need to *read* the current frame index, not modify it. The `.as_ref()` method converts `Option<TextureAtlas>` into `Option<&TextureAtlas>`, giving us a read-only reference. 
+
+## Spawning Characters
+
+We have animation, movement, and data structures but no actual character on screen yet! The spawn system is responsible for:
+
+1. Loading the `characters.ron` file
+2. Creating the player entity with all necessary components
+3. Setting up the texture atlas from the spritesheet
+4. Allowing runtime character switching with number keys (1-6)
+
+Create a new file `src/characters/spawn.rs`:
+
+```
+characters/
+├── config.rs
+├── animation.rs
+├── movement.rs
+├── spawn.rs  <- Create this
+```
+
+### Resources for Character Management
+
+We'll need two resources: one to track which character is currently active, and another to hold a reference to our loaded character data file.
+
+Add this to `src/characters/spawn.rs`:
+
+```rust
+// src/characters/spawn.rs
+use bevy::prelude::*;
+use crate::characters::animation::*;
+use crate::characters::config::{CharacterEntry, CharactersList};
+use crate::characters::movement::Player;
+
+const PLAYER_SCALE: f32 = 0.8;
+const PLAYER_Z_POSITION: f32 = 20.0;
+
+#[derive(Resource, Default)]
+pub struct CurrentCharacterIndex {
+    pub index: usize,
+}
+
+#[derive(Resource)]
+pub struct CharactersListResource {
+    pub handle: Handle<CharactersList>,
+}
+```
+
+**What are these resources for?**
+
+- `CurrentCharacterIndex`: Tracks which character is currently active (0 = first character, 1 = second, etc.)
+- `CharactersListResource`: Stores the handle to our loaded `characters.ron` file. A handle is like a reference to an asset that Bevy is loading or has loaded.
+
+**How to decide between using resources and components?**
+
+Use **Components** for data that belongs to specific entities (like a player's health, position, or animation state). Use **Resources** for global data that isn't tied to any particular entity (like the current level number, game settings, or in our case, which character is active). Think of it this way: if you'd ask "which entity does this belong to?" and the answer is "all of them" or "none of them," it's probably a Resource.
+
+**What's the `Default` macro**
+
+The `Default` derive macro automatically implements the `Default` trait, which provides a default value for the struct. For `usize`, Rust's default is `0`. When you later in the chapter use `init_resource::<CurrentCharacterIndex>()`, Bevy internally calls `CurrentCharacterIndex::default()`, which creates `CurrentCharacterIndex { index: 0 }`.
+
+This is equivalent to manually writing:
+```rust
+impl Default for CurrentCharacterIndex {
+    fn default() -> Self {
+        Self { index: 0 }
+    }
+}
+```
+
+But the derive macro does it for us! Different types have different defaults: `bool` → `false`, `String` → `""`, `Option<T>` → `None`, etc.
+
+### Creating the Texture Atlas Layout
+
+Remember how we talked about spritesheets being grids of frames? Bevy doesn't automatically know where one frame ends and another begins. We need to give it instructions: "Each frame is 64×64 pixels, there are 12 columns, and 8 rows." That's what a texture atlas layout does, it's like a map that tells Bevy how to navigate the spritesheet.
+
+This helper function creates that map:
+
+```rust
+// Append this to src/characters/spawn.rs
+/// Create a texture atlas layout for a character
+fn create_character_atlas_layout(
+    atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    character_entry: &CharacterEntry,
+) -> Handle<TextureAtlasLayout> {
+    let max_row = character_entry.calculate_max_animation_row();
+    
+    atlas_layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::splat(character_entry.tile_size),
+        character_entry.atlas_columns as u32,
+        (max_row + 1) as u32,
+        None,
+        None,
+    ))
+}
+```
+
+**Breaking it down:**
+
+- `calculate_max_animation_row()`: We defined this earlier in `CharacterEntry`. It figures out how many rows the spritesheet needs based on all the animations.
+- `UVec2::splat(tile_size)`: Creates a 2D vector where both x and y are the tile size (e.g., 64×64 pixels per frame).
+- `from_grid(...)`: Tells Bevy "this texture is a grid with X columns and Y rows, each cell is this size."
+
+### Spawning the Player Entity
+
+Now we spawn the player. But here's the catch: loading files from disk takes time. We can't wait for `characters.ron` to load before creating the player entity, that would freeze the game during startup.
+
+So we use a two stage approach: create a "placeholder" entity immediately, then fill in the details once the data finishes loading. 
+
+**Stage 1: Create the entity**
+
+```rust
+// Append this to src/characters/spawn.rs
+pub fn spawn_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut character_index: ResMut<CurrentCharacterIndex>,
+) {
+    // Load the characters list
+    let characters_list_handle: Handle<CharactersList> = asset_server.load("characters/characters.ron");
+    
+    // Store the handle in a resource
+    commands.insert_resource(CharactersListResource {
+        handle: characters_list_handle,
+    });
+    
+    // Initialize with first character
+    character_index.index = 0;
+    
+    // Spawn player entity (will be initialized once asset loads)
+    commands.spawn((
+        Player,
+        Transform::from_translation(Vec3::new(0.0, 0.0, PLAYER_Z_POSITION))
+            .with_scale(Vec3::splat(PLAYER_SCALE)),
+        Sprite::default(),
+    ));
+}
+```
+
+This system runs once at startup. It loads the `characters.ron` file, stores the handle in a resource, and spawns a player entity with just the `Player` marker, a `Transform`, and an empty `Sprite`. We can't fully initialize it yet because the asset is still loading.
+
+**Why not load everything immediately?**
+
+Asset loading in Bevy is asynchronous. When you call `asset_server.load()`, Bevy starts loading the file in the background. It might take a few frames (or longer for large files). We need to wait until it's ready.
+
+**Stage 2: Initialize once loaded**
+
+```rust
+// Append this to src/characters/spawn.rs
+pub fn initialize_player_character(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    characters_lists: Res<Assets<CharactersList>>,
+    character_index: Res<CurrentCharacterIndex>,
+    characters_list_res: Option<Res<CharactersListResource>>,
+    mut query: Query<Entity, (With<Player>, Without<AnimationController>)>,
+) {
+    let Some(characters_list_res) = characters_list_res else {
+        return;
+    };
+    
+    for entity in query.iter_mut() {
+        let Some(characters_list) = characters_lists.get(&characters_list_res.handle) else {
+            continue;
+        };
+        
+        if character_index.index >= characters_list.characters.len() {
+            continue;
+        };
+        
+        let character_entry = &characters_list.characters[character_index.index];
+        
+        let texture = asset_server.load(&character_entry.texture_path);
+        let layout = create_character_atlas_layout(&mut atlas_layouts, character_entry);
+        
+        let sprite = Sprite::from_atlas_image(
+            texture,
+            TextureAtlas {
+                layout,
+                index: 0,
+            },
+        );
+        
+        commands.entity(entity).insert((
+            AnimationController::default(),
+            AnimationState::default(),
+            AnimationTimer(Timer::from_seconds(DEFAULT_ANIMATION_FRAME_TIME, TimerMode::Repeating)),
+            character_entry.clone(),
+            sprite,
+        ));
+    }
+}
+```
+
+Earlier in Stage 1 we started loading `characters.ron` in the background. But we don't know *when* it will finish—could be the next frame, could be 10 frames later.
+
+This system runs every frame, checking: "Is the file loaded yet? Is there a player entity that still needs initialization?" 
+
+The query `(With<Player>, Without<AnimationController>)` finds player entities that exist but haven't been fully set up yet. Once the file loads, `characters_lists.get()` succeeds, and we can finally add all the animation components.
+
+We grab the character data, load its texture, create the atlas layout, and insert all the necessary components.
+
+
+
+### Character Switching
+
+One of the coolest features of our data-driven system: switching characters at runtime by pressing number keys!
+
+```rust
+// Append this to src/characters/spawn.rs
+pub fn switch_character(
+    input: Res<ButtonInput<KeyCode>>,
+    mut character_index: ResMut<CurrentCharacterIndex>,
+    characters_lists: Res<Assets<CharactersList>>,
+    characters_list_res: Option<Res<CharactersListResource>>,
+    mut query: Query<(
+        &mut CharacterEntry,
+        &mut Sprite,
+    ), With<Player>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    asset_server: Res<AssetServer>,
+) {
+    // Map digit keys to indices
+    const DIGIT_KEYS: [KeyCode; 9] = [
+        KeyCode::Digit1, KeyCode::Digit2, KeyCode::Digit3,
+        KeyCode::Digit4, KeyCode::Digit5, KeyCode::Digit6,
+        KeyCode::Digit7, KeyCode::Digit8, KeyCode::Digit9,
+    ];
+    
+    // Find which digit key was pressed
+    let new_index = DIGIT_KEYS.iter()
+        .position(|&key| input.just_pressed(key));
+    
+    let Some(new_index) = new_index else {
+        return;
+    };
+    
+    let Some(characters_list_res) = characters_list_res else {
+        return;
+    };
+    
+    let Some(characters_list) = characters_lists.get(&characters_list_res.handle) else {
+        return;
+    };
+    
+    if new_index >= characters_list.characters.len() {
+        return;
+    }
+    
+    // Update character index
+    character_index.index = new_index;
+    
+    // Update player entity
+    let Ok((mut current_entry, mut sprite)) = query.single_mut() else {
+        return;
+    };
+    
+    let character_entry = &characters_list.characters[new_index];
+    
+    // Update character entry
+    *current_entry = character_entry.clone();
+    
+    // Update sprite with new texture
+    let texture = asset_server.load(&character_entry.texture_path);
+    let layout = create_character_atlas_layout(&mut atlas_layouts, character_entry);
+    
+    *sprite = Sprite::from_atlas_image(
+        texture,
+        TextureAtlas {
+            layout,
+            index: 0,
+        },
+    );
+}
+```
+
+**How it works:**
+
+1. **Detect key press**: Check if any digit key (1-9) was just pressed.
+2. **Validate index**: Make sure the index is within bounds (we have 6 characters, so keys 1-6 work).
+3. **Update resources**: Set `character_index.index` to the new value.
+4. **Swap the character**: Replace the `CharacterEntry` component with the new character's data.
+5. **Update the sprite**: Load the new character's texture and create a new atlas layout.
+
+This is the payoff of our data-driven design! Remember how in Chapter 1, adding a second character would have meant duplicating all the animation and movement code? Here, we just swap out the data. The animation system doesn't care if it's animating a Male character or a Crimson Count—it just reads the `CharacterEntry` component and does its job. Same with movement: it reads `base_move_speed` and `run_speed_multiplier` from the new character's data. No code changes needed.
+
+**How does `.position()` work?**
+
+This iterator method searches through the array and returns the index of the first item where the condition is true. The closure `|&key| input.just_pressed(key)` checks each key: "was this key just pressed?" If the player presses `Digit3`, `.position()` returns `Some(2)` (because `Digit3` is at index 2 in the array). If no digit key is pressed, it returns `None`. It works like the filter operation.
+
+**What's the `*` in `*current_entry`?**
+
+The `*` is the dereference operator. `current_entry` is a mutable reference (`&mut CharacterEntry`), not the actual data. To modify the data it points to, we need to dereference it with `*`. Think of it like this: `current_entry` is a pointer to a box, `*current_entry` is the contents of the box. We're replacing the contents, not the pointer.
+
+## Bringing It All Together
+
+We've built all the pieces animation, movement, spawning, and character switching. Now we need to package them into a plugin and integrate it into our game.
+
+### Adding the RON Asset Loader
+
+First, we need to add dependencies that let Bevy load `.ron` files and serialize/deserialize our data structures. Open `Cargo.toml` and add these to your `[dependencies]` section:
+
+```toml
+bevy_common_assets = { version = "0.14", features = ["ron"] }
+serde = { version = "1.0", features = ["derive"] }
+```
+
+The `bevy_common_assets` crate provides asset loaders for common file formats. We're using the `ron` feature to load our `characters.ron` file. The `serde` crate with the `derive` feature allows us to use `#[derive(Serialize, Deserialize)]` on our structs, which we used in `config.rs` and `animation.rs`.
+
+### Creating the Characters Plugin
+
+Create `src/characters/mod.rs`:
+
+```rust
+// src/characters/mod.rs
+pub mod animation;
+pub mod config;
+pub mod movement;
+pub mod spawn;
+
+use bevy::prelude::*;
+use bevy_common_assets::ron::RonAssetPlugin;
+use config::CharactersList;
+
+pub struct CharactersPlugin;
+
+impl Plugin for CharactersPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(RonAssetPlugin::<CharactersList>::new(&["characters.ron"]))
+            .init_resource::<spawn::CurrentCharacterIndex>()
+            .add_systems(Startup, spawn::spawn_player)
+            .add_systems(Update, (
+                spawn::initialize_player_character,
+                spawn::switch_character,
+                movement::move_player,
+                movement::update_jump_state,
+                animation::animate_characters,
+                animation::update_animation_flags,
+            ));
+    }
+}
+```
+
+**Breaking it down:**
+
+- **Module declarations**: `pub mod animation;` etc. make our submodules accessible.
+- **RonAssetPlugin**: Registers the `.ron` file loader for our `CharactersList` type.
+- **init_resource**: Creates the `CurrentCharacterIndex` resource with its default value (0).
+- **Startup systems**: `spawn_player` runs once at game start.
+- **Update systems**: All other systems run every frame.
+
+**Why group systems in a tuple?**
+
+The tuple `(spawn::initialize_player_character, spawn::switch_character, ...)` tells Bevy "run all these systems every frame." Bevy can run them in parallel if they don't conflict (e.g., different queries), making the game faster.
+
+**Why are we keeping `initialize_player_character` in the Update instead of Startup? Does it initialize player character every frame?**
+
+Good catch! The system *does* run every frame, but it doesn't initialize the player every frame. Look at the query: `Query<Entity, (With<Player>, Without<AnimationController>)>`. This only matches player entities that *don't have* an `AnimationController` yet.
+
+Once we add the `AnimationController` component (which happens inside the system), the entity no longer matches the query, so the system does nothing on subsequent frames. It's a self-terminating system—it runs until it finds and initializes uninitialized players, then effectively becomes a no-op.
+
+We can't put it in Startup because the `characters.ron` file might not be loaded yet when Startup runs. By putting it in Update, it keeps checking every frame: "Is the file loaded? Is there an uninitialized player?" Once both conditions are true, it initializes the player and then stops doing anything.
+
+### Integrating into Main
+
+Now we connect our plugin to the main game. Open `src/main.rs` and add the module declaration at the top:
+
+```rust
+// Update line in src/main.rs
+mod map;
+mod characters;  // Add this line
+```
+
+Then add the plugin to your app:
+
+```rust
+// Update line in src/main.rs
+fn main() {
+    let map_size = map_pixel_dimensions();
+
+    App::new()
+        .insert_resource(ClearColor(Color::WHITE))
+        .add_plugins(
+            DefaultPlugins
+                .set(AssetPlugin {
+                    file_path: "src/assets".into(),
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: WindowResolution::new(map_size.x as u32, map_size.y as u32),
+                        resizable: false,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
+        .add_plugins(ProcGenSimplePlugin::<Cartesian3D, Sprite>::default())
+        .add_plugins(characters::CharactersPlugin)  // Add this line
+        .add_systems(Startup, (setup_camera, setup_generator))
+        .run();
+}
+```
+
+That's it! Run your game with `cargo run`, and you should see your character on screen. Press the arrow keys to move, hold Shift to run, press Space to jump, and press number keys 1-6 to switch characters!
