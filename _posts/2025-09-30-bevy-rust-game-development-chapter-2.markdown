@@ -3413,10 +3413,11 @@ right_girl_laugh: Found Jesus mode!
 ```
 
 <div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-<strong>Don't miss Chapter 3!</strong> <br> <a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when the next chapter drops and share your amazing procedural world creations with fellow developers.
+<strong>Next up</strong> <br> <a href="/posts/bevy-rust-game-development-chapter-3/"> Chapter 3, Let The Data Flow</a>
 <br><br>
 <strong>Let's stay connected! Here are some ways</strong>
 <ul>
+<li><a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when new chapters drop. </li>
 <li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
 <li>Join the discussion on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
 <li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-2-let-there-be-a-world-continuing-activity-7382797407824039936-WXFD?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>

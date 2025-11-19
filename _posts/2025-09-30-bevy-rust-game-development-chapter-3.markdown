@@ -1,10 +1,10 @@
 ---
 layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 3 - Let The Data Flow"
-date: 2025-10-11 10:00:00 +0000
+date: 2025-11-19 10:00:00 +0000
 category: rust
 excerpt: "Learn to build a flexible, data-driven character system in Bevy and Rust. This third chapter covers creating evolving characters, decoupling stats from code, and building a scalable character progression framework that grows with your game."
-image: /assets/book_assets/chapter3/ch3.gif
+image: /assets/book_assets/chapter3/chapter3.gif
 og_image: /assets/book_assets/chapter3/animation-system.png
 ---
 
@@ -17,7 +17,7 @@ og_image: /assets/book_assets/chapter3/animation-system.png
 }
 </style>
 
-By the end of this tutorial, you'll have a flexible, data-driven character system that supports character switching, multiple animation types (Walk, Run, Jump) configured through a single external data file.
+By the end of this tutorial, you'll have a flexible, data-driven character system that supports character switching, multiple animation types (Walk, Run, Jump) configured through a data file.
 
 > **Prerequisites**: This is Chapter 3 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) for updates on new releases. Before starting, complete [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/) and [Chapter 2: Let There Be a World](/posts/bevy-rust-game-development-chapter-2/), or clone the Chapter 2 code from [this repository](https://github.com/jamesfebin/ImpatientProgrammerBevyRust) to follow along.
 
@@ -72,6 +72,11 @@ Now imagine you discover a bug in your animation system. You need to fix it in:
 Miss one? That character breaks. Want to add a "jump" animation? Update 10 functions. Want to change how movement works? Touch every single character's code.
 
 This is the copy-paste maintenance nightmare you want to avoid.
+
+```comic
+left_guy_smile: I'll still copy-paste this for the other 5 characters.
+right_girl_angry: Put the keyboard down and step away slowly.
+```
 
 
 ### Data-Driven Design
@@ -260,9 +265,6 @@ pub struct CharactersList {
 }
 ```
 
-> [!IMPORTANT]
-> Make sure to include `Asset` and `TypePath` in the derive macro for `CharactersList`. Without these, Bevy won't be able to load the `.ron` file as an asset, and you'll get a compilation error when using `RonAssetPlugin`.
-
 The `calculate_max_animation_row` helper inspects every animation definition to figure out how many rows the texture atlas needs. 
 
 Directional animations like `Walk` often consume four stacked rows (Up, Left, Down, Right), while others, say a climb animation, may only need a single row regardless of facing. This helper keeps those differences data-driven so atlas loading code can stay generic.
@@ -368,6 +370,8 @@ Our spritesheets follow a convention. For directional animations like "Walk", th
 - Row 3: Walk Right
 
 The `direction_index` function converts our `Facing` enum into these row offsets (0, 1, 2, 3). So when we know the player is facing `Down` and we want to play the "Walk" animation starting at row 8, we calculate: `8 + Facing::Down.direction_index()` = `8 + 2` = row 10. That's where the "Walk Down" frames live in the atlas.
+
+<img src="/assets/book_assets/chapter3/graveyard_reaper_spritesheet.png" alt="Walk Spritesheet" style="display: block; margin: 0 auto; width: 50%;" />
 
 ### Tracking Animation State
 
@@ -586,6 +590,39 @@ This detection is crucial for smooth transitions. Without it, animations would c
 
 The third branch (idle state) handles a different case: when the player *stops* moving, we transition to Walk animation but need to ensure we display the idle pose (frame 0), not whatever frame the walk cycle was on when they stopped.
 
+```d2
+Idle: {
+  shape: circle
+}
+
+Walk: {
+  shape: circle
+}
+
+Run: {
+  shape: circle
+}
+
+Jump: {
+  shape: circle
+}
+
+Idle -> Walk: press arrow key
+Walk -> Idle: release arrow key
+Walk -> Run: hold shift
+Run -> Walk: release shift
+Idle -> Jump: press space
+Walk -> Jump: press space
+Run -> Jump: press space
+Jump -> Idle: animation complete
+```
+
+
+```comic
+left_guy_surprised: Why is he running while standing still?
+right_girl_laugh: He's just really excited to be idle.
+```
+
 **Why do we need `update_animation_flags`?**<br>
 We need `update_animation_flags` to run *after* all logic is done, so that in the *next* frame, `was_moving` correctly reflects the previous frame's state. This allows us to detect the exact moment a state changes.
 
@@ -740,6 +777,11 @@ pub fn move_player(
 3. **Handle jumping**: If Space was just pressed, set `is_jumping` and switch to the Jump animation.
 4. **Check for running**: Are either Shift keys pressed?
 5. **Move the character**: If there's input, normalize the direction (so diagonal movement isn't faster), multiply by speed and delta time, and update the transform.
+
+```comic
+left_guy_smile: Diagonal movement is faster! It's a feature!
+right_girl_sad: It's a bug. Normalize your vectors.
+```
 6. **Update facing**: Use our `Facing::from_direction` helper to determine which way to face.
 7. **Update animation**: If not jumping, set the animation to Run or Walk based on whether `Shift` is held.
 
@@ -850,6 +892,7 @@ The `Default` derive macro automatically implements the `Default` trait, which p
 
 This is equivalent to manually writing:
 ```rust
+// Pseudo code warning, don't use
 impl Default for CurrentCharacterIndex {
     fn default() -> Self {
         Self { index: 0 }
@@ -932,6 +975,11 @@ This system runs once at startup. It loads the `characters.ron` file, stores the
 
 Asset loading in Bevy is asynchronous. When you call `asset_server.load()`, Bevy starts loading the file in the background. It might take a few frames (or longer for large files). We need to wait until it's ready.
 
+```comic
+left_guy_anxious: I spawned him, but he's invisible!
+right_girl_smile: Relax. The asset server is still loading his pants.
+```
+
 **Stage 2: Initialize once loaded**
 
 ```rust
@@ -989,8 +1037,6 @@ This system runs every frame, checking: "Is the file loaded yet? Is there a play
 The query `(With<Player>, Without<AnimationController>)` finds player entities that exist but haven't been fully set up yet. Once the file loads, `characters_lists.get()` succeeds, and we can finally add all the animation components.
 
 We grab the character data, load its texture, create the atlas layout, and insert all the necessary components.
-
-
 
 ### Character Switching
 
@@ -1076,7 +1122,7 @@ This is the payoff of our data-driven design! Remember how in Chapter 1, adding 
 
 **How does `.position()` work?**
 
-This iterator method searches through the array and returns the index of the first item where the condition is true. The closure `|&key| input.just_pressed(key)` checks each key: "was this key just pressed?" If the player presses `Digit3`, `.position()` returns `Some(2)` (because `Digit3` is at index 2 in the array). If no digit key is pressed, it returns `None`. It works like the filter operation.
+This iterator method searches through the array and returns the index of the first item where the condition is true. The closure `|&key| input.just_pressed(key)` checks each key: "was this key just pressed?" If the player presses `Digit3`, `.position()` returns `Some(2)` (because `Digit3` is at index 2 in the array). If no digit key is pressed, it returns `None`. It's similar to the filter operation.
 
 **What's the `*` in `*current_entry`?**
 
@@ -1151,7 +1197,7 @@ Once we add the `AnimationController` component (which happens inside the system
 
 We can't put it in Startup because the `characters.ron` file might not be loaded yet when Startup runs. By putting it in Update, it keeps checking every frame: "Is the file loaded? Is there an uninitialized player?" Once both conditions are true, it initializes the player and then stops doing anything.
 
-### Integrating into Main //Todo use a different title
+### Plugging Into the Game
 
 Now we connect our plugin to the main game. Open `src/main.rs` and add the module declaration at the top:
 
@@ -1196,4 +1242,17 @@ fn main() {
 That's it! Run your game with `cargo run`, and you should see your character on screen. Press the arrow keys to move, hold Shift to run, press Space to jump, and press number keys 1-6 to switch characters!
 
 ![Animation System Demo]({{ "/assets/book_assets/chapter3/chapter3.gif" | relative_url }})
+
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Don't miss Chapter 4!</strong> <br> <a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when the next chapter drops and share your amazing creations with fellow developers.
+<br><br>
+<strong>Let's stay connected! Here are some ways</strong>
+<ul>
+<li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
+<li>Join the discussion on <a href="https://www.reddit.com/r/bevy/comments/1o3y2hr/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
+<li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-2-let-there-be-a-world-continuing-activity-7382797407824039936-WXFD?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
+<li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
+</ul>
+</div>
 
