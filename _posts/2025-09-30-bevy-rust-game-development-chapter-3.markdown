@@ -3,7 +3,7 @@ layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 3 - Let The Data Flow"
 date: 2025-11-19 10:00:00 +0000
 category: rust
-excerpt: "Learn to build a flexible, data-driven character system in Bevy and Rust. This third chapter covers creating evolving characters, decoupling stats from code, and building a scalable character progression framework that grows with your game."
+excerpt: "Learn to build a data-driven character system in Bevy. We'll use a RON file to configure character attributes and animations, create a generic animation engine that handles walk, run, and jump animations, and implement character switching."
 image: /assets/book_assets/chapter3/chapter3.gif
 og_image: /assets/book_assets/chapter3/animation-system.png
 ---
