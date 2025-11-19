@@ -21,7 +21,8 @@ By the end of this tutorial, you'll have a flexible, data-driven character syste
 
 > **Prerequisites**: This is Chapter 3 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) for updates on new releases. Before starting, complete [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/) and [Chapter 2: Let There Be a World](/posts/bevy-rust-game-development-chapter-2/), or clone the Chapter 2 code from [this repository](https://github.com/jamesfebin/ImpatientProgrammerBevyRust) to follow along.
 
-<!-- ![Animation System Demo]({{ "/assets/book_assets/chapter3/ch3.gif" | relative_url }}) -->
+![Animation System Demo]({{ "/assets/book_assets/chapter3/chapter3.gif" | relative_url }})
+
 
 ## The Problem with Hardcoded Characters
 
@@ -566,7 +567,7 @@ pub fn update_animation_flags(mut query: Query<&mut AnimationState>) {
         state.was_jumping = state.is_jumping;
     }
 }
-}
+
 ```
 
 **How the Animation System Works**
@@ -1150,7 +1151,7 @@ Once we add the `AnimationController` component (which happens inside the system
 
 We can't put it in Startup because the `characters.ron` file might not be loaded yet when Startup runs. By putting it in Update, it keeps checking every frame: "Is the file loaded? Is there an uninitialized player?" Once both conditions are true, it initializes the player and then stops doing anything.
 
-### Integrating into Main
+### Integrating into Main //Todo use a different title
 
 Now we connect our plugin to the main game. Open `src/main.rs` and add the module declaration at the top:
 
@@ -1193,3 +1194,6 @@ fn main() {
 ```
 
 That's it! Run your game with `cargo run`, and you should see your character on screen. Press the arrow keys to move, hold Shift to run, press Space to jump, and press number keys 1-6 to switch characters!
+
+![Animation System Demo]({{ "/assets/book_assets/chapter3/chapter3.gif" | relative_url }})
+
