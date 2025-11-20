@@ -81,7 +81,7 @@ right_girl_angry: Put the keyboard down and step away slowly.
 
 ### Data-Driven Design
 
-The solution lies in **data-oriented programming** - a design approach where we **separate what things are (data) from what they do (behavior)**. 
+The solution lies in **data-oriented programming**, a design approach where we **separate what things are (data) from what they do (behavior)**. 
 
 Instead of tightly coupling character attributes with character-specific code, we:
 
@@ -151,8 +151,6 @@ You can load characters from a network server at runtime, enabling downloadable 
 
 Players can create their own custom characters by simply editing the `.ron` file, opening the door to user-generated content.
 
- Game designers can experiment with character balance through A/B testing by swapping different data files, gathering player feedback and iterating on game balance without touching a single line of code.
-
 **What We'll Build in This Chapter:**
 
 While the data-driven approach opens up all these possibilities, we'll start with the foundation:
@@ -176,6 +174,9 @@ graveyard_reaper_spritesheet.png
 lantern_warden_spritesheet.png
 starlit_oracle_spritesheet.png
 ```
+
+![Sprite Sheets]({{ "/assets/book_assets/chapter3/sprite_sheets.gif" | relative_url }})
+
 ### Character Schema
 Every entry in `characters.ron` follows the same structure:
 
@@ -311,6 +312,8 @@ Our animation engine needs to help us with the following:
 Let's build each piece.
 
 ### Direction Tracking
+
+![Sprite Sheets]({{ "/assets/book_assets/chapter3/walk.gif" | relative_url }})
 
 When your player presses the arrow keys, we get a velocity vector like `Vec2 { x: 1.0, y: 0.0 }` for moving right. But our spritesheet doesn't understand vectors—it has specific rows for Up, Down, Left, and Right animations.
 
@@ -627,6 +630,7 @@ right_girl_laugh: He's just really excited to be idle.
 We need `update_animation_flags` to run *after* all logic is done, so that in the *next* frame, `was_moving` correctly reflects the previous frame's state. This allows us to detect the exact moment a state changes.
 
 ## The Movement System
+![Sprite Sheets]({{ "/assets/book_assets/chapter3/run.gif" | relative_url }})
 
 Our animation engine can display the right frames, but it needs to know *what* the player is doing. The `AnimationController` we built earlier stores the *current* animation state ("I'm running left"), but something needs to *update* that state based on player input. That's where the movement system comes in. It reads keyboard input, moves the character, and tells the `AnimationController` which animation to play.
 
@@ -786,6 +790,9 @@ right_girl_sad: It's a bug. Normalize your vectors.
 7. **Update animation**: If not jumping, set the animation to Run or Walk based on whether `Shift` is held.
 
 ### Handling Jump Completion
+
+![Sprite Sheets]({{ "/assets/book_assets/chapter3/jump.gif" | relative_url }})
+
 
 Jump animations are special, they have a beginning and an end. Unlike Walk or Run, which loop forever, Jump plays once and then we need to return to the idle state.
 
