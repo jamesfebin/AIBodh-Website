@@ -1118,7 +1118,7 @@ pub fn switch_character(
 4. **Swap the character**: Replace the `CharacterEntry` component with the new character's data.
 5. **Update the sprite**: Load the new character's texture and create a new atlas layout.
 
-This is the payoff of our data-driven design! Remember how in Chapter 1, adding a second character would have meant duplicating all the animation and movement code? Here, we just swap out the data. The animation system doesn't care if it's animating a Male character or a Crimson Count—it just reads the `CharacterEntry` component and does its job. Same with movement: it reads `base_move_speed` and `run_speed_multiplier` from the new character's data. No code changes needed.
+This is the payoff of our data-driven design! Remember how in Chapter 1, adding a second character would have meant duplicating all the animation and movement code? Here, we just swap out the data. The animation system doesn't care if it's animating a Male character or a Crimson Count, it just reads the `CharacterEntry` component and does its job. Same with movement: it reads `base_move_speed` and `run_speed_multiplier` from the new character's data. No code changes needed.
 
 **How does `.position()` work?**
 
