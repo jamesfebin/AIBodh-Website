@@ -1185,10 +1185,6 @@ impl Plugin for CharactersPlugin {
 - **Startup systems**: `spawn_player` runs once at game start.
 - **Update systems**: All other systems run every frame.
 
-**Why group systems in a tuple?**
-
-The tuple `(spawn::initialize_player_character, spawn::switch_character, ...)` tells Bevy "run all these systems every frame." Bevy can run them in parallel if they don't conflict (e.g., different queries), making the game faster.
-
 **Why are we keeping `initialize_player_character` in the Update instead of Startup? Does it initialize player character every frame?**
 
 Good catch! The system *does* run every frame, but it doesn't initialize the player every frame. Look at the query: `Query<Entity, (With<Player>, Without<AnimationController>)>`. This only matches player entities that *don't have* an `AnimationController` yet.
