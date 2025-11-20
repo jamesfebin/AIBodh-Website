@@ -165,7 +165,7 @@ Ready to build this data-driven character system? Let's dive in!
 
 ## Setting Up the Characters Module
 
-Find the Chapter 3 project files from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust) and copy these spritesheets into your project’s `src/assets/` directory:
+Find the Chapter 3 project files from the [repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust/tree/main/chapter3/src/assets) and copy these spritesheets into your project’s `src/assets/` directory:
 
 
 ```bash
