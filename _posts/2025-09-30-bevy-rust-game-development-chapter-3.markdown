@@ -37,7 +37,7 @@ const MOVE_SPEED ... = 140.0;    // ← Hardcoded movement speed
 const ANIM_DT ... = 0.1;         // ← Hardcoded animation timing
 ```
 
-### Maintainance Nightmare
+### Maintenance Nightmare
 
 Let's see what happens when you add a second character. You'd need to duplicate everything:
 
@@ -190,7 +190,7 @@ Every entry in `characters.ron` follows the same structure:
   - `frame_time`: Seconds per frame.
   - `directional`: `true` when the spritesheet contains four direction rows (Up, Left, Down, Right) stacked vertically for that animation. If `false`, Bevy uses the same row regardless of facing direction.
 
-Make a folder `src/assets/characters/` and copy `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust), it includes data of all 6 characters.
+Create a folder `src/assets/characters/` and copy the `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust). It includes data for all 6 characters.
 
 ### Setting Up the Config
 
@@ -231,7 +231,7 @@ pub struct AnimationDefinition {
 **What's `Hash`, `Serialize`, and `Deserialize`?**  
 `Hash` lets us use `AnimationType` as a key inside `HashMap`, so retrieving the settings for `AnimationType::Run` is just a dictionary lookup. `Serialize` and `Deserialize` allow Rust to turn these structs into `.ron` text (and back) automatically when you load or save character data.
 
-With the animation schema in place we can define `CharacterEntry`, the asset we load from `characters.ron`. It bundles character attributes, sprite metadata, and the animation map so every system pulls the info it needs from a single struct record.
+With the animation schema in place, we can define `CharacterEntry`, the asset we load from `characters.ron`. It bundles character attributes, sprite metadata, and the animation map so every system pulls the info it needs from a single struct record.
 
 Append the following code to `characters/config.rs`.
 
@@ -302,7 +302,7 @@ characters/
 ├── animation.rs  <- Create this
 ```
 
-Our animation engine need to help us with the following:
+Our animation engine needs to help us with the following:
 
 1. **Direction Tracking**: When your character moves right, you want them to face right. When they move up, they should face up. We need a system to convert movement into facing direction.
 2. **State Management**: We need to know *when* to change animations. Did the player just start running? Just stop? Just jump? These transitions are when we reset the animation.
@@ -375,7 +375,7 @@ The `direction_index` function converts our `Facing` enum into these row offsets
 
 ### Tracking Animation State
 
-We also need to know *when* to change animations. If your character transitions from standing still to running, we need to detect that moment and restart the animation from frame 0. Otherwise, the run animation might start mid-cycle, looking janky.
+We need to know *when* to change animations. If your character transitions from standing still to running, we need to detect that moment and restart the animation from frame 0. Otherwise, the run animation might start mid-cycle, looking janky.
 
 We need these components to track the *current* state of the animation. 
 
@@ -833,7 +833,7 @@ In the animation system, we used `.as_mut()` to get a mutable reference to the t
 
 ## Spawning Characters
 
-We have animation, movement, and data structures but no actual character on screen yet! The spawn system is responsible for:
+We have animation, movement, and data structures, but no actual character on screen yet! The spawn system is responsible for:
 
 1. Loading the `characters.ron` file
 2. Creating the player entity with all necessary components
@@ -886,7 +886,7 @@ pub struct CharactersListResource {
 
 Use **Components** for data that belongs to specific entities (like a player's health, position, or animation state). Use **Resources** for global data that isn't tied to any particular entity (like the current level number, game settings, or in our case, which character is active). Think of it this way: if you'd ask "which entity does this belong to?" and the answer is "all of them" or "none of them," it's probably a Resource.
 
-**What's the `Default` macro**
+**What's the `Default` macro?**
 
 The `Default` derive macro automatically implements the `Default` trait, which provides a default value for the struct. For `usize`, Rust's default is `0`. When you later in the chapter use `init_resource::<CurrentCharacterIndex>()`, Bevy internally calls `CurrentCharacterIndex::default()`, which creates `CurrentCharacterIndex { index: 0 }`.
 
@@ -1030,7 +1030,7 @@ pub fn initialize_player_character(
 }
 ```
 
-Earlier in Stage 1 we started loading `characters.ron` in the background. But we don't know *when* it will finish—could be the next frame, could be 10 frames later.
+Earlier in Stage 1, we started loading `characters.ron` in the background. But we don't know *when* it will finish—could be the next frame, could be 10 frames later.
 
 This system runs every frame, checking: "Is the file loaded yet? Is there a player entity that still needs initialization?" 
 
@@ -1130,7 +1130,7 @@ The `*` is the dereference operator. `current_entry` is a mutable reference (`&m
 
 ## Bringing It All Together
 
-We've built all the pieces animation, movement, spawning, and character switching. Now we need to package them into a plugin and integrate it into our game.
+We've built all the pieces: animation, movement, spawning, and character switching. Now we need to package them into a plugin and integrate it into our game.
 
 ### Adding the RON Asset Loader
 
