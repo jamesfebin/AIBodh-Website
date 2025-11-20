@@ -1142,7 +1142,7 @@ The `*` is the dereference operator. `current_entry` is a mutable reference (`&m
 
 ```comic
 left_guy_smile: I can swap 6 characters with zero code duplication!
-right_girl_sad: Impossible. Next you'll tell me you actually read the Bevy docs.
+right_girl_surprised: Impossible. Next you'll tell me you actually read the Bevy docs.
 ```
 
 ## Bringing It All Together
@@ -1212,7 +1212,7 @@ We can't put it in Startup because the `characters.ron` file might not be loaded
 
 ```comic
 left_guy_laugh: This system runs every frame but does nothing after initialization!
-right_female_laugh: It's the software equivalent of pretending to work after lunch.
+right_girl_laugh: It's the software equivalent of pretending to work after lunch.
 ```
 
 ### Plugging Into the Game
