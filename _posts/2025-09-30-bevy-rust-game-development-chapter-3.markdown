@@ -427,7 +427,7 @@ Think of the spritesheet as a numbered grid, reading left-to-right, top-to-botto
 We'll create an `AnimationClip` struct to handle this math for us.
 
 ```rust
-//Append this to src/characters/animation.rs
+// Append this to src/characters/animation.rs
 // Runtime animation clip helper
 #[derive(Clone, Copy)]
 pub struct AnimationClip {
