@@ -192,7 +192,7 @@ Every entry in `characters.ron` follows the same structure:
 
 Make a folder `src/assets/characters/` and copy `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust), it includes data of all 6 characters.
 
-### Building the Config Module
+### Setting Up the Config
 
 With our data file in place, we need code that reads it and spawns the player. We’re going to replace the Chapter 1 `player.rs` with a new `characters` module. 
 
