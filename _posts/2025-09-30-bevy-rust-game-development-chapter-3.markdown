@@ -5,7 +5,7 @@ date: 2025-11-19 10:00:00 +0000
 category: rust
 excerpt: "Learn to build a data-driven character system in Bevy. We'll use a RON file to configure character attributes and animations, create a generic animation engine that handles walk, run, and jump animations, and implement character switching."
 image: /assets/book_assets/chapter3/chapter3.gif
-og_image: /assets/book_assets/chapter3/animation-system.png
+og_image: /assets/book_assets/chapter3/chapter3.gif
 ---
 
 <style>
