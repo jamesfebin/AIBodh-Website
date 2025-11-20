@@ -113,11 +113,6 @@ Move character properties into a single external `.ron` configuration file:
 
 RON stands for **Rusty Object Notation**, a data format similar to JSON but designed for Rust. It's human-readable, supports Rust types like tuples and structs, and allows comments. Think of it as JSON that feels native to Rust developers.
 
-```comic
-left_guy_smile: I added a trailing comma in JSON.
-right_girl_anxious: RIP. I'll notify your next of kin.
-```
-
 | JSON | RON |
 |------|-----|
 | Requires quotes on every key | Optional quotes for simple identifiers |
@@ -292,11 +287,6 @@ Yes! This is called **method chaining**. Each function runs in order: first `.va
 **What's `HashMap<AnimationType, AnimationDefinition>` doing?**  
 Each character needs different timing and sprite rows for `Walk`, `Run`, `Jump`, etc. The `HashMap` is simply a lookup table with key as `AnimationType`, so when the animation system asks for `AnimationType::Run`, it instantly receives the corresponding `AnimationDefinition` (start row, frame count, frame speed, directional flag). 
 
-```comic
-left_guy_surprised: HashMap lookup is O(1)? That's impossibly fast!
-right_girl_laugh: Wait till you see my O(1) algorithm for ignoring documentation.
-```
-
 
 Now that we have a data structure to hold our character information, we need a system to bring it to life.
 
@@ -386,11 +376,6 @@ The `direction_index` function converts our `Facing` enum into these row offsets
 
 <img src="/assets/book_assets/chapter3/graveyard_reaper_spritesheet.png" alt="Walk Spritesheet" style="display: block; margin: 0 auto; width: 50%;" />
 
-```comic
-left_guy_anxious: My character moonwalks everywhere!
-right_girl_angry: You're incrementing rows when you should decrement. He's not Michael Jackson.
-```
-
 ### Tracking Animation State
 
 We need to know *when* to change animations. If your character transitions from standing still to running, we need to detect that moment and restart the animation from frame 0. Otherwise, the run animation might start mid-cycle, looking janky.
@@ -431,11 +416,6 @@ pub struct AnimationState {
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AnimationTimer(pub Timer);
-```
-
-```comic
-left_guy_laugh: I removed the timer. Animations run at 10,000 FPS now!
-right_girl_surprised: That's not an animation. That's a strobe light warning.
 ```
 
 ### Frame Calculation
@@ -648,11 +628,6 @@ right_girl_laugh: He's just really excited to be idle.
 
 **Why do we need `update_animation_flags`?**<br>
 We need `update_animation_flags` to run *after* all logic is done, so that in the *next* frame, `was_moving` correctly reflects the previous frame's state. This allows us to detect the exact moment a state changes.
-
-```comic
-male_more_angry: I optimized out was_moving! Saved 1 byte of RAM!
-female_sad: Congratulations. Your character now has permanent hiccups.
-```
 
 ## The Movement System
 ![Sprite Sheets]({{ "/assets/book_assets/chapter3/run.gif" | relative_url }})
@@ -1075,11 +1050,6 @@ The query `(With<Player>, Without<AnimationController>)` finds player entities t
 
 We grab the character data, load its texture, create the atlas layout, and insert all the necessary components.
 
-```comic
-left_guy_anxious: Why is my character invisible for 3 seconds at startup?
-right_girl_smile: The asset server is fashionably late. As always.
-```
-
 ### Character Switching
 
 One of the coolest features of our data-driven system: switching characters at runtime by pressing number keys!
@@ -1171,8 +1141,8 @@ This iterator method searches through the array and returns the index of the fir
 The `*` is the dereference operator. `current_entry` is a mutable reference (`&mut CharacterEntry`), not the actual data. To modify the data it points to, we need to dereference it with `*`. Think of it like this: `current_entry` is a pointer to a box, `*current_entry` is the contents of the box. We're replacing the contents, not the pointer.
 
 ```comic
-male_smile: I can swap 6 characters with zero code duplication!
-female_surprised: Impossible. Next you'll tell me you actually read the Bevy docs.
+left_guy_smile: I can swap 6 characters with zero code duplication!
+right_girl_sad: Impossible. Next you'll tell me you actually read the Bevy docs.
 ```
 
 ## Bringing It All Together
@@ -1241,8 +1211,8 @@ Once we add the `AnimationController` component (which happens inside the system
 We can't put it in Startup because the `characters.ron` file might not be loaded yet when Startup runs. By putting it in Update, it keeps checking every frame: "Is the file loaded? Is there an uninitialized player?" Once both conditions are true, it initializes the player and then stops doing anything.
 
 ```comic
-male_laugh: This system runs every frame but does nothing after initialization!
-female_laugh: It's the software equivalent of pretending to work after lunch.
+left_guy_laugh: This system runs every frame but does nothing after initialization!
+right_female_laugh: It's the software equivalent of pretending to work after lunch.
 ```
 
 ### Plugging Into the Game
