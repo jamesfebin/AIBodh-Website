@@ -190,7 +190,7 @@ Every entry in `characters.ron` follows the same structure:
   - `frame_time`: Seconds per frame.
   - `directional`: `true` when the spritesheet contains four direction rows (Up, Left, Down, Right) stacked vertically for that animation. If `false`, Bevy uses the same row regardless of facing direction.
 
-Create a folder `src/assets/characters/` and copy the `characters.ron` file from the [repo](http://github.com/jamesfebin/ImpatientProgrammerBevyRust). It includes data for all 6 characters.
+Create a folder `src/assets/characters/` and copy the `characters.ron` file from the [repo](https://github.com/jamesfebin/ImpatientProgrammerBevyRust/blob/main/chapter3/src/assets/characters/characters.ron) and add place it inside the folder. It includes data for all 6 characters.
 
 ### Setting Up the Config
 
