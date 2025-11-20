@@ -115,9 +115,9 @@ RON stands for **Rusty Object Notation**, a data format similar to JSON but desi
 
 | JSON | RON |
 |------|-----|
-| Requires quotes on every key | Optional quotes for simple identifiers less typing, cleaner files |
+| Requires quotes on every key | Optional quotes for simple identifiers |
 | No comment support | Inline and multiline comments, document your data directly |
-| Trailing commas cause syntax errors | Trailing commas allowed, fewer bugs when editing lists |
+| Trailing commas cause syntax errors | Trailing commas allowed
 | Limited to JavaScript types | Native Rust types (tuples, structs, enums), matches your code |
 
 RON eliminates JSON's verbosity while adding features that Rust developers need, making it ideal for game configuration. 
