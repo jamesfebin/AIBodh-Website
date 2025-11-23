@@ -23,6 +23,9 @@ By the end of this tutorial, you'll have a flexible, data-driven character syste
 
 ![Animation System Demo]({{ "/assets/book_assets/chapter3/chapter3.gif" | relative_url }})
 
+<div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+<strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey enjoyable. Your feedback matters - share your frustrations, questions, or suggestions on <a href="https://www.reddit.com/r/rust/comments/1p46n9c/the_impatient_programmers_guide_to_bevy_and_rust/" target="_blank">Reddit</a>/<a target="_blank" href="https://discord.com/invite/cD9qEsSjUH">Discord</a>/<a href="https://www.linkedin.com/posts/febinjohnjames_chapter-3-let-the-data-flow-continuing-activity-7397051447600664576-C3Bd/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc" target="_blank">LinkedIn</a>. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
+</div>
 
 ## The Problem with Hardcoded Characters
 
