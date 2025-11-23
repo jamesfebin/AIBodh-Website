@@ -16,6 +16,7 @@ og_image: /assets/book_assets/chapter3/chapter3.gif
   pointer-events: none !important;
 }
 </style>
+I was supposed to release this on Halloween, but my code was so scary it kept running away. 🎃 Now that we've debugged the ghosts in the machine, let's begin!
 
 By the end of this tutorial, you'll have a flexible, data-driven character system that supports character switching, multiple animation types (Walk, Run, Jump) configured through a data file.
 
