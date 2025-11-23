@@ -695,10 +695,6 @@ The `&` symbol means "reference to" - instead of making a new copy of the text, 
 
 The `'static` is a special lifetime annotation that tells Rust "this text will exist for the entire duration of your game." When you write `"grass"` directly in your code, Rust bakes it into your game file when you build it. It's always there, from game startup to shutdown.
 
-**What's a string literal?**
-
-A string literal is text you write directly in quotes in your code: `"grass"`, `"dirt"`, `"tree"`. 
-
 
 **What's a lifetime and what has `'static` got to do with it?**
 
@@ -713,6 +709,10 @@ Most data has a limited lifetime. For example:
 But some data lives forever - like string literals embedded in your program. The `'static` lifetime means "this data lives for the entire duration of the program" - it never gets deleted.
 
 This is perfect for our sprite names because they're hardcoded in our source code (like `"grass"`, `"tree"`, `"rock"`) and will never change or be deleted while the program runs. Rust can safely let us use these references anywhere in our code because it knows the data will always be there.
+
+**What's a string literal?**
+
+A string literal is text you write directly in quotes in your code: `"grass"`, `"dirt"`, `"tree"`. 
 
 **Why does Rust need to know when it's safe to use data? Other languages don't seem to care about this.**
 
