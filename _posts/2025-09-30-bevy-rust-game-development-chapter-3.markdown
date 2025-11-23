@@ -1210,11 +1210,6 @@ Once we add the `AnimationController` component (which happens inside the system
 
 We can't put it in Startup because the `characters.ron` file might not be loaded yet when Startup runs. By putting it in Update, it keeps checking every frame: "Is the file loaded? Is there an uninitialized player?" Once both conditions are true, it initializes the player and then stops doing anything.
 
-```comic
-left_guy_laugh: This system runs every frame but does nothing after initialization!
-right_girl_laugh: It's the software equivalent of pretending to work after lunch.
-```
-
 ### Plugging Into the Game
 
 Now we connect our plugin to the main game. Open `src/main.rs` and add the module declaration at the top:

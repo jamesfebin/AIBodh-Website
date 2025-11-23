@@ -2,9 +2,7 @@
 title: AIBodh
 email: your-email@example.com
 description: >- # this means to ignore newlines until "baseurl:"
-  AIBodh explores solutions to the challenges developers face when building intelligent systems. 
-  We focus on better teaching methods, foundational skills in systems engineering, building knowledge graphs, 
-  industry-relevant projects, and developer tools to reduce cognitive overload in system design.
+  I built AIBodh to solve the problems I faced: navigating technology noise, balancing deep learning with management deadlines, and finding content that goes beyond toy projects. I'm exploring better teaching methods, foundational systems knowledge, and developer tools that reduce cognitive overload while building intelligent systems.
 
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://aibodh.com" # the base hostname & protocol for your site
@@ -48,8 +46,8 @@ paginate: 5
 paginate_path: "/page:num/"
 
 # Social links
-github_username: yourusername
-twitter_username: yourusername
+github_username: jamesfebin
+twitter_username: heyfebin
 
 # Google Fonts - Space Mono for body text, JetBrains Mono for code, Bangers for comics
 google_fonts:
