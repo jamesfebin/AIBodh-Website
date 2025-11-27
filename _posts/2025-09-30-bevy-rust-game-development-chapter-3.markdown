@@ -689,6 +689,15 @@ We define a constant array mapping each arrow key to its direction vector. `Vec2
 
 Then we iterate through all four keys, filter to only the ones currently pressed, extract their direction vectors, and sum them. If both Up and Right are pressed, we get `Vec2::Y + Vec2::X` = `Vec2 { x: 1.0, y: 1.0 }`.
 
+**What's `_` in `(keys, _)` and in `(_, dir)`?**
+
+The `_` (underscore) is Rust's "I don't care" placeholder in pattern matching. When destructuring tuples, you use `_` to ignore values you don't need:
+
+- In `(key, _)`: We only need the `key` to check if it's pressed, so we ignore the direction with `_`
+- In `(_, dir)`: We only need the `dir` (direction vector), so we ignore the key with `_`
+
+This is more readable than naming unused variables like `(key, _unused_dir)` or `(_unused_key, dir)`. Rust's compiler also knows these values are intentionally ignored, so you won't get warnings about unused variables.
+
 ### Calculating Movement Speed
 
 Different characters move at different speeds. The Male character might be slower, while the Female character is faster. We also need to support running (holding Shift).
