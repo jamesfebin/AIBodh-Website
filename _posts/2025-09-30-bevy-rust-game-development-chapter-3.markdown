@@ -275,7 +275,7 @@ The `calculate_max_animation_row` helper inspects every animation definition to 
 Directional animations like `Walk` often consume four stacked rows (Up, Left, Down, Right), while others, say a climb animation, may only need a single row regardless of facing. This helper keeps those differences data-driven so atlas loading code can stay generic.
 
 **Is `self.animations` calling multiple functions sequentially?**  
-Yes! This is called **method chaining**. Each function runs in order: first `.values()` gets all animation definitions from the HashMap, then `.map()` transforms each one, then `.max()` finds the largest value. They execute left-to-right, one after another.
+Yes! This is called **method chaining**. Each function runs in order: first `.values()` gets all animation definitions from the HashMap, then `.map()` transforms each one, then `.max()` finds the largest value. They execute top-to-bottom, one after another.
 
 **What's map doing, also is that a closure inside map?**  
 `map` transforms each item in the collection. Yes, `|def|` is a **closure** as we studied in the previous chapter. It takes each animation definition (`def`) and calculates its maximum row: if the animation is directional (4 rows), it returns `start_row + 3`; otherwise just `start_row`. Think of it as "for each animation, calculate its end row."

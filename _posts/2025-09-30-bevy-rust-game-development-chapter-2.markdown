@@ -2527,7 +2527,7 @@ Water adds life to our procedural world! Unlike grass layers that stack on top o
 First, let's add the water sprites to our tilemap definition. Open `src/map/tilemap.rs` and add these entries to the `sprites` array:
 
 ```rust
-// src/map/tilemap.rs - Add these after the tree stump sprites
+// src/map/tilemap.rs - Add water sprites to the sprites array
 TilemapSprite {
     name: "water",
     pixel_x: 32,
@@ -2657,6 +2657,7 @@ pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSocket
             layer_down: new_socket(),
             yellow_grass_fill_down: new_socket(),
         },
+        // Line update alert
         water: WaterLayerSockets {
             layer_up: new_socket(),
             layer_down: new_socket(),
@@ -3092,6 +3093,7 @@ pub fn create_sockets(socket_collection: &mut SocketCollection) -> TerrainSocket
             water_and_void: new_socket(),
             ground_up: new_socket(),
         },
+        // Line update alert
         props: PropsLayerSockets {
             layer_up: new_socket(),
             layer_down: new_socket(),
