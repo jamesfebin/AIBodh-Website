@@ -566,10 +566,323 @@ let new_animation = match state {
 
 The compiler warns you if you forget to handle a state. If you later add a new state to the enum, every match statement becomes a compile error until you handle the new case. The compiler forces you to think through all possibilities.
 
+Now let's put this into practice and implement `CharacterState`.
 
-### The Connection
+## Implementing Character States
 
-Notice the parallel? `GameState` controls which *game systems* run. `CharacterState` controls which *animation* plays. Both use enums where only one value is active at a time, both use change detection for transitions, and both scale naturally. Once you see this pattern, you'll find uses everywhere: enemy AI (Patrol, Chase, Attack), doors (Open, Closed, Locked), network connections (Connecting, Connected, Disconnected).
+Create a new file `src/characters/state.rs`:
 
-Later in this chapter, we'll implement this refactoring: replacing `AnimationState` booleans with a `CharacterState` enum, separating `Facing` into its own component, and using Bevy's change detection for smooth transitions.
+```
+characters/
+├── config.rs
+├── animation.rs
+├── movement.rs
+├── mod.rs
+├── spawn.rs
+├── state.rs  ← Create this
+```
 
+### The CharacterState Enum
+
+We need an enum that represents all possible states our character can be in:
+
+```rust
+// src/characters/state.rs
+use bevy::prelude::*;
+
+/// Character states. Only one can be active at a time.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CharacterState {
+    #[default]
+    Idle,
+    Walking,
+    Running,
+    Jumping,
+}
+```
+
+### Querying State with Methods
+
+Earlier, we explained how boolean flags can create invalid combinations. Instead of tracking `is_jumping` and `was_jumping` flags separately, we now have a single `CharacterState`. But we still need to answer questions like "can this character jump right now?"
+
+That's where these query methods come in. They let us ask questions about the current state without maintaining separate flag variables:
+
+```rust
+// Append to src/characters/state.rs
+impl CharacterState {
+    /// Check if this is a grounded state (can jump from here)
+    pub fn is_grounded(&self) -> bool {
+        matches!(self, CharacterState::Idle | CharacterState::Walking | CharacterState::Running)
+    }
+}
+```
+
+This method replaces boolean flag logic for jump control. Instead of tracking an `is_jumping` flag and checking it manually, we query the state. The logic is simple: you can only jump when grounded (Idle, Walking, or Running). You can't jump while already in the Jumping state.
+
+Later, when handling input, we'll use this method:
+
+```rust
+// Pseudo code, don't use
+if wants_jump && current_state.is_grounded() {
+    *state = CharacterState::Jumping;
+}
+```
+
+**What's `matches!`?**
+
+The `matches!` macro checks if a value matches a pattern. `matches!(self, CharacterState::Idle)` returns `true` if `self` is `Idle`, `false` otherwise. The `|` means "or" so `matches!(self, CharacterState::Walking | CharacterState::Running)` checks if it's either Walking or Running.
+
+## Animation Refactoring
+
+Now we'll refactor `animation.rs` to use our new state-based approach. While we're at it, let's also clean up a code organization issue: currently, `AnimationController` stores both the current animation type and the facing direction. But these are owned by different systems, facing decides direction, animation decides the clip. Separating them makes each system's responsibility clearer.
+
+First, create a new file `src/characters/facing.rs`. By making `Facing` its own component, the movement system owns direction updates, and the animation system focuses on sprite animation.
+
+```rust
+// src/characters/facing.rs
+use bevy::prelude::*;
+
+/// The direction a character is facing.
+/// Separate from movement - character can face one way while moving another.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Facing {
+    Up,
+    Left,
+    #[default]
+    Down,
+    Right,
+}
+
+impl Facing {
+    pub fn from_velocity(velocity: Vec2) -> Self {
+        if velocity.x.abs() > velocity.y.abs() {
+            if velocity.x > 0.0 { Facing::Right } else { Facing::Left }
+        } else {
+            if velocity.y > 0.0 { Facing::Up } else { Facing::Down }
+        }
+    }
+    
+    /// Helper to map direction to row offset (0, 1, 2, 3)
+    pub(crate) fn direction_index(self) -> usize {
+        match self {
+            Facing::Up => 0,
+            Facing::Left => 1,
+            Facing::Down => 2,
+            Facing::Right => 3,
+        }
+    }
+}
+```
+
+Expose both `state` and `facing` in `src/characters/mod.rs`:
+
+```rust
+// src/characters/mod.rs
+pub mod config;
+pub mod animation;
+pub mod movement;
+pub mod state; // Add this line
+pub mod facing;  // Add this line
+```
+
+Open `src/characters/animation.rs`. We'll update it section by section.
+
+First, delete the old `Facing` enum and `AnimationState` struct. We'll be using `CharacterState` instead.
+
+```rust
+// src/characters/animation.rs - Delete the following sections 
+
+// DELETE this (Facing moved to facing.rs)
+pub enum Facing { ... }
+impl Facing { ... }
+
+// DELETE this (AnimationState replaced by CharacterState)
+pub struct AnimationState {
+    pub is_moving: bool,
+    ...
+}
+```
+
+Remove `facing` from `AnimationController` since it's now a separate component. Also derive `Default` macro for `AnimationController`.
+
+```rust
+// src/characters/animation.rs - Update AnimationController
+#[derive(Component, Default)] // Line update alert
+pub struct AnimationController {
+    pub current_animation: AnimationType,
+    // Facing is removed now, line update alert
+}
+```
+
+You'll also need to delete the old manual `Default` implementation for `AnimationController`. Previously, it looked like this:
+
+```rust
+// DELETE the following old implementation from src/characters/animation.rs
+impl Default for AnimationController {
+    fn default() -> Self {
+        Self {
+            current_animation: AnimationType::Walk,
+            facing: Facing::Down,  // This field no longer exists
+        }
+    }
+}
+```
+
+Delete it entirely. Since `AnimationController` now only has one field (`current_animation`), we need `AnimationType` to have a default value. Add `#[derive(Default)]` to `AnimationType` and mark `Walk` as the default:
+
+```rust
+// src/characters/config.rs - Set default animation type to Walk
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)] // Line update alert
+pub enum AnimationType {
+    #[default] // Line update alert
+    Walk,
+    Run,
+    Jump
+}
+```
+
+Now update the imports at the top of the file. Let's add imports for `CharacterState` and `Facing`.
+
+```rust
+// src/characters/animation.rs - Update imports
+use bevy::prelude::*;
+use crate::characters::config::{CharacterEntry, AnimationType};
+use crate::characters::state::CharacterState; // Line update alert
+use crate::characters::facing::Facing; // Line update alert
+```
+
+Since we moved `Facing` out of `AnimationController`, `get_clip` can no longer access `self.facing`. We need to pass facing as a parameter. This is actually cleaner: the method now explicitly declares what data it needs:
+
+```rust
+// src/characters/animation.rs - Update get_clip signature
+impl AnimationController {
+    /// Get the animation clip for the current animation and facing direction.
+    /// `facing` is passed in since it's now a separate component.
+    pub fn get_clip(&self, config: &CharacterEntry, facing: Facing) -> Option<AnimationClip> {
+        let def = config.animations.get(&self.current_animation)?;
+        
+        let row = if def.directional {
+            def.start_row + facing.direction_index()
+        } else {
+            def.start_row
+        };
+        
+        Some(AnimationClip::new(row, def.frame_count, config.atlas_columns))
+    }
+}
+```
+
+**Delete update_animation_flags**
+
+We no longer need this function since we will be using `Changed<CharacterState>` instead of manual tracking.
+
+```rust
+// src/characters/animation.rs - DELETE this entire function
+pub fn update_animation_flags(...) { ... }
+```
+
+### Replace Animation System
+
+Here's where the state pattern really pays off. The old `animate_characters` function manually tracked state changes with boolean flags. With `CharacterState`, Bevy's `Changed` filter does this for us automatically.
+
+Delete `animate_characters` entirely. 
+```rust
+// src/characters/animation.rs - DELETE this entire function
+pub fn animate_characters(...) { ... }
+```
+
+We'll write one system that responds to state changes (using `Changed<CharacterState>`), and another that does animation playback. This separation means state-change logic only runs when needed, not every frame.
+
+**System 1: Handle Character State Changes**
+
+This system runs only when `CharacterState` changes, using Bevy's `Changed` filter. When triggered, it updates the animation type so the playback system knows which animation to play.
+
+```rust
+// src/characters/animation.rs - Add this new function
+pub fn on_state_change_update_animation(
+    mut query: Query<
+        (&CharacterState, &mut AnimationController, &mut AnimationTimer),
+        Changed<CharacterState>
+    >,
+) {
+    for (state, mut controller, mut timer) in query.iter_mut() {
+        // Select animation based on new state
+        let new_animation = match state {
+            CharacterState::Idle | CharacterState::Walking => AnimationType::Walk,
+            CharacterState::Running => AnimationType::Run,
+            CharacterState::Jumping => AnimationType::Jump,
+        };
+        
+        // Only update and reset timer if animation actually changed
+        if controller.current_animation != new_animation {
+            controller.current_animation = new_animation;
+            timer.0.reset();
+        }
+    }
+}
+```
+
+**What's `Changed<CharacterState>`?**
+
+This is the change detection we discussed earlier! The query only returns entities whose `CharacterState` changed since last frame. No manual tracking needed.
+
+**Why check `controller.current_animation != new_animation` if Changed already filters?**
+
+Because multiple states can map to the same animation. Look at the match: both `Idle` and `Walking` use `AnimationType::Walk`. If the player transitions from `Idle` to `Walking`, `Changed<CharacterState>` fires (state changed), but the animation type stays `Walk`. Without this guard, we'd reset the timer and cause a visual stutter even though we're playing the same animation.
+
+**System 2: Animation Playback**
+
+ While the first system picks *which* animation to play when state changes, this one handles the frame-by-frame playback. Together they form a complete animation pipeline: state changes set up the animation, and this system keeps it running.
+
+```rust
+// src/characters/animation.rs - Add this new function
+pub fn animations_playback(
+    time: Res<Time>,
+    mut query: Query<(
+        &CharacterState,
+        &Facing,
+        &AnimationController,
+        &mut AnimationTimer,
+        &mut Sprite,
+        &CharacterEntry,
+    )>,
+) {
+    for (state, facing, controller, mut timer, mut sprite, config) in query.iter_mut() {
+        // Don't animate when idle
+        if *state == CharacterState::Idle {
+            // Ensure idle sprite is at frame 0
+            if let Some(atlas) = sprite.texture_atlas.as_mut() {
+                if let Some(clip) = controller.get_clip(config, *facing) {
+                    if atlas.index != clip.start() {
+                        atlas.index = clip.start();
+                    }
+                }
+            }
+            continue;
+        }
+        
+        let Some(atlas) = sprite.texture_atlas.as_mut() else { continue; };
+        let Some(clip) = controller.get_clip(config, *facing) else { continue; };
+        let Some(anim_def) = config.animations.get(&controller.current_animation) else { continue; };
+        
+        // Safety: If we somehow ended up on a frame outside our clip, reset.
+        if !clip.contains(atlas.index) {
+            atlas.index = clip.start();
+            timer.0.reset();
+        }
+        
+        // Update timer duration if needed
+        let expected_duration = std::time::Duration::from_secs_f32(anim_def.frame_time);
+        if timer.0.duration() != expected_duration {
+            timer.0.set_duration(expected_duration);
+        }
+        
+        // Advance animation
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            let old_index = atlas.index;
+            atlas.index = clip.next(atlas.index);
+        }
+    }
+}
+```
