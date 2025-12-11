@@ -886,3 +886,316 @@ pub fn animations_playback(
     }
 }
 ```
+
+## Completing the State-Based Refactoring
+
+We've updated the animation system to use `CharacterState` instead of boolean flags. But where does `CharacterState` get set? Right now, our `movement.rs` still uses the old approach, it directly modifies `Transform` and sets boolean flags in `AnimationState`. We need to refactor it to work with our new state-based design.
+
+Look at the current `movement.rs`. It does three things at once:
+1. Reads input (arrow keys, shift, space)
+2. Moves the character on screen
+3. Decides which animation to play using boolean flags
+
+This mixing of concerns made sense before, but now that we have `CharacterState`, we can separate these responsibilities. We'll split `movement.rs` into:
+- **input.rs** - Reads keyboard input, updates `CharacterState`, and sets how fast to move (//Todo simplify this line)
+- **physics.rs** - Handling movement of the character based on a `Velocity` component
+
+This separation means the animation system we just built will work automatically. When input changes `CharacterState`, our `on_state_change_update_animation` system reacts. When input sets `Velocity`, our physics system moves the entity. Each piece focuses on one job.
+
+Create `src/characters/physics.rs`:
+
+```rust
+// src/characters/physics.rs
+use bevy::prelude::*;
+use super::{state::CharacterState, config::CharacterEntry};
+
+/// Linear velocity in world units per second.
+/// Systems that want to move an entity modify this.
+/// A physics system reads this to update Transform.
+#[derive(Component, Debug, Clone, Copy, Default, Deref, DerefMut)]
+pub struct Velocity(pub Vec2);
+
+impl Velocity {
+    pub const ZERO: Self = Self(Vec2::ZERO);
+    
+    pub fn is_moving(&self) -> bool {
+        self.0 != Vec2::ZERO
+    }
+}
+```
+
+Now add the velocity calculation based on state:
+
+```rust
+// Append to src/characters/physics.rs
+
+/// Calculate velocity based on character state, direction, and configuration.
+pub fn calculate_velocity(
+    state: CharacterState,
+    direction: Vec2,
+    character: &CharacterEntry,
+) -> Velocity {
+    match state {
+        CharacterState::Idle => Velocity::ZERO,
+        CharacterState::Jumping => Velocity::ZERO,  // No movement during jump
+        CharacterState::Walking => {
+            Velocity(direction.normalize_or_zero() * character.base_move_speed)
+        }
+        CharacterState::Running => {
+            Velocity(direction.normalize_or_zero() * character.base_move_speed * character.run_speed_multiplier)
+        }
+    }
+}
+```
+
+Notice how `CharacterState` directly determines velocity. No boolean flags, no conditionals about `is_jumping && !is_moving`. The state tells us everything we need to know.
+
+Finally, add the system that actually moves the character. It reads the velocity and updates the character's position on screen:
+
+```rust
+// Append to src/characters/physics.rs
+
+/// Applies velocity to transform. Pure physics, no game logic.
+pub fn apply_velocity(
+    time: Res<Time>,
+    mut query: Query<(&Velocity, &mut Transform)>,
+) {
+    for (velocity, mut transform) in query.iter_mut() {
+        if velocity.is_moving() {
+            transform.translation += velocity.0.extend(0.0) * time.delta_secs();
+        }
+    }
+}
+```
+
+This system knows nothing about input, characters, or states. It just moves things based on their velocity. Add any entity with `Velocity` and `Transform`, and it moves automatically.
+
+### Refactoring Player Input
+
+Now for the second half of splitting `movement.rs`. We have physics handling the "how to move" part. Now we need input handling for the "what the player wants to do" part.
+
+This is where we connect everything together. The input system will:
+1. Read keyboard input
+2. Update `CharacterState` (which triggers our animation system via `Changed<CharacterState>`)
+3. Set `Velocity` (which our physics system uses to move the entity)
+
+Create `src/characters/input.rs`. This replaces the input-handling parts of `movement.rs`.
+
+```rust
+// src/characters/input.rs
+use bevy::prelude::*;
+use super::{
+    state::CharacterState,
+    physics::Velocity,
+    facing::Facing,
+    config::CharacterEntry,
+    animation::{AnimationController, AnimationTimer},
+};
+
+#[derive(Component)]
+pub struct Player;
+```
+
+We moved the `Player` marker component here since input handling is player-specific.
+
+```rust
+// Append to src/characters/input.rs
+
+/// Read directional input and return a direction vector
+fn read_movement_input(input: &ButtonInput<KeyCode>) -> Vec2 {
+    const MOVEMENT_KEYS: [(KeyCode, Vec2); 4] = [
+        (KeyCode::ArrowLeft, Vec2::NEG_X),
+        (KeyCode::ArrowRight, Vec2::X),
+        (KeyCode::ArrowUp, Vec2::Y),
+        (KeyCode::ArrowDown, Vec2::NEG_Y),
+    ];
+    
+    MOVEMENT_KEYS.iter()
+        .filter(|(key, _)| input.pressed(*key))
+        .map(|(_, dir)| *dir)
+        .sum()
+}
+```
+
+This is the same input reading we had before, just isolated into its own function.
+
+### State Machine Logic
+
+Now we need to decide what state the character should be in based on that input. Remember earlier we said "the state tells us everything we need to know"? This is where we translate raw input into meaningful state transitions.
+
+Instead of scattered `if` statements that set boolean flags (`is_moving = true`, `is_jumping = true`), we have one function that returns the new state:
+
+```rust
+// Append to src/characters/input.rs
+
+fn determine_new_state(
+    current: CharacterState,
+    direction: Vec2,
+    is_running: bool,
+    wants_jump: bool,
+) -> CharacterState {
+    match current {
+        // Can't transition out of jumping until it completes
+        CharacterState::Jumping => CharacterState::Jumping,
+        
+        // Jump takes priority when grounded
+        _ if wants_jump && current.is_grounded() => CharacterState::Jumping,
+        
+        // Movement states
+        _ if direction != Vec2::ZERO => {
+            if is_running { CharacterState::Running } else { CharacterState::Walking }
+        }
+        
+        // Default to idle
+        _ => CharacterState::Idle,
+    }
+}
+```
+
+
+**What's this strange pattern of having `if` conditions inside `match`?**
+
+This is called a *match guard*. The syntax `_ if condition =>` means "match anything, but only if this condition is also true." It combines pattern matching with boolean logic.
+
+**Why use it here?**
+
+We need to check two things: what state we're currently in, and what the player is doing (moving, jumping, etc.). Match guards let us handle both in one clean expression. The `_` means "any state not already matched above," and the `if` adds the extra condition.
+
+You can use this pattern when you need to match on one thing but also check something else that isn't part of the enum itself.
+
+Alright, the new approach puts all state transition logic in one function. You can read it top to bottom and understand the priority.
+
+### The Main Input Handler
+
+We've built the helper functions: `read_movement_input` reads keys, `determine_new_state` decides the state. Now we need the main system that ties them together and actually updates the entity's components.
+
+This is the new version of the old `move_player` function from `movement.rs`. Instead of directly modifying `Transform` and `AnimationController`, it now updates `CharacterState`, `Velocity`, and `Facing`. Other systems react to these changes: the animation system responds to `Changed<CharacterState>`, and the physics system reads `Velocity` to move the entity.
+
+The function works in four steps:
+1. **Read input** - Check which keys are pressed (arrows for direction, shift for running, space for jump)
+2. **Update facing** - If moving, update the facing direction so the character looks where they're going
+3. **Determine new state** - Use the state machine to figure out the next state based on current state and input
+4. **Calculate velocity** - Based on the new state, calculate how fast and which direction to move
+
+```rust
+// Append to src/characters/input.rs
+
+/// Reads player input and updates movement-related components.
+/// Does NOT touch animations directly - decoupled from animation system.
+pub fn handle_player_input(
+    input: Res<ButtonInput<KeyCode>>,
+    mut query: Query<(
+        &mut CharacterState,
+        &mut Velocity,
+        &mut Facing,
+        &CharacterEntry,
+    ), With<Player>>,
+) {
+    let Ok((mut state, mut velocity, mut facing, character)) = query.single_mut() else {
+        return;
+    };
+    
+    // Step 1: Read what keys are pressed
+    let direction = read_movement_input(&input);
+    let is_running = input.pressed(KeyCode::ShiftLeft) || input.pressed(KeyCode::ShiftRight);
+    let wants_jump = input.just_pressed(KeyCode::Space);
+    
+    // Step 2: Update facing direction (which way the character looks)
+    if direction != Vec2::ZERO {
+        let new_facing = Facing::from_velocity(direction);
+        if *facing != new_facing {
+            *facing = new_facing;
+        }
+    }
+    
+    // Step 3: Use our state machine to determine the new state
+    // This calls the determine_new_state function we wrote earlier
+    let new_state = determine_new_state(*state, direction, is_running, wants_jump);
+    if *state != new_state {
+        *state = new_state;  // This triggers Changed<CharacterState>!
+    }
+    
+    // Step 4: Calculate velocity based on state
+    // Idle and Jumping = no movement, Walking/Running = movement
+    *velocity = super::physics::calculate_velocity(*state, direction, character);
+}
+```
+
+### Handling Jump Completion
+
+There's one edge case our main input handler doesn't cover. Look at `determine_new_state`, when the character is `Jumping`, it stays `Jumping`. But how does jumping ever end?
+
+Unlike walking or running (which end when you release the key), jumping needs to complete its animation before transitioning back to idle. We need a separate system that watches for this:
+
+```rust
+// Append to src/characters/input.rs
+
+/// Checks if jump animation completed and transitions back to idle
+pub fn update_jump_state(
+    mut query: Query<(
+        &mut CharacterState,
+        &Facing,
+        &AnimationController,
+        &AnimationTimer,
+        &Sprite,
+        &CharacterEntry,
+    ), With<Player>>,
+) {
+    let Ok((mut state, facing, controller, timer, sprite, config)) = query.single_mut() else {
+        return;
+    };
+    
+    // Only check if currently jumping
+    if *state != CharacterState::Jumping {
+        return;
+    }
+    
+    let Some(atlas) = sprite.texture_atlas.as_ref() else {
+        return;
+    };
+    
+    let Some(clip) = controller.get_clip(config, *facing) else {
+        return;
+    };
+    
+    // Check if jump animation has completed
+    if clip.is_complete(atlas.index, timer.just_finished()) {
+        *state = CharacterState::Idle;
+    }
+}
+```
+
+This system only runs meaningful logic when the player is jumping. It uses `clip.is_complete()` to check if the animation finished, then transitions to Idle. The state change triggers our `on_state_change_update_animation` system, which updates the animation to Walk.
+
+## Updating mod.rs
+
+Update `src/characters/mod.rs` to include the new modules and register the systems:
+
+```rust
+// src/characters/mod.rs - Update module declarations
+pub mod animation;
+pub mod config;
+pub mod facing;
+pub mod input;      // Line update alert
+pub mod physics;    // Line update alert
+pub mod spawn;
+pub mod state;
+```
+
+Delete the old `movement` module—we've split it into `input` and `physics`.
+
+Update the system registration:
+
+```rust
+// src/characters/mod.rs - Update add_systems
+.add_systems(Update, (
+    input::handle_player_input,
+    spawn::switch_character,
+    input::update_jump_state,
+    animation::on_state_change_update_animation,
+    physics::apply_velocity,
+    animation::animations_playback,
+).chain().run_if(in_state(GameState::Playing)));
+```
+
+The `.chain()` ensures systems run in order. Input sets state and velocity, animation responds to state changes, physics moves the entity, and animation playback advances frames.
