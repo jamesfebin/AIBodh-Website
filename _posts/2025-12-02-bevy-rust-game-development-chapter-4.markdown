@@ -77,14 +77,14 @@ But what if we need systems that run at *specific moments*? Not every frame, not
 
 ### State-Based Schedules
 
-The solution is to organize our game into distinct **phases**. We call these phases **states**: Loading, Playing, and Paused. Each state represents a different mode of the game.
+The solution is to organize our game into distinct **phases**. We call these phases **states**: `Loading`, `Playing`, and `Paused`. Each state represents a different mode of the game.
 
-When the game transitions from one state to another (say, from Loading to Playing), Bevy provides special schedules that run exactly once:
+When the game transitions from one state to another (say, from `Loading` to `Playing`), Bevy provides special schedules that run exactly once:
 
 - **OnEnter** - Runs when entering a state
 - **OnExit** - Runs when leaving a state
 
-This is how we eliminate polling. Instead of `initialize_player_character` checking every frame "Are assets loaded yet?", we attach it to `OnExit(Loading)`. When assets finish loading and we leave the Loading state, Bevy runs it exactly once with no checking, no guard clauses, no wasted frames.
+This is how we eliminate polling. Instead of `initialize_player_character` checking every frame "Are assets loaded yet?", we attach it to `OnExit(Loading)`. When assets finish loading and we leave the `Loading` state, Bevy runs it exactly once.
 
 ```d2
 direction: down
@@ -116,7 +116,7 @@ OnExit Loading -> Playing: One-time player initialization
 
 ## Implementing Game States
 
-Let's build a complete state management module with loading screens and pause functionality. Create the folder `state` inside the `src` folder.
+Let's build a state management module with loading screens and game pause functionality. Create the folder `state` inside the `src` folder.
 
 ### Defining Game States
 
@@ -157,7 +157,7 @@ The `#[derive(States)]` macro implements the `States` trait, which tells Bevy:
 - Systems can be gated to run only in specific states
 - State transitions should trigger OnEnter/OnExit schedules
 
-The `#[default]` attribute marks which state the game starts in. Here, Bevy initializes the state to the default value (Loading in our case).
+The `#[default]` attribute marks which state the game starts in. Here, Bevy initializes the state to the default value (`Loading` in our case).
 
 
 ### Loading Screen
@@ -394,9 +394,9 @@ While in Loading state, `Update.run_if(in_state(GameState::Loading))` runs two s
 
 Once assets load, `check_assets_loaded` requests a transition to `Playing` state. When this happens, `OnExit(GameState::Loading)` triggers, running two systems that cleans up the loading UI and initialize the player. Now player initialization can happen only once since exiting from loading state is a one-time event.
 
-For pausing, we added systems on `OnEnter(GameState::Paused)` and `OnExit(GameState::Paused)` to show and hide the pause menu. The `toggle_pause` function listens for the Escape key and switches between Playing and Paused states.
+For pausing, we added systems on `OnEnter(GameState::Paused)` and `OnExit(GameState::Paused)` to show and hide the pause menu. The `toggle_pause` function listens for the Escape key and switches between `Playing` and `Paused` states.
 
-Our `StatePlugin` now orchestrates the entire game flow. The Loading state handles asset loading with visual feedback, the Playing state runs gameplay systems, and the Paused state freezes gameplay while showing a menu. The beauty of this design is that systems automatically attach to state transitions, no polling, no wasted frames. Everything runs exactly when needed.
+Our `StatePlugin` now orchestrates the entire game flow. The `Loading` state handles asset loading with visual feedback, the `Playing` state runs gameplay systems, and the `Paused` state freezes gameplay while showing a menu. The beauty of this design is that systems automatically attach to state transitions, no polling, no wasted frames. Everything runs exactly when needed.
 
 Now open `src/characters/mod.rs` and remove `initialize_player_character` from the Update schedule. Since we have already added it through `StatePlugin`.
 
@@ -451,8 +451,8 @@ cargo run
 
 You might not see the loading screen (assets load quickly, but you can manually add a delay if needed). The game starts and your character appears, ready to move. Press Escape anytime to pause, the game freezes and shows a pause overlay. Press Escape again to continue seamlessly.
 
-## The State Pattern for Characters
-We just used states to control our *game flow* (Loading → Playing → Paused). Now let's apply the same pattern to something else: *character behavior*.
+## The State Pattern for Characters 
+We just used states to control our *game flow* (`Loading` → `Playing` → `Paused`). Now let's apply the same pattern to something else: *character behavior*.
 
 Have a look at out `AnimationState` component:
 
@@ -507,9 +507,7 @@ A developer might accidentally set both flags, or forget to clear one when setti
 
 ### The State Pattern Solution
 
-Remember how `GameState` worked? One enum, one value at a time, Bevy tracks transitions for us.
-
-We can do the same for characters:
+Remember how `GameState` worked? We defined an enum with `Loading`, `Playing`, and `Paused`, and Bevy tracked which state we were in. We can apply the same idea to characters: define an enum of possible states, and let the current state determine behavior.
 
 ```rust
 // Pseudo code, don't use
@@ -619,15 +617,6 @@ impl CharacterState {
 
 This method replaces boolean flag logic for jump control. Instead of tracking an `is_jumping` flag and checking it manually, we query the state. The logic is simple: you can only jump when grounded (Idle, Walking, or Running). You can't jump while already in the Jumping state.
 
-Later, when handling input, we'll use this method:
-
-```rust
-// Pseudo code, don't use
-if wants_jump && current_state.is_grounded() {
-    *state = CharacterState::Jumping;
-}
-```
-
 **What's `matches!`?**
 
 The `matches!` macro checks if a value matches a pattern. `matches!(self, CharacterState::Idle)` returns `true` if `self` is `Idle`, `false` otherwise. The `|` means "or" so `matches!(self, CharacterState::Walking | CharacterState::Running)` checks if it's either Walking or Running.
@@ -722,7 +711,7 @@ impl Default for AnimationController {
     fn default() -> Self {
         Self {
             current_animation: AnimationType::Walk,
-            facing: Facing::Down,  // This field no longer exists
+            facing: Facing::Down, 
         }
     }
 }
@@ -897,10 +886,11 @@ Look at the current `movement.rs`. It does three things at once:
 3. Decides which animation to play using boolean flags
 
 This mixing of concerns made sense before, but now that we have `CharacterState`, we can separate these responsibilities. We'll split `movement.rs` into:
-- **input.rs** - Reads keyboard input, updates `CharacterState`, and sets how fast to move (//Todo simplify this line)
-- **physics.rs** - Handling movement of the character based on a `Velocity` component
+- **input.rs** - Reads keyboard input and decides what the character should do
+- **physics.rs** - Handles moving the character based on velocity
 
 This separation means the animation system we just built will work automatically. When input changes `CharacterState`, our `on_state_change_update_animation` system reacts. When input sets `Velocity`, our physics system moves the entity. Each piece focuses on one job.
+
 
 Create `src/characters/physics.rs`:
 
@@ -1081,7 +1071,6 @@ The function works in four steps:
 // Append to src/characters/input.rs
 
 /// Reads player input and updates movement-related components.
-/// Does NOT touch animations directly - decoupled from animation system.
 pub fn handle_player_input(
     input: Res<ButtonInput<KeyCode>>,
     mut query: Query<(
@@ -1167,27 +1156,74 @@ pub fn update_jump_state(
 
 This system only runs meaningful logic when the player is jumping. It uses `clip.is_complete()` to check if the animation finished, then transitions to Idle. The state change triggers our `on_state_change_update_animation` system, which updates the animation to Walk.
 
-## Updating mod.rs
+Before we update `mod.rs`, we need to update `spawn.rs`. We moved `Player` to `input.rs`, and our new systems expect entities to have `CharacterState`, `Velocity`, and `Facing` components.
 
-Update `src/characters/mod.rs` to include the new modules and register the systems:
+Update the imports at the top of `src/characters/spawn.rs`:
+
+```rust
+// src/characters/spawn.rs - Update imports
+use bevy::prelude::*;
+use crate::characters::animation::*;
+use crate::characters::config::{CharacterEntry, CharactersList};
+use crate::characters::input::Player;  // Changed from movement::Player
+use crate::characters::state::CharacterState;  // Line update alert
+use crate::characters::physics::Velocity;  // Line update alert
+use crate::characters::facing::Facing;  // Line update alert
+```
+
+Then in `initialize_player_character`, update the components attached to the player entity. 
+
+```rust
+// src/characters/spawn.rs - Inside initialize_player_character
+// Update commands.entity(entity).insert((...)) function call
+// Remove the line  AnimationState::default(), and add the following lines:
+commands.entity(entity).insert((
+    AnimationController::default(),
+    CharacterState::default(),   // Line update alert
+    Velocity::default(),         // Line update alert  
+    Facing::default(),           // Line update alert
+    AnimationTimer(Timer::from_seconds(DEFAULT_ANIMATION_FRAME_TIME, TimerMode::Repeating)),
+    character_entry.clone(),
+    sprite,
+));
+```
+
+Now the player entity has all the components our refactored systems need: `CharacterState` for the animation system to react to, `Velocity` for the physics system to read, and `Facing` for sprite direction.
+
+### Wiring Up the New Systems
+
+Update `src/characters/mod.rs` to include the new modules:
 
 ```rust
 // src/characters/mod.rs - Update module declarations
 pub mod animation;
 pub mod config;
-pub mod facing;
+pub mod facing;     // Line update alert
 pub mod input;      // Line update alert
 pub mod physics;    // Line update alert
 pub mod spawn;
-pub mod state;
+pub mod state;      // Line update alert
+
+// DELETE this line:
+// pub mod movement;
+
+use crate::state::GameState;
 ```
 
-Delete the old `movement` module—we've split it into `input` and `physics`.
-
-Update the system registration:
+Now update the system registration. Remove the old systems and add the new ones:
 
 ```rust
-// src/characters/mod.rs - Update add_systems
+// src/characters/mod.rs - DELETE these old systems from add_systems
+movement::move_player,           // DELETE
+movement::update_jump_state,     // DELETE
+animation::animate_characters,   // DELETE
+animation::update_animation_flags, // DELETE
+```
+
+Replace them with our new systems. Notice we're using `.chain()` to ensure they run in order, and `.run_if(in_state(GameState::Playing))` so they only run during gameplay:
+
+```rust
+// src/characters/mod.rs - Add new systems
 .add_systems(Update, (
     input::handle_player_input,
     spawn::switch_character,
@@ -1198,4 +1234,4 @@ Update the system registration:
 ).chain().run_if(in_state(GameState::Playing)));
 ```
 
-The `.chain()` ensures systems run in order. Input sets state and velocity, animation responds to state changes, physics moves the entity, and animation playback advances frames.
+The `.chain()` ensures systems run in order. Input sets state and velocity, animation responds to state changes, physics moves the entity, and animation playback animates the character.
