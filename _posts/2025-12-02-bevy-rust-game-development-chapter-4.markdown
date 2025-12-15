@@ -1618,7 +1618,35 @@ impl CollisionMap {
 
 The methods above check if a single **point** is walkable. But our character isn't a point, they have a body! If we only check the player's center position, they could overlap walls.
 
-We model the player's collision area as a circle at their center. The circle collision method `is_circle_clear` builds on what we already have: it finds which tiles the circle might overlap, then uses `is_walkable` to check each one.
+We model the player's collision area as a circle at their center. To check if a circle collides with a tile (rectangle), we need to solve a problem: **how do you test if a circle overlaps a rectangle?**
+
+The trick is to find the point on the rectangle closest to the circle's center. If that point is inside the circle (distance less than radius), they overlap.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Check if a circle intersects with a tile's bounding box.
+    fn circle_intersects_tile(&self, center: Vec2, radius: f32, gx: i32, gy: i32) -> bool {
+        // Tile bounding box
+        let tile_min = Vec2::new(
+            self.origin_x + gx as f32 * self.tile_size,
+            self.origin_y + gy as f32 * self.tile_size,
+        );
+        let tile_max = tile_min + Vec2::splat(self.tile_size);
+
+        // Find closest point on tile to circle center
+        let closest = Vec2::new(
+            center.x.clamp(tile_min.x, tile_max.x),
+            center.y.clamp(tile_min.y, tile_max.y),
+        );
+
+        // Check if closest point is within radius
+        center.distance_squared(closest) <= radius * radius
+    }
+}
+```
+
+Now we can build `is_circle_clear`, which uses this helper to check if a circle overlaps any unwalkable tiles:
 
 ```rust
 // Append to src/collision/map.rs
@@ -1661,42 +1689,10 @@ impl CollisionMap {
 
 Here's how `is_circle_clear` works:
 1. Find all grid cells the circle might touch (based on circle bounds)
-2. For each unwalkable tile, check if the circle actually overlaps it
+2. For each unwalkable tile, use `circle_intersects_tile` to check overlap
 3. Apply `collision_adjustment()` to allow corner cutting on certain tiles
 
-Notice that `is_circle_clear` uses our earlier methods: `in_bounds` to check edges, `get_tile` to read tile types, and `is_walkable` to test walkability. Each layer builds on the previous one.
-
-Now we need a helper that checks if a circle overlaps a tile:
-
-```rust
-// Append to src/collision/map.rs
-impl CollisionMap {
-    /// Check if a circle intersects with a tile's bounding box.
-    fn circle_intersects_tile(&self, center: Vec2, radius: f32, gx: i32, gy: i32) -> bool {
-        // Tile bounding box
-        let tile_min = Vec2::new(
-            self.origin_x + gx as f32 * self.tile_size,
-            self.origin_y + gy as f32 * self.tile_size,
-        );
-        let tile_max = tile_min + Vec2::splat(self.tile_size);
-
-        // Find closest point on tile to circle center
-        let closest = Vec2::new(
-            center.x.clamp(tile_min.x, tile_max.x),
-            center.y.clamp(tile_min.y, tile_max.y),
-        );
-
-        // Check if closest point is within radius
-        center.distance_squared(closest) <= radius * radius
-    }
-}
-```
-
-The function above checks if a circle overlaps a single tile. But tiles are rectangles, and our player is a circle. How do we check if a circle and a rectangle overlap?
-
-**What's AABB?** AABB stands for "Axis-Aligned Bounding Box", which is just a fancy name for a rectangle that isn't rotated. Each tile is an AABB.
-
-The trick: find the point on the rectangle that's closest to the circle's center. If that point is inside the circle (closer than the radius), they overlap. If the circle's center is already inside the rectangle, the closest point is the center itself.
+Notice that `is_circle_clear` builds on everything we've created: `in_bounds`, `get_tile`, `is_walkable`, and now `circle_intersects_tile`. Each layer builds on the previous one.
 
 ### Swept Collision
 
