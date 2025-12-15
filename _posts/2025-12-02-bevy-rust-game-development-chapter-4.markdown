@@ -1977,8 +1977,177 @@ fn convert_water_edges_to_shore(map: &mut CollisionMap) {
         map.set_tile(x, y, TileType::Shore);
     }
 
-    if shore_count > 0 {
-        info!("Created {} shore tiles from water edges", shore_count);
+
+}
+```
+
+### Debug Visualization
+
+When collision isn't working, you need to see what's happening. Is the player's collider in the right place? Are tiles marked correctly? Visual debugging makes these problems obvious.
+
+We'll create a debug overlay that:
+- Shows green for walkable tiles, red for blocked
+- Draws the player's collision circle
+- Highlights which grid cell the player is in
+- Only exists in debug builds (removed from release)
+
+Create `src/collision/debug.rs`:
+
+```rust
+// src/collision/debug.rs
+use bevy::prelude::*;
+use super::CollisionMap;
+use crate::characters::input::Player;
+use crate::characters::collider::Collider;
+
+/// Resource to toggle debug visualization.
+#[derive(Resource, Default)]
+pub struct DebugCollisionEnabled(pub bool);
+```
+
+This `DebugCollisionEnabled` resource controls whether debug drawing is active. We start with it off and let the player toggle it with a key.
+
+```rust
+// Append to src/collision/debug.rs
+
+/// Toggle collision debug visualization with F3 key.
+pub fn toggle_debug_collision(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut debug_enabled: ResMut<DebugCollisionEnabled>,
+) {
+    if keyboard.just_pressed(KeyCode::F3) {
+        debug_enabled.0 = !debug_enabled.0;
+        if debug_enabled.0 {
+            info!("🔍 Collision debug ENABLED (F3 to toggle)");
+        } else {
+            info!("Collision debug disabled");
+        }
     }
 }
 ```
+
+**Why `debug_enabled.0` instead of just `debug_enabled`?**
+
+Our `DebugCollisionEnabled` is a "tuple struct" - a struct that wraps a single value. The `.0` accesses the first (and only) field inside it. This pattern is common in Rust for creating type-safe wrappers: instead of passing around a raw `bool`, we wrap it in a named type that makes the code's intent clearer.
+
+We have used F3 as keyboard shortcut to toggle the debug overlay on and off in the gameplay.
+
+**What's `Gizmos`?**
+
+Gizmos are Bevy's built-in tool for drawing debug shapes like lines, circles, and rectangles. Unlike regular sprites, gizmos only last for one frame and automatically disappear. This makes them perfect for debug visualization: you draw what you need each frame, and when you stop drawing, they're gone.
+
+```rust
+// Append to src/collision/debug.rs
+
+/// Draw colored rectangles over tiles showing walkability.
+pub fn debug_draw_collision(
+    map: Option<Res<CollisionMap>>,
+    debug_enabled: Res<DebugCollisionEnabled>,
+    mut gizmos: Gizmos,
+) {
+    if !debug_enabled.0 {
+        return;
+    }
+
+    let Some(map) = map else { return };
+
+    let tile_size = map.tile_size();
+    let origin = map.origin();
+
+    // Draw each tile
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            let world_pos = Vec2::new(
+                origin.x + (x as f32 + 0.5) * tile_size,
+                origin.y + (y as f32 + 0.5) * tile_size,
+            );
+
+            let color = if map.is_walkable(x, y) {
+                Color::srgba(0.0, 1.0, 0.0, 0.25)  // Green, 25% opacity
+            } else {
+                Color::srgba(1.0, 0.0, 0.0, 0.4)   // Red, 40% opacity
+            };
+
+            gizmos.rect_2d(
+                world_pos,
+                Vec2::splat(tile_size * 0.9),
+                color,
+            );
+        }
+    }
+}
+```
+
+This loops through every tile and draws a colored rectangle: green for walkable, red for blocked. The 0.9 multiplier makes each rectangle slightly smaller than the tile so you can see the grid lines.
+
+Next, we visualize the player's collider:
+
+```rust
+// Append to src/collision/debug.rs
+
+/// Draw player position and collider visualization.
+pub fn debug_player_position(
+    player_query: Query<(&Transform, &Collider), With<Player>>,
+    map: Option<Res<CollisionMap>>,
+    debug_enabled: Res<DebugCollisionEnabled>,
+    mut gizmos: Gizmos,
+) {
+    if !debug_enabled.0 {
+        return;
+    }
+
+    let Some(map) = map else { return };
+    let Ok((transform, collider)) = player_query.single() else { return };
+
+    let center = transform.translation.truncate();
+    
+    // Get actual collider position
+    let collider_pos = collider.world_position(transform);
+    let grid = map.world_to_grid(collider_pos);
+
+    // Draw line from center to collider (shows offset)
+    gizmos.line_2d(center, collider_pos, Color::srgba(1.0, 1.0, 0.0, 0.5));
+
+    // Draw actual collider circle
+    gizmos.circle_2d(collider_pos, collider.radius, Color::srgb(0.0, 1.0, 1.0));
+
+    // Draw current grid cell outline
+    if map.in_bounds(grid.x, grid.y) {
+        let cell_center = map.grid_to_world(grid.x, grid.y);
+        gizmos.rect_2d(
+            cell_center,
+            Vec2::splat(map.tile_size()),
+            Color::srgb(1.0, 1.0, 0.0),
+        );
+
+        // Draw red X if on unwalkable tile
+        if !map.is_walkable(grid.x, grid.y) {
+            let offset = 15.0;
+            gizmos.line_2d(
+                collider_pos + Vec2::new(-offset, -offset),
+                collider_pos + Vec2::new(offset, offset),
+                Color::srgb(1.0, 0.0, 0.0),
+            );
+            gizmos.line_2d(
+                collider_pos + Vec2::new(-offset, offset),
+                collider_pos + Vec2::new(offset, -offset),
+                Color::srgb(1.0, 0.0, 0.0),
+            );
+        }
+    }
+}
+```
+
+This draws:
+- **Cyan circle** - the player's collision radius
+- **Yellow rectangle** - which grid cell the player is in
+- **Red X** - appears if the player is somehow on an unwalkable tile
+
+Remember, this entire file only exists in debug builds. In `mod.rs`, we wrap it with `#[cfg(debug_assertions)]`:
+
+```rust
+#[cfg(debug_assertions)]
+mod debug;
+```
+
+This means the release build has zero overhead from debug visualization, the code isn't even compiled.
