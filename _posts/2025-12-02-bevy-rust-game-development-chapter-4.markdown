@@ -1534,18 +1534,24 @@ impl CollisionMap {
     }
 
     /// Convert 2D grid coordinates to 1D array index.
+    #[inline]
     fn xy_to_idx(&self, x: i32, y: i32) -> usize {
         (y * self.width + x) as usize
     }
 
     /// Check if grid coordinates are within bounds.
+    #[inline]
     pub fn in_bounds(&self, x: i32, y: i32) -> bool {
         x >= 0 && x < self.width && y >= 0 && y < self.height
     }
 }
 ```
-
 Players move in screen positions like (150.5, -32.0). We need to convert these to tile coordinates like (4, -1) to check collision. That's what these two functions do.
+
+
+**What's `#[inline]`?** 
+This hints to the compiler that these small, frequently-called functions should be inlined (copied directly into the caller function) rather than called as separate functions.
+
 
 ```rust
 // Append to src/collision/map.rs
@@ -1646,13 +1652,38 @@ impl CollisionMap {
 }
 ```
 
-Now we can build `is_circle_clear`, which uses this helper to check if a circle overlaps any unwalkable tiles:
+With `circle_intersects_tile` ready, we can build `is_circle_clear`. But first, we need to prevent the player from walking off the edge of the map.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Check if a position with radius is within map bounds.
+    fn is_within_bounds(&self, center: Vec2, radius: f32) -> bool {
+        let left = self.origin_x;
+        let right = self.origin_x + self.width as f32 * self.tile_size;
+        let bottom = self.origin_y;
+        let top = self.origin_y + self.height as f32 * self.tile_size;
+
+        center.x - radius >= left
+            && center.x + radius <= right
+            && center.y - radius >= bottom
+            && center.y + radius <= top
+    }
+}
+```
+
+Now the main collision check.
 
 ```rust
 // Append to src/collision/map.rs
 impl CollisionMap {
     /// Check if a circle at the given world position is clear of obstacles.
     pub fn is_circle_clear(&self, center: Vec2, radius: f32) -> bool {
+        // Early bounds check
+        if !self.is_within_bounds(center, radius) {
+            return false;
+        }
+
         // Point collision if no radius
         if radius <= 0.0 {
             return self.is_world_pos_walkable(center);
@@ -1688,11 +1719,12 @@ impl CollisionMap {
 ```
 
 Here's how `is_circle_clear` works:
-1. Find all grid cells the circle might touch (based on circle bounds)
-2. For each unwalkable tile, use `circle_intersects_tile` to check overlap
-3. Apply `collision_adjustment()` to allow corner cutting on certain tiles
+1. Early exit if circle is outside map bounds (`is_within_bounds`)
+2. Find all grid cells the circle might touch (based on circle bounds)
+3. For each unwalkable tile, use `circle_intersects_tile` to check overlap
+4. Apply `collision_adjustment()` to allow corner cutting on certain tiles
 
-Notice that `is_circle_clear` builds on everything we've created: `in_bounds`, `get_tile`, `is_walkable`, and now `circle_intersects_tile`. Each layer builds on the previous one.
+Notice that `is_circle_clear` builds on everything we've created: `in_bounds`, `get_tile`, `is_walkable`, `is_within_bounds`, and `circle_intersects_tile`. Each layer builds on the previous one.
 
 ### Swept Collision
 
@@ -1748,10 +1780,25 @@ impl CollisionMap {
 }
 ```
 
-**What's axis sliding?** When you walk diagonally into a wall, you don't just stop. You slide along the wall in whichever direction is still valid. If moving northeast into a wall on your right, you slide north. This feels much better than stopping dead.
+We'll be soon working on a feature to visually debug collisions. We need the following helper functions to calculate the collision map. The `#[cfg(debug_assertions)]` attribute means these only exist in debug builds, they're completely removed from release builds:
 
-The algorithm breaks movement into small steps (quarter-tile each). For each step:
-1. Try the full movement
-2. If blocked, try moving only on X axis
-3. If still blocked, try moving only on Y axis
-4. If completely blocked, stop
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    #[cfg(debug_assertions)]
+    pub fn width(&self) -> i32 { self.width }
+    
+    #[cfg(debug_assertions)]
+    pub fn height(&self) -> i32 { self.height }
+    
+    #[cfg(debug_assertions)]
+    pub fn tile_size(&self) -> f32 { self.tile_size }
+    
+    #[cfg(debug_assertions)]
+    pub fn origin(&self) -> Vec2 { Vec2::new(self.origin_x, self.origin_y) }
+    
+    #[cfg(debug_assertions)]
+    pub fn tiles(&self) -> &[TileType] { &self.tiles }
+}
+```
+
