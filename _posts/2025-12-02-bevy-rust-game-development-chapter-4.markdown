@@ -1235,3 +1235,527 @@ Replace them with our new systems. Notice we're using `.chain()` to ensure they 
 ```
 
 The `.chain()` ensures systems run in order. Input sets state and velocity, animation responds to state changes, physics moves the entity, and animation playback animates the character.
+
+## Building a Collision System
+
+Right now our character can walk anywhere, even through trees and into water. We need a collision system that prevents movement into obstacles.
+
+Our approach is simple, each tile in our world has a *type* (grass, water, tree, etc.), and each type is either walkable or not. When the player tries to move, we check if the destination is walkable. If not, we block the move.
+
+### Defining Tile Types
+
+First, we need to categorize what kinds of tiles exist in our world. Create `src/collision/tile_type.rs`:
+
+```rust
+// src/collision/tile_type.rs
+use bevy::prelude::*;
+
+/// Tile types for collision detection.
+/// Each type has different walkability and collision behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum TileType {
+    // Walkable terrain
+    #[default]
+    Empty,
+    Dirt,
+    Grass,
+    YellowGrass,
+    Shore,  // Water edges (walkable)
+    // Non-walkable obstacles
+    Water,
+    Tree,
+    Rock,
+}
+```
+
+Now add a method to check walkability:
+
+```rust
+// Append to src/collision/tile_type.rs
+impl TileType {
+    /// Check if this tile type allows movement through it.
+    pub fn is_walkable(&self) -> bool {
+        !matches!(self, TileType::Water | TileType::Tree | TileType::Rock)
+    }
+
+    /// Get the collision adjustment for this tile type.
+    /// Positive = push player away, negative = allow corner cutting.
+    pub fn collision_adjustment(&self) -> f32 {
+        match self {
+            TileType::Tree | TileType::Rock => -0.2,  // Allow cutting corners
+            _ => 0.0,
+        }
+    }
+}
+```
+
+Notice how we define walkability: instead of listing everything that **is** walkable, we list what **isn't**. This means new tile types are walkable by default, a safer choice since forgetting to add a tile would make it passable rather than creating invisible walls.
+
+**What's `collision_adjustment`?** 
+
+Some tiles feel better with adjusted collision. A negative value (like -0.2 for trees and rocks) lets players cut corners more naturally instead of getting stuck on edges. Positive values would push players away from tiles.
+
+We also need a marker component to attach tile type information to entities:
+
+```rust
+// Append to src/collision/tile_type.rs
+
+/// Component to mark entities with their collision type.
+/// Attached to tiles during map generation.
+#[derive(Component, Debug, Clone)]
+pub struct TileMarker {
+    pub tile_type: TileType,
+}
+
+impl TileMarker {
+    pub fn new(tile_type: TileType) -> Self {
+        Self { tile_type }
+    }
+}
+```
+
+### The Collision Map
+
+Every frame, when the player tries to move, we need to answer "can they move there?" quickly. Checking every tree and water tile in the world each frame would be slow. Instead, we build a lookup table once: a grid where each cell knows if it's walkable or not.
+
+Here's what a collision map looks like for a small 4x3 area:
+
+<div style="margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+<div style="display: flex; flex-direction: column; align-items: center; font-family: monospace;">
+  <div style="margin-bottom: 8px; font-size: 13px; color: #666;">Collision Map (4x3 grid)</div>
+  <table style="border-collapse: separate; border-spacing: 3px; font-size: 12px;">
+    <tr>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #ffcdd2; border-radius: 4px;">Water</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #ffcdd2; border-radius: 4px;">Water</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #ffcdd2; border-radius: 4px;">Tree</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Grass</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Dirt</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #c8e6c9; border-radius: 4px;">Dirt</td>
+      <td style="padding: 8px 12px; text-align: center; background-color: #ffcdd2; border-radius: 4px;">Rock</td>
+    </tr>
+  </table>
+  <div style="margin-top: 8px; font-size: 11px;">
+    <span style="background-color: #c8e6c9; padding: 2px 6px; border-radius: 3px;">walkable</span>
+    <span style="background-color: #ffcdd2; padding: 2px 6px; border-radius: 3px; margin-left: 6px;">blocked</span>
+  </div>
+</div>
+</div>
+
+This is `CollisionMap`. When the level loads, we scan all tiles and record their types. During gameplay, checking "is position (x, y) walkable?" is just an array lookup.
+
+Create `src/collision/map.rs`:
+
+```rust
+// src/collision/map.rs
+use bevy::prelude::*;
+use super::TileType;
+
+/// Collision map resource that stores walkability information.
+/// Provides efficient spatial queries for movement validation.
+#[derive(Resource)]
+pub struct CollisionMap {
+    /// Flat array of tile types (row-major order)
+    tiles: Vec<TileType>,
+    /// Grid dimensions
+    width: i32,
+    height: i32,
+    /// Size of each tile in world units
+    tile_size: f32,
+    /// World position of grid origin (bottom-left corner)
+    origin_x: f32,
+    origin_y: f32,
+}
+```
+
+We store tiles in a flat `Vec` rather than a 2D array for better performance.
+
+**Why a flat array?**
+
+ In memory, we flatten the grid above row by row into a single array:
+
+<div style="margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+<div style="display: flex; flex-direction: column; align-items: center; font-family: monospace;">
+  <div style="margin-bottom: 8px; font-size: 13px; color: #666;">1D Array (how it's stored)</div>
+  <div style="display: flex; gap: 2px; flex-wrap: wrap; justify-content: center;">
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">0</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">1</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Dirt</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">2</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Dirt</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">3</span>
+      <div style="padding: 6px 8px; background-color: #ffcdd2; border-radius: 3px; font-size: 10px;">Rock</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">4</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">5</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">6</span>
+      <div style="padding: 6px 8px; background-color: #ffcdd2; border-radius: 3px; font-size: 10px;">Tree</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">7</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">8</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">9</span>
+      <div style="padding: 6px 8px; background-color: #ffcdd2; border-radius: 3px; font-size: 10px;">Water</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">10</span>
+      <div style="padding: 6px 8px; background-color: #ffcdd2; border-radius: 3px; font-size: 10px;">Water</div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <span style="font-size: 9px; color: #999;">11</span>
+      <div style="padding: 6px 8px; background-color: #c8e6c9; border-radius: 3px; font-size: 10px;">Grass</div>
+    </div>
+  </div>
+  <div style="margin-top: 8px; font-size: 11px; color: #666;">Row 0 (indices 0-3) → Row 1 (indices 4-7) → Row 2 (indices 8-11)</div>
+</div>
+</div>
+
+All 12 tiles sit next to each other in memory. When you access index 6 (Tree), indices 7 and 8 are likely already loaded into fast memory. A 2D array (`Vec<Vec<TileType>>`) stores each row separately, which can be slower.
+
+**Why store origin?**
+
+ In Bevy, the default camera places (0, 0) at the center of the screen. If we center a 4x4 tile grid, where does each tile sit?
+
+Our grid uses **tile coordinates**: the bottom-left tile is (0, 0), the one to its right is (1, 0), and so on.
+
+<div style="margin: 20px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+<div style="display: flex; flex-direction: column; align-items: center; font-family: monospace;">
+  <div style="margin-bottom: 8px; font-size: 13px; color: #666;">Tile Grid (each tile = 32px)</div>
+  <div style="display: flex; align-items: flex-end;">
+    <div style="display: flex; flex-direction: column; justify-content: space-around; height: 220px; margin-right: 4px; font-size: 10px; color: #999;">
+      <span>32</span>
+      <span>0</span>
+      <span>-32</span>
+      <span>-64</span>
+    </div>
+    <div>
+      <table style="border-collapse: separate; border-spacing: 3px; font-size: 16px;">
+        <tr>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">0,3</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">1,3</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">2,3</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">3,3</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">0,2</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #c8e6c9; border-radius: 4px; font-weight: bold;">1,2</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #fff3cd; border-radius: 4px; font-weight: bold;">2,2</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">3,2</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">0,1</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">1,1</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">2,1</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">3,1</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 16px; text-align: center; background-color: #ffcdd2; border-radius: 4px; font-weight: bold;">0,0 </td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">1,0</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">2,0</td>
+          <td style="padding: 12px 16px; text-align: center; background-color: #e3f2fd; border-radius: 4px;">3,0</td>
+        </tr>
+      </table>
+      <div style="display: flex; justify-content: space-around; margin-top: 4px; font-size: 10px; color: #999;">
+        <span>-64</span>
+        <span>-32</span>
+        <span>0</span>
+        <span>32</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top: 8px; font-size: 10px; color: #999;">← screen X (pixels) / ↑ screen Y (pixels)</div>
+  <div style="margin-top: 12px; font-size: 13px;">
+    <span style="background-color: #ffcdd2; padding: 2px 8px; border-radius: 4px;"> origin (tile 0,0)</span>
+    <span style="background-color: #fff3cd; padding: 2px 8px; border-radius: 4px; margin-left: 8px;"> screen center</span>
+    <span style="background-color: #c8e6c9; padding: 2px 8px; border-radius: 4px; margin-left: 8px;"> player</span>
+  </div>
+</div>
+</div>
+
+The grid is 4 tiles wide × 32 pixels each = 128 pixels total. To center it, we shift left by half: 128 ÷ 2 = 64 pixels. So the grid's bottom-left corner (tile 0,0) sits at screen position **(-64, -64)**. That's the **origin**. 
+
+Screen center (0, 0) lands inside tile (2, 2), not tile (0, 0)!
+
+Now the player stands at screen position (-32, 0). Which tile?
+
+- **With origin**: `(-32 - (-64)) / 32 = 1`, `(0 - (-64)) / 32 = 2` → Tile (1, 2) ✓
+- **Without origin**: `(-32) / 32 = -1`, `(0) / 32 = 0` → Tile (-1, 0) **(wrong tile!)**
+
+That's why our `CollisionMap` stores the origin. Let's implement the struct with methods to handle this conversion automatically.
+
+The constructor creates an empty map filled with `TileType::Empty`. We also need two internal helpers:
+
+- `xy_to_idx` converts 2D coordinates like (3, 7) to a single number for array access, since tiles are stored in a 1D array.
+- `in_bounds` checks if coordinates are inside the grid, this serves double duty: it prevents accessing invalid memory and treats anything outside the map as "blocked" for collision purposes.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Create a new collision map with specified dimensions and origin.
+    pub fn new(width: i32, height: i32, tile_size: f32, origin_x: f32, origin_y: f32) -> Self {
+        let size = (width * height) as usize;
+        Self {
+            tiles: vec![TileType::Empty; size],
+            width,
+            height,
+            tile_size,
+            origin_x,
+            origin_y,
+        }
+    }
+
+    /// Convert 2D grid coordinates to 1D array index.
+    fn xy_to_idx(&self, x: i32, y: i32) -> usize {
+        (y * self.width + x) as usize
+    }
+
+    /// Check if grid coordinates are within bounds.
+    pub fn in_bounds(&self, x: i32, y: i32) -> bool {
+        x >= 0 && x < self.width && y >= 0 && y < self.height
+    }
+}
+```
+
+Players move in screen positions like (150.5, -32.0). We need to convert these to tile coordinates like (4, -1) to check collision. That's what these two functions do.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Convert world position to grid coordinates.
+    pub fn world_to_grid(&self, world_pos: Vec2) -> IVec2 {
+        let grid_x = ((world_pos.x - self.origin_x) / self.tile_size).floor() as i32;
+        let grid_y = ((world_pos.y - self.origin_y) / self.tile_size).floor() as i32;
+        IVec2::new(grid_x, grid_y)
+    }
+
+    /// Convert grid coordinates to world position (tile center).
+    pub fn grid_to_world(&self, grid_x: i32, grid_y: i32) -> Vec2 {
+        Vec2::new(
+            self.origin_x + (grid_x as f32 + 0.5) * self.tile_size,
+            self.origin_y + (grid_y as f32 + 0.5) * self.tile_size,
+        )
+    }
+}
+```
+
+**Why does `grid_to_world` return the center?** 
+
+If tile (3, 7) spans pixels 96-127, the center is at pixel 112. The `+ 0.5` adds half a tile to get from the corner to the center. This is useful for placing sprites exactly in the middle of tiles.
+
+Now add tile access methods. Here's how they fit together:
+
+- `set_tile` is used when building the map (during level load, we scan tiles and call `set_tile` for each one)
+- `get_tile` retrieves a tile type at grid coordinates
+- `is_walkable` asks **can I walk on tile (3, 7)?** It calls `get_tile`, then checks if that tile type is walkable
+- `is_world_pos_walkable` is the same question, but starts from screen position (150, -32). It converts to grid coordinates, then calls `is_walkable`
+
+In practice, the circle collision code uses these internally. You rarely call them directly.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Get the tile type at grid coordinates.
+    pub fn get_tile(&self, x: i32, y: i32) -> Option<TileType> {
+        if self.in_bounds(x, y) {
+            Some(self.tiles[self.xy_to_idx(x, y)])
+        } else {
+            None
+        }
+    }
+
+    /// Set a tile at grid coordinates.
+    pub fn set_tile(&mut self, x: i32, y: i32, tile_type: TileType) {
+        if self.in_bounds(x, y) {
+            let idx = self.xy_to_idx(x, y);
+            self.tiles[idx] = tile_type;
+        }
+    }
+
+    /// Check if a grid position is walkable.
+    pub fn is_walkable(&self, x: i32, y: i32) -> bool {
+        self.get_tile(x, y).map_or(false, |t| t.is_walkable())
+    }
+
+    /// Check if a world position is walkable.
+    pub fn is_world_pos_walkable(&self, world_pos: Vec2) -> bool {
+        let grid_pos = self.world_to_grid(world_pos);
+        self.is_walkable(grid_pos.x, grid_pos.y)
+    }
+}
+```
+
+
+### Circle Collision
+
+The methods above check if a single **point** is walkable. But our character isn't a point, they have a body! If we only check the player's center position, they could overlap walls.
+
+We model the player's collision area as a circle at their center. The circle collision method `is_circle_clear` builds on what we already have: it finds which tiles the circle might overlap, then uses `is_walkable` to check each one.
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Check if a circle at the given world position is clear of obstacles.
+    pub fn is_circle_clear(&self, center: Vec2, radius: f32) -> bool {
+        // Point collision if no radius
+        if radius <= 0.0 {
+            return self.is_world_pos_walkable(center);
+        }
+
+        // Find grid cells that could overlap the circle
+        let min_gx = ((center.x - radius - self.origin_x) / self.tile_size).floor() as i32;
+        let max_gx = ((center.x + radius - self.origin_x) / self.tile_size).floor() as i32;
+        let min_gy = ((center.y - radius - self.origin_y) / self.tile_size).floor() as i32;
+        let max_gy = ((center.y + radius - self.origin_y) / self.tile_size).floor() as i32;
+
+        for gy in min_gy..=max_gy {
+            for gx in min_gx..=max_gx {
+                if !self.in_bounds(gx, gy) {
+                    return false;  // Out of bounds = blocked
+                }
+
+                if let Some(tile) = self.get_tile(gx, gy) {
+                    if !tile.is_walkable() {
+                        // Apply tile-specific collision adjustment
+                        let effective_radius = radius + tile.collision_adjustment() * self.tile_size;
+                        
+                        if self.circle_intersects_tile(center, effective_radius, gx, gy) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true
+    }
+}
+```
+
+Here's how `is_circle_clear` works:
+1. Find all grid cells the circle might touch (based on circle bounds)
+2. For each unwalkable tile, check if the circle actually overlaps it
+3. Apply `collision_adjustment()` to allow corner cutting on certain tiles
+
+Notice that `is_circle_clear` uses our earlier methods: `in_bounds` to check edges, `get_tile` to read tile types, and `is_walkable` to test walkability. Each layer builds on the previous one.
+
+Now we need a helper that checks if a circle overlaps a tile:
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Check if a circle intersects with a tile's bounding box.
+    fn circle_intersects_tile(&self, center: Vec2, radius: f32, gx: i32, gy: i32) -> bool {
+        // Tile bounding box
+        let tile_min = Vec2::new(
+            self.origin_x + gx as f32 * self.tile_size,
+            self.origin_y + gy as f32 * self.tile_size,
+        );
+        let tile_max = tile_min + Vec2::splat(self.tile_size);
+
+        // Find closest point on tile to circle center
+        let closest = Vec2::new(
+            center.x.clamp(tile_min.x, tile_max.x),
+            center.y.clamp(tile_min.y, tile_max.y),
+        );
+
+        // Check if closest point is within radius
+        center.distance_squared(closest) <= radius * radius
+    }
+}
+```
+
+The function above checks if a circle overlaps a single tile. But tiles are rectangles, and our player is a circle. How do we check if a circle and a rectangle overlap?
+
+**What's AABB?** AABB stands for "Axis-Aligned Bounding Box", which is just a fancy name for a rectangle that isn't rotated. Each tile is an AABB.
+
+The trick: find the point on the rectangle that's closest to the circle's center. If that point is inside the circle (closer than the radius), they overlap. If the circle's center is already inside the rectangle, the closest point is the center itself.
+
+### Swept Collision
+
+We can now check if a position is valid using `is_circle_clear`. But there's a problem: if a player moves fast enough in one frame, they could jump *over* a thin wall. The collision check at the destination would pass, but they'd skip right through the obstacle.
+
+`sweep_circle` solves this by checking the **entire path** from start to end. It uses `is_circle_clear` repeatedly along small steps, ensuring we catch any collision along the way:
+
+```rust
+// Append to src/collision/map.rs
+impl CollisionMap {
+    /// Perform swept circle movement with axis-sliding.
+    /// Returns the furthest valid position the circle can reach.
+    pub fn sweep_circle(&self, start: Vec2, end: Vec2, radius: f32) -> Vec2 {
+        let delta = end - start;
+        
+        // No movement needed
+        if delta.length() < 0.001 {
+            return start;
+        }
+
+        // Step size (quarter tile for smooth collision)
+        let max_step = self.tile_size * 0.25;
+        let steps = (delta.length() / max_step).ceil().max(1.0) as i32;
+        let step_vec = delta / steps as f32;
+
+        let mut pos = start;
+        for _ in 0..steps {
+            let candidate = pos + step_vec;
+
+            if self.is_circle_clear(candidate, radius) {
+                pos = candidate;
+            } else {
+                // Try sliding along X axis only
+                let try_x = Vec2::new(candidate.x, pos.y);
+                if self.is_circle_clear(try_x, radius) {
+                    pos = try_x;
+                    continue;
+                }
+
+                // Try sliding along Y axis only
+                let try_y = Vec2::new(pos.x, candidate.y);
+                if self.is_circle_clear(try_y, radius) {
+                    pos = try_y;
+                    continue;
+                }
+
+                // Completely blocked
+                break;
+            }
+        }
+        pos
+    }
+}
+```
+
+**What's axis sliding?** When you walk diagonally into a wall, you don't just stop. You slide along the wall in whichever direction is still valid. If moving northeast into a wall on your right, you slide north. This feels much better than stopping dead.
+
+The algorithm breaks movement into small steps (quarter-tile each). For each step:
+1. Try the full movement
+2. If blocked, try moving only on X axis
+3. If still blocked, try moving only on Y axis
+4. If completely blocked, stop
