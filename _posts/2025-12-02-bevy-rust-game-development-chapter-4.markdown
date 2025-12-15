@@ -1802,3 +1802,183 @@ impl CollisionMap {
 }
 ```
 
+### Building the Collision Map
+
+We have the `CollisionMap` data structure, but when does it get populated? We need a system that scans all the tiles after WFC generation and builds the collision map.
+
+
+Create `src/collision/systems.rs`:
+
+The collision map should only be built once after tiles are spawned. We need a way to track this. A simple boolean resource does the job: it starts as `false`, and once we build the map, we flip it to `true`. 
+
+We register this resource with Bevy's scheduler using `run_if(resource_equals(CollisionMapBuilt(false)))`, which means the build system won't even run after the map is built.
+
+```rust
+// src/collision/systems.rs
+use bevy::prelude::*;
+use std::collections::{HashMap, hash_map::Entry};
+
+use super::{CollisionMap, TileMarker, TileType};
+use crate::config::map::{TILE_SIZE, GRID_X, GRID_Y};
+
+/// Resource to track if collision map has been built.
+#[derive(Resource, Default, PartialEq, Eq)]
+pub struct CollisionMapBuilt(pub bool);
+```
+
+Now the main system that builds the map. This is the longest function we've written, so let's understand what it does before looking at the code.
+
+The system detects when WFC has finished by querying for tiles, if no tiles exist yet, it exits early. Once tiles exist, it:
+
+1. **Calculates the grid origin** - Our map is centered on the screen, so the bottom-left corner of the grid isn't at (0, 0). We need to figure out where it actually is. 
+
+2. **Scans all tiles** - Each tile entity has a `Transform` (its position in the world) and a `TileMarker` (what type of tile it is). We loop through every tile and read both.
+
+3. **Handles overlapping tiles** - Our WFC generator can place tiles on top of each other. For example, a tree sprite sits on top of grass at the same (x, y) position but at a higher Z (depth). For collision, we only care about the topmost tile: if there's a tree on grass, the player collides with the tree.
+
+4. **Tracks bounds** - We track the leftmost, rightmost, topmost, and bottommost tile coordinates. From these, we calculate the dimensions of the `CollisionMap`.
+
+5. **Creates and populates the CollisionMap** - Using the `world_to_grid` logic we built earlier, we convert each tile's world position to grid coordinates and call `set_tile` to record its type.
+
+6. **Post-processes** - Finally, we run shore conversion to turn water tiles at the edge of lakes into walkable shore tiles. This gives players a better experience at water boundaries.
+
+```rust
+// Append to src/collision/systems.rs
+
+/// System that builds the collision map from spawned tiles.
+/// Handles multi-layer maps by keeping only the TOPMOST tile at each (x,y).
+pub fn build_collision_map(
+    mut commands: Commands,
+    mut built: ResMut<CollisionMapBuilt>,
+    tile_query: Query<(&TileMarker, &Transform)>,
+) {
+    // Need at least one tile to proceed
+    let mut tile_iter = tile_query.iter();
+    let Some((first_marker, first_transform)) = tile_iter.next() else {
+        return; // WFC hasn't generated tiles yet
+    };
+
+    // Calculate grid origin (centered map)
+    let grid_origin_x = -TILE_SIZE * GRID_X as f32 / 2.0;
+    let grid_origin_y = -TILE_SIZE * GRID_Y as f32 / 2.0;
+
+    // Track bounds and layer info
+    let (mut min_x, mut max_x) = (i32::MAX, i32::MIN);
+    let (mut min_y, mut max_y) = (i32::MAX, i32::MIN);
+    let mut layer_tracker: HashMap<(i32, i32), (TileType, f32)> = HashMap::new();
+    let mut tile_count: usize = 0;
+
+    // Process all tiles, keeping only the topmost at each position
+    let mut process_tile = |marker: &TileMarker, transform: &Transform| {
+        tile_count += 1;
+
+        let world_x = transform.translation.x;
+        let world_y = transform.translation.y;
+        let world_z = transform.translation.z;
+        
+        let grid_x = ((world_x - grid_origin_x) / TILE_SIZE).floor() as i32;
+        let grid_y = ((world_y - grid_origin_y) / TILE_SIZE).floor() as i32;
+
+        min_x = min_x.min(grid_x);
+        max_x = max_x.max(grid_x);
+        min_y = min_y.min(grid_y);
+        max_y = max_y.max(grid_y);
+
+        // Keep only the topmost layer (highest Z)
+        match layer_tracker.entry((grid_x, grid_y)) {
+            Entry::Occupied(mut entry) => {
+                if world_z > entry.get().1 {
+                    *entry.get_mut() = (marker.tile_type, world_z);
+                }
+            }
+            Entry::Vacant(entry) => {
+                entry.insert((marker.tile_type, world_z));
+            }
+        }
+    };
+
+    // Process first tile and remaining
+    process_tile(first_marker, first_transform);
+    for (marker, transform) in tile_iter {
+        process_tile(marker, transform);
+    }
+
+    // Calculate actual dimensions
+    let actual_width = (max_x - min_x + 1) as i32;
+    let actual_height = (max_y - min_y + 1) as i32;
+
+    // Create the collision map
+    let mut map = CollisionMap::new(
+        actual_width,
+        actual_height,
+        TILE_SIZE,
+        grid_origin_x,
+        grid_origin_y,
+    );
+
+    // Populate the map from layer tracker
+    for ((grid_x, grid_y), (tile_type, _z)) in layer_tracker.iter() {
+        // Convert world grid to local array coordinates
+        let local_x = grid_x - min_x;
+        let local_y = grid_y - min_y;
+        map.set_tile(local_x, local_y, *tile_type);
+    }
+
+    // Post-processing: Convert water edges to shore
+    convert_water_edges_to_shore(&mut map);
+    // Insert as resource and mark built
+    commands.insert_resource(map);
+    built.0 = true;
+}
+```
+
+
+### Shore Conversion
+
+Imagine a lake in your game. Water tiles block movement completely, but what about the edge of the lake? If the player walks up to water at the edge of grass, they should be able to get close to the waterline rather than stopping a full tile away.
+
+Shore conversion solves this by finding water tiles that touch walkable terrain and marking them as `Shore`. Shore tiles are walkable (remember our `TileType::Shore` from earlier), so the player can walk right up to the water's edge while still being blocked by the deep water in the middle of the lake.
+
+The algorithm is straightforward: scan every tile, find water tiles, check their 8 neighbors, and if any neighbor is walkable, mark this water tile as shore.
+
+```rust
+// Append to src/collision/systems.rs
+
+/// Convert water tiles adjacent to walkable tiles into shore tiles.
+fn convert_water_edges_to_shore(map: &mut CollisionMap) {
+    let mut shores = Vec::new();
+
+    // Find water tiles that touch walkable tiles
+    for y in 0..map.height() {
+        for x in 0..map.width() {
+            if map.get_tile(x, y) != Some(TileType::Water) {
+                continue;
+            }
+
+            // Check 8 neighbors
+            let neighbors = [
+                (x - 1, y),     (x + 1, y),     // left, right
+                (x, y - 1),     (x, y + 1),     // down, up
+                (x - 1, y - 1), (x + 1, y - 1), // bottom corners
+                (x - 1, y + 1), (x + 1, y + 1), // top corners
+            ];
+
+            for (nx, ny) in neighbors {
+                if map.is_walkable(nx, ny) {
+                    shores.push((x, y));
+                    break;
+                }
+            }
+        }
+    }
+
+    let shore_count = shores.len();
+    for (x, y) in shores {
+        map.set_tile(x, y, TileType::Shore);
+    }
+
+    if shore_count > 0 {
+        info!("Created {} shore tiles from water edges", shore_count);
+    }
+}
+```
