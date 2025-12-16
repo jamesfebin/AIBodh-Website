@@ -869,7 +869,6 @@ pub fn animations_playback(
         // Advance animation
         timer.tick(time.delta());
         if timer.just_finished() {
-            let old_index = atlas.index;
             atlas.index = clip.next(atlas.index);
         }
     }
@@ -1550,12 +1549,16 @@ Players move in screen positions like (150.5, -32.0). We need to convert these t
 
 
 **What's `#[inline]`?** 
+
 This hints to the compiler that these small, frequently-called functions should be inlined (copied directly into the caller function) rather than called as separate functions.
 
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
+
     /// Convert world position to grid coordinates.
     pub fn world_to_grid(&self, world_pos: Vec2) -> IVec2 {
         let grid_x = ((world_pos.x - self.origin_x) / self.tile_size).floor() as i32;
@@ -1570,7 +1573,6 @@ impl CollisionMap {
             self.origin_y + (grid_y as f32 + 0.5) * self.tile_size,
         )
     }
-}
 ```
 
 **Why does `grid_to_world` return the center?** 
@@ -1588,7 +1590,11 @@ In practice, the circle collision code uses these internally. You rarely call th
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
+
+
     /// Get the tile type at grid coordinates.
     pub fn get_tile(&self, x: i32, y: i32) -> Option<TileType> {
         if self.in_bounds(x, y) {
@@ -1616,7 +1622,7 @@ impl CollisionMap {
         let grid_pos = self.world_to_grid(world_pos);
         self.is_walkable(grid_pos.x, grid_pos.y)
     }
-}
+
 ```
 
 
@@ -1630,7 +1636,11 @@ The trick is to find the point on the rectangle closest to the circle's center. 
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
+
+
     /// Check if a circle intersects with a tile's bounding box.
     fn circle_intersects_tile(&self, center: Vec2, radius: f32, gx: i32, gy: i32) -> bool {
         // Tile bounding box
@@ -1649,14 +1659,16 @@ impl CollisionMap {
         // Check if closest point is within radius
         center.distance_squared(closest) <= radius * radius
     }
-}
+
 ```
 
 With `circle_intersects_tile` ready, we can build `is_circle_clear`. But first, we need to prevent the player from walking off the edge of the map.
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
     /// Check if a position with radius is within map bounds.
     fn is_within_bounds(&self, center: Vec2, radius: f32) -> bool {
         let left = self.origin_x;
@@ -1669,14 +1681,17 @@ impl CollisionMap {
             && center.y - radius >= bottom
             && center.y + radius <= top
     }
-}
+
 ```
 
 Now the main collision check.
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
+
     /// Check if a circle at the given world position is clear of obstacles.
     pub fn is_circle_clear(&self, center: Vec2, radius: f32) -> bool {
         // Early bounds check
@@ -1715,7 +1730,7 @@ impl CollisionMap {
         }
         true
     }
-}
+
 ```
 
 Here's how `is_circle_clear` works:
@@ -1734,7 +1749,10 @@ We can now check if a position is valid using `is_circle_clear`. But there's a p
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
+
     /// Perform swept circle movement with axis-sliding.
     /// Returns the furthest valid position the circle can reach.
     pub fn sweep_circle(&self, start: Vec2, end: Vec2, radius: f32) -> Vec2 {
@@ -1777,14 +1795,17 @@ impl CollisionMap {
         }
         pos
     }
-}
+
 ```
 
 We'll be soon working on a feature to visually debug collisions. We need the following helper functions to calculate the collision map. The `#[cfg(debug_assertions)]` attribute means these only exist in debug builds, they're completely removed from release builds:
 
 ```rust
 // Append to src/collision/map.rs
-impl CollisionMap {
+// Append to src/collision/map.rs
+// Add this inside impl CollisionMap {
+
+    // ... earlier functions inside impl CollisionMap 
     #[cfg(debug_assertions)]
     pub fn width(&self) -> i32 { self.width }
     
@@ -1796,10 +1817,7 @@ impl CollisionMap {
     
     #[cfg(debug_assertions)]
     pub fn origin(&self) -> Vec2 { Vec2::new(self.origin_x, self.origin_y) }
-    
-    #[cfg(debug_assertions)]
-    pub fn tiles(&self) -> &[TileType] { &self.tiles }
-}
+
 ```
 
 ### Building the Collision Map
@@ -1972,7 +1990,6 @@ fn convert_water_edges_to_shore(map: &mut CollisionMap) {
         }
     }
 
-    let shore_count = shores.len();
     for (x, y) in shores {
         map.set_tile(x, y, TileType::Shore);
     }
@@ -2143,11 +2160,720 @@ This draws:
 - **Yellow rectangle** - which grid cell the player is in
 - **Red X** - appears if the player is somehow on an unwalkable tile
 
-Remember, this entire file only exists in debug builds. In `mod.rs`, we wrap it with `#[cfg(debug_assertions)]`:
+
+### Wiring It Together: The Collision Module
+
+Now we tie everything together in `src/collision/mod.rs`. This file declares our submodules, re-exports the public types, and defines the `CollisionPlugin`.
 
 ```rust
+// src/collision/mod.rs
+mod tile_type;
+mod map;
+mod systems;
+
 #[cfg(debug_assertions)]
 mod debug;
+
+use bevy::prelude::*;
+use crate::state::GameState;
+
+// Re-export commonly used types
+pub use tile_type::{TileType, TileMarker};
+pub use map::CollisionMap;
+pub use systems::CollisionMapBuilt;
+
+#[cfg(debug_assertions)]
+pub use debug::DebugCollisionEnabled;
 ```
 
-This means the release build has zero overhead from debug visualization, the code isn't even compiled.
+The `pub use` lines make these types available to other modules. Instead of writing `collision::tile_type::TileType`, other code can simply use `collision::TileType`.
+
+Now the plugin that registers everything with Bevy:
+
+```rust
+// Append to src/collision/mod.rs
+
+/// Plugin for collision detection functionality
+pub struct CollisionPlugin;
+
+impl Plugin for CollisionPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<CollisionMapBuilt>()
+            .add_systems(
+                Update,
+                systems::build_collision_map
+                    .run_if(resource_equals(CollisionMapBuilt(false)))
+                    .run_if(in_state(GameState::Playing)),
+            );
+
+        // Debug systems - only in debug builds
+        #[cfg(debug_assertions)]
+        {
+            app.init_resource::<DebugCollisionEnabled>()
+                .add_systems(
+                    Update,
+                    (
+                        debug::toggle_debug_collision,
+                        debug::debug_draw_collision,
+                        debug::debug_player_position,
+                    )
+                        .run_if(in_state(GameState::Playing)),
+                );
+        }
+    }
+}
+```
+
+Notice the two `run_if` conditions on `build_collision_map`:
+- `resource_equals(CollisionMapBuilt(false))` - Only runs when the map hasn't been built yet
+- `in_state(GameState::Playing)` - Only runs during gameplay, not menus or loading
+
+The debug systems are wrapped in `#[cfg(debug_assertions)]`, so they don't exist in release builds at all.
+
+Also add the collision module to your `main.rs`:
+
+```rust
+// In main.rs
+mod collision; // Line update alert
+
+// In your app setup:
+        .add_plugins(ProcGenSimplePlugin::<Cartesian3D, Sprite>::default())
+        .add_plugins(state::StatePlugin)
+        .add_plugins(collision::CollisionPlugin) // Line update alert
+        .add_plugins(characters::CharactersPlugin) 
+        .add_systems(Startup, (setup_camera, setup_generator))
+        .run();
+```
+
+### Integrating Collision with Map Assets
+
+Now we need to modify our map generation to attach `TileMarker` components to spawned tiles. This connects the visual tiles to the collision system.
+
+First, update `src/map/assets.rs` to support tile types:
+
+```rust
+// src/map/assets.rs - Updated imports
+use bevy::prelude::*;
+use bevy_procedural_tilemaps::prelude::*;
+
+use crate::collision::{TileMarker, TileType}; // Line update alert
+use crate::map::tilemap::TILEMAP;
+```
+
+Update the `SpawnableAsset` struct to include tile type. Note: We are replacing `components_spawner` we had earlier with `tile_type`, so this include multiple changes in struct, function arguments, etc.
+
+```rust
+// src/map/assets.rs - Updated SpawnableAsset struct
+#[derive(Clone)]
+pub struct SpawnableAsset {
+    /// Name of the sprite inside our tilemap atlas
+    sprite_name: &'static str,
+    /// Offset in grid coordinates (for multi-tile objects)
+    grid_offset: GridDelta,
+    /// Offset in world coordinates (fine positioning)
+    offset: Vec3,
+    /// The tile type for collision detection
+    tile_type: Option<TileType>, // Line update alert
+}
+
+impl SpawnableAsset {
+    pub fn new(sprite_name: &'static str) -> Self {
+        Self {
+            sprite_name,
+            grid_offset: GridDelta::new(0, 0, 0),
+            offset: Vec3::ZERO,
+            tile_type: None, // Line update alert
+        }
+    }
+
+    /// Set grid offset for multi-tile objects.
+    pub fn with_grid_offset(mut self, offset: GridDelta) -> Self {
+        self.grid_offset = offset;
+        self
+    }
+
+    /// Set tile type for collision detection.
+    // Function added alert
+    pub fn with_tile_type(mut self, tile_type: TileType) -> Self { 
+        self.tile_type = Some(tile_type);
+        self
+    }
+}
+```
+
+The builder pattern lets us chain methods: `SpawnableAsset::new("grass").with_tile_type(TileType::Grass)`.
+
+Update the `load_assets` function to use a spawner:
+
+```rust
+// src/map/assets.rs - Updated load_assets function
+pub fn load_assets(
+    tilemap_handles: &TilemapHandles,
+    assets_definitions: Vec<Vec<SpawnableAsset>>,
+) -> ModelsAssets<Sprite> {
+    let mut models_assets = ModelsAssets::<Sprite>::new();
+    
+    for (model_index, assets) in assets_definitions.into_iter().enumerate() {
+        for asset_def in assets {
+            let SpawnableAsset {
+                sprite_name,
+                grid_offset,
+                offset,
+                tile_type, // Line update alert
+            } = asset_def;
+
+            let Some(atlas_index) = TILEMAP.sprite_index(sprite_name) else {
+                panic!("Unknown atlas sprite '{}'", sprite_name);
+            };
+
+            // Create the spawner function that adds components
+            let spawner = create_spawner(tile_type); // Line update alert
+
+            models_assets.add(
+                model_index,
+                ModelAsset {
+                    assets_bundle: tilemap_handles.sprite(atlas_index),
+                    grid_offset,
+                    world_offset: offset,
+                    spawn_commands: spawner, // Line update alert
+                },
+            );
+        }
+    }
+    models_assets
+}
+```
+
+Now add the `create_spawner` function that generates the right component insertion based on tile type:
+
+```rust
+// src/map/assets.rs - Add create_spawner function
+
+fn create_spawner(
+    tile_type: Option<TileType>,
+) -> fn(&mut EntityCommands) {
+    match tile_type {
+        // Tile types without pickable
+        Some(TileType::Dirt) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Dirt));
+        },
+        Some(TileType::Grass) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Grass));
+        },
+        Some(TileType::YellowGrass) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::YellowGrass));
+        },
+        Some(TileType::Water) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Water));
+        },
+        Some(TileType::Shore) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Shore));
+        },
+        Some(TileType::Tree) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Tree));
+        },
+        Some(TileType::Rock) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Rock));
+        },
+        Some(TileType::Empty) => |e: &mut EntityCommands| {
+            e.insert(TileMarker::new(TileType::Empty));
+        },
+        // Default: no components
+        _ => |_: &mut EntityCommands| {},
+    }
+}
+```
+
+### Updating Map Rules with Tile Types
+
+Now update `src/map/rules.rs` to specify tile types for each spawnable asset. Add the import at the top:
+
+```rust
+// src/map/rules.rs - Updated imports
+use crate::collision::TileType; //Line update alert
+use crate::map::assets::SpawnableAsset;
+use crate::map::models::TerrainModelBuilder;
+use crate::map::sockets::*;
+use bevy_procedural_tilemaps::prelude::*;
+```
+
+Now update each layer function. Here's the dirt layer:
+
+```rust
+// src/map/rules.rs - Updated build_dirt_layer
+fn build_dirt_layer(
+    terrain_model_builder: &mut TerrainModelBuilder,
+    terrain_sockets: &TerrainSockets,
+    socket_collection: &mut SocketCollection,
+) {
+    terrain_model_builder
+        .create_model(
+            SocketsCartesian3D::Simple {
+                x_pos: terrain_sockets.dirt.material,
+                x_neg: terrain_sockets.dirt.material,
+                z_pos: terrain_sockets.dirt.layer_up,
+                z_neg: terrain_sockets.dirt.layer_down,
+                y_pos: terrain_sockets.dirt.material,
+                y_neg: terrain_sockets.dirt.material,
+            },
+            //Line update alert
+            vec![SpawnableAsset::new("dirt").with_tile_type(TileType::Dirt)],
+        )
+        .with_weight(20.);
+
+    socket_collection.add_connections(vec![(
+        terrain_sockets.dirt.material,
+        vec![terrain_sockets.dirt.material],
+    )]);
+}
+```
+
+The grass layer (showing the main tile and one corner as example), you will need to repeat this to all other grass corner and side tiles.
+
+```rust
+// src/map/rules.rs - Updated build_grass_layer (partial)
+// Main grass tile
+terrain_model_builder
+    .create_model(
+        SocketsCartesian3D::Multiple {
+            x_pos: vec![terrain_sockets.grass.material],
+            x_neg: vec![terrain_sockets.grass.material],
+            z_pos: vec![
+                terrain_sockets.grass.layer_up,
+                terrain_sockets.grass.grass_fill_up,
+            ],
+            z_neg: vec![terrain_sockets.grass.layer_down],
+            y_pos: vec![terrain_sockets.grass.material],
+            y_neg: vec![terrain_sockets.grass.material],
+        },
+        //Line update alert
+        vec![SpawnableAsset::new("green_grass").with_tile_type(TileType::Grass)],
+    )
+    .with_weight(5.);
+
+// Outer corners
+terrain_model_builder.create_model(
+    green_grass_corner_out.clone(),
+    vec![SpawnableAsset::new("green_grass_corner_out_tl").with_tile_type(TileType::Grass)],
+);
+// ... repeat for all corner and side variants with .with_tile_type(TileType::Grass)
+```
+
+Ensure to repeat for all corner and side variants with `.with_tile_type(TileType::Grass)`, if you are confused check the github repo for the full code.
+
+The yellow grass layer follows the same pattern:
+
+```rust
+// Main yellow grass tile
+vec![SpawnableAsset::new("yellow_grass").with_tile_type(TileType::YellowGrass)]
+
+// All yellow grass corners and sides
+vec![SpawnableAsset::new("yellow_grass_corner_out_tl").with_tile_type(TileType::YellowGrass)]
+// ... etc
+```
+
+Ensure to repeat for all corner and side variants with `.with_tile_type(TileType::YellowGrass)`.
+
+The water layer:
+
+```rust
+// Main water tile
+vec![SpawnableAsset::new("water").with_tile_type(TileType::Water)]
+
+// All water corners and sides
+vec![SpawnableAsset::new("water_corner_out_tl").with_tile_type(TileType::Water)]
+// ... etc
+```
+
+Ensure to repeat for all corner and side variants with `.with_tile_type(TileType::Water)`.
+
+The props layer has mixed tile types. Trees and rocks block movement, plants are walkable:
+
+```rust
+// src/map/rules.rs - Updated build_props_layer (key examples)
+
+// Small tree - bottom blocks, top is walkable (canopy)
+terrain_model_builder.create_model(
+    plant_prop.clone(),
+    vec![
+        // Line update alert
+        SpawnableAsset::new("small_tree_bottom").with_tile_type(TileType::Tree),
+        SpawnableAsset::new("small_tree_top").with_grid_offset(GridDelta::new(0, 1, 0)),
+    ],
+);
+
+// Big tree 1 - left side (base blocks, canopy walkable)
+vec![
+    SpawnableAsset::new("big_tree_1_bl").with_tile_type(TileType::Tree),
+    SpawnableAsset::new("big_tree_1_tl").with_grid_offset(GridDelta::new(0, 1, 0)),
+]
+
+// Big tree 1 - right side
+vec![
+    SpawnableAsset::new("big_tree_1_br").with_tile_type(TileType::Tree),
+    SpawnableAsset::new("big_tree_1_tr").with_grid_offset(GridDelta::new(0, 1, 0)),
+]
+
+// Big tree 2 - left side
+vec![
+    SpawnableAsset::new("big_tree_2_bl").with_tile_type(TileType::Tree),
+    SpawnableAsset::new("big_tree_2_tl").with_grid_offset(GridDelta::new(0, 1, 0)),
+]
+
+// Big tree 2 - right side
+vec![
+    SpawnableAsset::new("big_tree_2_br").with_tile_type(TileType::Tree),
+    SpawnableAsset::new("big_tree_2_tr").with_grid_offset(GridDelta::new(0, 1, 0)),
+]
+
+// Tree stumps block movement
+vec![SpawnableAsset::new("tree_stump_1").with_tile_type(TileType::Tree)]
+vec![SpawnableAsset::new("tree_stump_2").with_tile_type(TileType::Tree)]
+vec![SpawnableAsset::new("tree_stump_3").with_tile_type(TileType::Tree)]
+
+// Rocks block movement
+// Lines updated
+vec![SpawnableAsset::new("rock_1").with_tile_type(TileType::Rock)]
+vec![SpawnableAsset::new("rock_2").with_tile_type(TileType::Rock)]
+vec![SpawnableAsset::new("rock_3").with_tile_type(TileType::Rock)]
+vec![SpawnableAsset::new("rock_4").with_tile_type(TileType::Rock)]
+
+// Plants are walkable (grass tile type)
+vec![SpawnableAsset::new("plant_1").with_tile_type(TileType::Grass)]
+vec![SpawnableAsset::new("plant_2").with_tile_type(TileType::Grass)]
+vec![SpawnableAsset::new("plant_3").with_tile_type(TileType::Grass)]
+vec![SpawnableAsset::new("plant_4").with_tile_type(TileType::Grass)]
+```
+
+Notice tree canopies (the "top" parts) don't have a tile type. This is intentional: the player can walk under tree canopies but collides with the trunk.
+
+### Centralizing Configuration
+
+Before we create the player's collider, let's centralize our magic numbers. Scattered constants make tuning gameplay tedious. Create a single configuration file:
+
+Create `src/config.rs`:
+
+```rust
+// src/config.rs
+//! Centralized configuration constants for the game.
+
+/// Player-related configuration
+pub mod player {
+    /// Collision radius for the player's collider (in world units)
+    pub const COLLIDER_RADIUS: f32 = 16.0;
+    
+    
+    /// Z-position for player rendering (above terrain, below UI)
+    pub const PLAYER_Z_POSITION: f32 = 20.0;
+    
+    /// Visual scale of the player sprite
+    pub const PLAYER_SCALE: f32 = 0.8;
+}
+
+/// Map/terrain configuration
+pub mod map {
+    /// Size of a single tile in world units
+    pub const TILE_SIZE: f32 = 32.0;
+    
+    /// Grid dimensions
+    pub const GRID_X: u32 = 25;
+    pub const GRID_Y: u32 = 18;
+}
+```
+
+These constants define our collision radius (16 pixels) and map dimensions. Having them in one place means you can tweak collision behavior without hunting through multiple files.
+
+Add this module to `src/main.rs`:
+
+```rust
+// src/main.rs
+mod config;  // Add this line
+```
+
+### Creating the Player Collider
+
+Now we need a component that represents the player's collision shape. We'll use a circle positioned at the player's center.
+
+Create `src/characters/collider.rs`:
+
+```rust
+// src/characters/collider.rs
+use bevy::prelude::*;
+
+use crate::collision::CollisionMap;
+use crate::characters::physics::Velocity;
+use crate::config::player::{COLLIDER_RADIUS};
+
+/// A circular collider for collision detection.
+/// 
+/// The collider position is offset from the entity's transform,
+/// typically to represent the character's feet position.
+#[derive(Component, Debug, Clone)]
+pub struct Collider {
+    /// Radius of the circular collider in world units
+    pub radius: f32,
+    /// Offset from entity center (e.g., Vec2(0, -25) for feet)
+    pub offset: Vec2,
+}
+
+impl Default for Collider {
+    fn default() -> Self {
+        Self {
+            radius: COLLIDER_RADIUS,
+            offset: Vec2::ZERO,
+        }
+    }
+}
+
+impl Collider {
+    /// Get the world position of this collider given an entity's transform.
+    pub fn world_position(&self, transform: &Transform) -> Vec2 {
+        transform.translation.truncate() + self.offset
+    }
+}
+```
+
+### Validating Movement Against Collision
+
+Now the crucial system: checking if the player can actually move where they want to go.
+
+```rust
+// Append to src/characters/collider.rs
+
+/// System that validates movement against the collision map.
+/// 
+/// Runs after input (which sets velocity) but before physics (which applies velocity).
+/// Modifies velocity to prevent movement into unwalkable tiles.
+pub fn validate_movement(
+    map: Option<Res<CollisionMap>>,
+    time: Res<Time>,
+    mut query: Query<(&Transform, &mut Velocity, &Collider)>,
+) {
+    let Some(map) = map else { return };
+
+    for (transform, mut velocity, collider) in query.iter_mut() {
+        // Skip if not moving
+        if !velocity.is_moving() {
+            continue;
+        }
+
+        // Current collider position
+        let current_pos = collider.world_position(transform);
+        
+        // Desired new position based on velocity
+        let delta = velocity.0 * time.delta_secs();
+        let desired_pos = current_pos + delta;
+
+        // Use swept collision to find valid position
+        let valid_pos = map.sweep_circle(current_pos, desired_pos, collider.radius);
+
+        // Calculate what velocity would get us to valid_pos
+        let actual_delta = valid_pos - current_pos;
+        
+        // Only update velocity if collision modified our path
+        if (actual_delta - delta).length_squared() > 0.001 {
+            // Convert position delta back to velocity
+            let dt = time.delta_secs();
+            if dt > 0.0 {
+                velocity.0 = actual_delta / dt;
+            }
+        }
+    }
+}
+```
+
+**How this works:**
+
+1. Get the current collider position (player's feet)
+2. Calculate where the player *wants* to go based on their velocity
+3. Use `sweep_circle` to find the furthest valid position along that path
+4. If collision blocked part of the movement, adjust velocity accordingly
+
+The key insight: we don't block movement entirely. If the player tries to walk diagonally into a wall, `sweep_circle` might allow sliding along the wall's surface. This feels much better than getting stuck.
+
+### Updating the Characters Module
+
+Add the collider module to `src/characters/mod.rs`:
+
+```rust
+// src/characters/mod.rs - Add at the top
+pub mod collider;  // Add this line
+```
+
+Now update the system registration. We need `validate_movement` to run **after** input sets velocity but **before** physics applies it:
+
+```rust
+// src/characters/mod.rs - Update the system chain
+.add_systems(Update, (
+    // 1. Input determines state + velocity + facing
+    input::handle_player_input,
+    spawn::switch_character,
+    input::update_jump_state,
+    
+    // 2. State changes trigger animation updates
+    animation::on_state_change_update_animation,
+    
+    // 3. Collision validation adjusts velocity  <-- Line update alert!
+    collider::validate_movement,
+    
+    // 4. Physics applies velocity to transform
+    physics::apply_velocity,
+    
+    // 5. Animation ticks frames
+    animation::tick_animations,
+).chain().run_if(in_state(GameState::Playing)));
+```
+
+The `.chain()` call ensures these systems run in order. Input first, then animation responds to state, then collision validates the movement, then physics applies the (possibly modified) velocity.
+
+### Attaching Collider to the Player
+
+Finally, update `src/characters/spawn.rs` to attach the `Collider` component when initializing the player.
+
+Update the imports:
+
+```rust
+// src/characters/spawn.rs - Add import
+use crate::characters::collider::Collider; // Line update alert!
+use crate::config::player::{PLAYER_SCALE, PLAYER_Z_POSITION}; // Line update alert!
+```
+
+Also remove these existing constants since we are importing the constants from the config.
+
+```rust
+// Delete these lines
+// const PLAYER_SCALE: f32 = 0.8;
+// const PLAYER_Z_POSITION: f32 = 20.0;
+```
+
+Then in `initialize_player_character`, add `Collider::default()` to the component bundle:
+
+```rust
+// src/characters/spawn.rs - In initialize_player_character
+commands.entity(entity).insert((
+    AnimationController::default(),
+    CharacterState::default(),
+    Velocity::default(),
+    Facing::default(),
+    Collider::default(),  // Line update alert!
+    AnimationTimer(Timer::from_seconds(DEFAULT_ANIMATION_FRAME_TIME, TimerMode::Repeating)),
+    character_entry.clone(),
+    sprite,
+));
+```
+
+Now run the game:
+
+```bash
+cargo run
+```
+
+Walk your character around. You should now collide with trees, rocks, and water! The character slides smoothly along obstacles rather than getting stuck. Press F3 to toggle the debug overlay and see the collision map visualized.
+
+## The Illusion of Depth
+
+There's one more problem. Walk your character behind a tree. Notice anything odd?
+
+The player always renders on top. They don't disappear behind the tree trunk. In a top-down game, objects further up the screen should appear "behind" objects lower on the screen. A character walking north should disappear behind trees as they pass them.
+
+This is **Y-based depth sorting**. The concept is simple: objects with a lower Y position (closer to the bottom of the screen) are "in front" of objects with a higher Y position. Think of it like a stage: actors downstage (closer to audience) block actors upstage.
+
+In 2D rendering, Z determines draw order. Higher Z draws on top. So we need:
+- **Higher Y** (top of screen) → **Lower Z** (drawn first, appears behind)
+- **Lower Y** (bottom of screen) → **Higher Z** (drawn last, appears in front)
+
+Our tilemap generator already does this for tiles using `with_z_offset_from_y(true)`. But the player's Z position is fixed! We need to update the player's Z dynamically based on their Y position.
+
+### Creating the Rendering Module
+
+Create `src/characters/rendering.rs`:
+
+```rust
+// src/characters/rendering.rs
+//! Rendering utilities for depth sorting.
+
+use bevy::prelude::*;
+
+use crate::characters::input::Player;
+use crate::config::map::{GRID_Y, TILE_SIZE};
+use crate::config::player::PLAYER_SCALE;
+
+/// Z-depth constants for proper layering.
+/// The tilemap uses `with_z_offset_from_y(true)` which assigns Z based on Y position.
+/// We need to match this formula for the player.
+const NODE_SIZE_Z: f32 = 1.0;  // Same as tilemap generator
+const PLAYER_BASE_Z: f32 = 4.0;  // Match props layer Z range
+const PLAYER_Z_OFFSET: f32 = 0.5;  // Small offset to stay above ground props
+```
+
+These constants need to match how the tilemap generator calculates Z. `PLAYER_BASE_Z` positions the player in the same Z range as props (trees, rocks). `PLAYER_Z_OFFSET` adds a tiny buffer so the player doesn't z-fight with ground-level decorations.
+
+Now the depth sorting system:
+
+```rust
+// Append to src/rendering.rs
+
+/// System to update player depth based on Y position.
+/// 
+/// Objects with lower Y (further down screen) get higher Z (rendered in front).
+/// This creates proper occlusion when walking behind trees.
+pub fn update_player_depth(
+    mut player_query: Query<&mut Transform, (With<Player>, Changed<Transform>)>,
+) {
+    // Map dimensions for normalization
+    let map_height = TILE_SIZE * GRID_Y as f32;
+    let map_y0 = -TILE_SIZE * GRID_Y as f32 / 2.0;  // Map origin Y (centered)
+    
+    // Player sprite height for feet position calculation
+    let player_sprite_height = 64.0 * PLAYER_SCALE;
+
+    for mut transform in player_query.iter_mut() {
+        let player_center_y = transform.translation.y;
+
+        // Use player's FEET position for depth sorting (not center)
+        let player_feet_y = player_center_y - (player_sprite_height / 2.0);
+
+        // Normalize feet Y to [0, 1] across the grid height
+        let t = ((player_feet_y - map_y0) / map_height).clamp(0.0, 1.0);
+
+        // Y-to-Z formula:
+        // Lower Y (bottom of screen) = higher t = lower Z offset = rendered in front
+        // Higher Y (top of screen) = lower t = higher Z offset = rendered behind
+        let player_z = PLAYER_BASE_Z + NODE_SIZE_Z * (1.0 - t) + PLAYER_Z_OFFSET;
+
+        transform.translation.z = player_z;
+    }
+}
+```
+
+**Why use feet position instead of center?**
+
+Imagine the player standing just below a tree. If we used the sprite's center for depth calculation, the player's head might poke out above the tree even though their feet are in front of it. By using feet position, the occlusion looks natural: when the player's feet are behind the tree's base, the whole player disappears behind the tree.
+
+We use `Changed<Transform>` Bevy filter because it only runs the query on entities whose `Transform` component changed this frame. Since we only need to recalculate Z when the player moves, this is a small optimization. No movement, no work.
+
+### Integrating Depth Sorting
+
+Now, you can add it to the character system chain in `src/characters/mod.rs` after `physics::apply_velocity`:
+
+```rust
+// src/characters/mod.rs
+
+mod rendering; // Line update alert!
+
+
+.add_systems(Update, (
+    // ... existing systems ...
+    physics::apply_velocity,
+    rendering::update_player_depth,  // Add after physics , line update alert!
+    animation::tick_animations,
+).chain().run_if(in_state(GameState::Playing)));
+```
+
+Run the game again:
+
+```bash
+cargo run
+```
+
+
