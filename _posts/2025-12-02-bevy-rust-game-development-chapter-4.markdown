@@ -3,7 +3,7 @@ layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 4 - Let There Be Collisions"
 date: 2025-12-16 10:00:00 +0000
 category: rust
-excerpt: "Learn to implement collision detection and physics in Bevy. We'll add collision boundaries, handle player-world interactions, and create a robust physics system for your game."
+excerpt: "Let's make the player interact with the world properly, no more walking through trees, water, or rocks. We'll implement z-ordering so they can walk behind objects, giving your 2D game true depth. Also, you'll build a collision visualizer for debugging."
 image: /assets/book_assets/chapter4/ch4.gif
 og_image: /assets/book_assets/chapter4/ch4.gif
 ---
@@ -17,7 +17,7 @@ og_image: /assets/book_assets/chapter4/ch4.gif
 }
 </style>
 
-By the end of this tutorial, you'll have implemented collision detection, player boundaries, and physics interactions in your Bevy game.
+By the end of this chapter, your player will interact with the world properly, no more walking through trees, water, or rocks. We'll implement z-ordering so they can walk behind objects, giving your 2D game true depth. Also, you'll build a collision visualizer for debugging.
 
 > **Prerequisites**: This is Chapter 4 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) for updates on new releases. Before starting, complete [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), [Chapter 2: Let There Be a World](/posts/bevy-rust-game-development-chapter-2/), and [Chapter 3: Let The Data Flow](/posts/bevy-rust-game-development-chapter-3/), or clone the Chapter 3 code from [this repository](https://github.com/jamesfebin/ImpatientProgrammerBevyRust) to follow along.
 
@@ -26,6 +26,7 @@ By the end of this tutorial, you'll have implemented collision detection, player
 <div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
 <strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey enjoyable. Your feedback matters - share your frustrations, questions, or suggestions on <a href="https://www.reddit.com/r/bevy/" target="_blank">Reddit</a>/<a target="_blank" href="https://discord.com/invite/cD9qEsSjUH">Discord</a>/<a href="https://www.linkedin.com/in/febinjohnjames" target="_blank">LinkedIn</a>. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
 </div>
+
 
 ## Systems Running When They Shouldn't
 
