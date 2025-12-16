@@ -2880,7 +2880,10 @@ const WATER_WEIGHT: f32 = 0.001;  // Reduce from 0.02 to 0.001
 
 This reduces water generation, making it less likely the player spawns in an inaccessible area.
 
-> **Note**: There's a small chance the procedural generation places the player on top of a blocking object (tree, rock) at spawn. If you can't move when the game starts, simply restart to generate a new map. This is a quirk of random generation we'll address in future chapters.
+<div style="margin: 20px 0; padding: 15px; background-color: #f8d7da; border-radius: 8px; border-left: 4px solid #dc3545;">
+<strong>Spawn Troubleshooting:</strong> There's a small chance the procedural generation places the player on top of a blocking object (tree, rock) at spawn. If you can't move when the game starts, simply restart to generate a new map. This is a quirk of random generation we'll address in future chapters.
+</div>
+
 
 Run the game again:
 
