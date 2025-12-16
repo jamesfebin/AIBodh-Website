@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 4 - Let There Be Collisions"
-date: 2025-12-02 10:00:00 +0000
+date: 2025-12-16 10:00:00 +0000
 category: rust
 excerpt: "Learn to implement collision detection and physics in Bevy. We'll add collision boundaries, handle player-world interactions, and create a robust physics system for your game."
 image: /assets/book_assets/chapter4/chapter4.gif
@@ -2772,7 +2772,7 @@ Walk your character around. You should now collide with trees, rocks, and water!
 
 There's one more problem. Walk your character behind a tree. Notice anything odd?
 
-The player always renders on top. They don't disappear behind the tree trunk. In a top-down game, objects further up the screen should appear "behind" objects lower on the screen. A character walking north should disappear behind trees as they pass them. (//Todo saying north further up screen is confusing, the below explanation of closer to the bottom of the screen is much better explanation, hence refine this)
+The player always renders on top. They don't disappear behind the tree trunk. In a top-down game, objects higher on the screen (further away from you) should appear "behind" objects lower on the screen (closer to you). When your character walks upward and passes behind a tree, they should disappear behind it.
 
 This is **Y-based depth sorting**. The concept is simple: objects with a lower Y position (closer to the bottom of the screen) are "in front" of objects with a higher Y position. 
 
@@ -2806,9 +2806,9 @@ const PLAYER_Z_OFFSET: f32 = 0.5;  // Small offset to stay above ground props
 
 These constants need to match how the tilemap generator calculates Z. `PLAYER_BASE_Z` positions the player in the same Z range as props (trees, rocks). `PLAYER_Z_OFFSET` adds a tiny buffer so the player doesn't z-fight with ground-level decorations.
 
-Now the depth sorting system.
+Now the depth sorting system. The key is to dynamically adjust the player's Z position based on their Y position. When the player moves up the screen (higher Y), we lower their Z so they render behind objects. When they move down (lower Y), we raise their Z so they render in front.
 
-//Todo adding explanation on code is not enough, add as text explanation here, continue strong narrative flow.
+But there's a subtlety: we use the player's **feet position**, not their sprite center, for depth calculation. Why? Imagine your character standing just in front of a tree. The sprite's center is at chest level, but visually, what matters is where their feet are. If we used the center, the player's head might incorrectly poke out above a tree they're standing in front of. Using feet position makes occlusion look natural.
 
 ```rust
 // Append to src/rendering.rs
@@ -2846,11 +2846,10 @@ pub fn update_player_depth(
 }
 ```
 
-**Why use feet position instead of center?**
 
-Imagine the player standing just below a tree. If we used the sprite's center for depth calculation, the player's head might poke out above the tree even though their feet are in front of it. By using feet position, the occlusion looks natural: when the player's feet are behind the tree's base, the whole player disappears behind the tree.
+**What's `Changed<Transform>`?**
 
-We use `Changed<Transform>`, Bevy's filter because it only runs the query on entities whose `Transform` component changed this frame. Since we only need to recalculate Z when the player moves, this is a small optimization. No movement, no work. (//Todor refine this explanation)
+This is a Bevy query filter that only matches entities whose `Transform` was modified this frame. It's a performance optimization: we only recalculate Z when the player actually moves. If they're standing still, the system skips them entirely.
 
 ### Integrating Depth Sorting
 
@@ -2870,7 +2869,18 @@ mod rendering; // Line update alert!
 ).chain().run_if(in_state(GameState::Playing)));
 ```
 
-//Todo also ask user to reduce water weight in map/rules.rs to 0.001 ensure player doesn't get placed in water when game starts, also tell user there's a chance user might not be able to move because they are placed on top of a colliding object when the game start, in such case ask user to restart game, so new map is generated and player can move.
+### Adjusting Water Generation
+
+Before running the game, make one small tweak to prevent the player from spawning in water. Open `src/map/rules.rs` and find the water layer weight:
+
+```rust
+// src/map/rules.rs - In build_water_layer function
+const WATER_WEIGHT: f32 = 0.001;  // Reduce from 0.02 to 0.001
+```
+
+This reduces water generation, making it less likely the player spawns in an inaccessible area.
+
+> **Note**: There's a small chance the procedural generation places the player on top of a blocking object (tree, rock) at spawn. If you can't move when the game starts, simply restart to generate a new map. This is a quirk of random generation we'll address in future chapters.
 
 Run the game again:
 
@@ -2878,4 +2888,22 @@ Run the game again:
 cargo run
 ```
 
+Now walk behind a tree. Your character should disappear behind the trunk! Walk back down, and they reappear. The illusion of depth makes the world feel three-dimensional even though it's all 2D sprites.
 
+## What We Built
+
+Let's take a step back and appreciate what we've accomplished in this chapter:
+
+1. **Game States** - Proper lifecycle management with Loading, Playing, and Paused states. No more polling patterns.
+
+2. **Character States** - An enum-based state machine that prevents impossible states and simplifies animation logic.
+
+3. **Collision System** - A tile-based collision map with circle colliders, swept collision for smooth wall-sliding, and shore detection for water edges.
+
+4. **Debug Visualization** - Press F3 to see the collision map, player collider, and current grid cell.
+
+5. **Depth Sorting** - Y-based rendering that creates the illusion of walking behind objects.
+
+Your character can now walk through a procedurally generated world, colliding realistically with obstacles, sliding around corners, and disappearing behind trees. That's a lot of systems working together!
+
+In the next chapter, we'll add interactivity: picking up items and building an inventory system. Until then, experiment with the collision parameters, try different collider sizes, and see how the debug visualization helps you understand what's happening under the hood.
