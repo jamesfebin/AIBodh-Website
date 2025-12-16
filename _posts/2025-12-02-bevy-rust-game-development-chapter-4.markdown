@@ -2684,7 +2684,7 @@ pub fn validate_movement(
 
 **How this works:**
 
-1. Get the current collider position (player's feet)
+1. Get the current collider position
 2. Calculate where the player *wants* to go based on their velocity
 3. Use `sweep_circle` to find the furthest valid position along that path
 4. If collision blocked part of the movement, adjust velocity accordingly
@@ -2723,8 +2723,6 @@ Now update the system registration. We need `validate_movement` to run **after**
     animation::tick_animations,
 ).chain().run_if(in_state(GameState::Playing)));
 ```
-
-The `.chain()` call ensures these systems run in order. Input first, then animation responds to state, then collision validates the movement, then physics applies the (possibly modified) velocity.
 
 ### Attaching Collider to the Player
 
@@ -2774,9 +2772,9 @@ Walk your character around. You should now collide with trees, rocks, and water!
 
 There's one more problem. Walk your character behind a tree. Notice anything odd?
 
-The player always renders on top. They don't disappear behind the tree trunk. In a top-down game, objects further up the screen should appear "behind" objects lower on the screen. A character walking north should disappear behind trees as they pass them.
+The player always renders on top. They don't disappear behind the tree trunk. In a top-down game, objects further up the screen should appear "behind" objects lower on the screen. A character walking north should disappear behind trees as they pass them. (//Todo saying north further up screen is confusing, the below explanation of closer to the bottom of the screen is much better explanation, hence refine this)
 
-This is **Y-based depth sorting**. The concept is simple: objects with a lower Y position (closer to the bottom of the screen) are "in front" of objects with a higher Y position. Think of it like a stage: actors downstage (closer to audience) block actors upstage.
+This is **Y-based depth sorting**. The concept is simple: objects with a lower Y position (closer to the bottom of the screen) are "in front" of objects with a higher Y position. 
 
 In 2D rendering, Z determines draw order. Higher Z draws on top. So we need:
 - **Higher Y** (top of screen) → **Lower Z** (drawn first, appears behind)
@@ -2808,7 +2806,9 @@ const PLAYER_Z_OFFSET: f32 = 0.5;  // Small offset to stay above ground props
 
 These constants need to match how the tilemap generator calculates Z. `PLAYER_BASE_Z` positions the player in the same Z range as props (trees, rocks). `PLAYER_Z_OFFSET` adds a tiny buffer so the player doesn't z-fight with ground-level decorations.
 
-Now the depth sorting system:
+Now the depth sorting system.
+
+//Todo adding explanation on code is not enough, add as text explanation here, continue strong narrative flow.
 
 ```rust
 // Append to src/rendering.rs
@@ -2850,7 +2850,7 @@ pub fn update_player_depth(
 
 Imagine the player standing just below a tree. If we used the sprite's center for depth calculation, the player's head might poke out above the tree even though their feet are in front of it. By using feet position, the occlusion looks natural: when the player's feet are behind the tree's base, the whole player disappears behind the tree.
 
-We use `Changed<Transform>` Bevy filter because it only runs the query on entities whose `Transform` component changed this frame. Since we only need to recalculate Z when the player moves, this is a small optimization. No movement, no work.
+We use `Changed<Transform>`, Bevy's filter because it only runs the query on entities whose `Transform` component changed this frame. Since we only need to recalculate Z when the player moves, this is a small optimization. No movement, no work. (//Todor refine this explanation)
 
 ### Integrating Depth Sorting
 
@@ -2869,6 +2869,8 @@ mod rendering; // Line update alert!
     animation::tick_animations,
 ).chain().run_if(in_state(GameState::Playing)));
 ```
+
+//Todo also ask user to reduce water weight in map/rules.rs to 0.001 ensure player doesn't get placed in water when game starts, also tell user there's a chance user might not be able to move because they are placed on top of a colliding object when the game start, in such case ask user to restart game, so new map is generated and player can move.
 
 Run the game again:
 
