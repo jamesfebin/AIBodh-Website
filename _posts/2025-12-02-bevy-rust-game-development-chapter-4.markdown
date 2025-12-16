@@ -2637,12 +2637,11 @@ use crate::config::player::{COLLIDER_RADIUS};
 /// A circular collider for collision detection.
 /// 
 /// The collider position is offset from the entity's transform,
-/// typically to represent the character's feet position.
 #[derive(Component, Debug, Clone)]
 pub struct Collider {
     /// Radius of the circular collider in world units
     pub radius: f32,
-    /// Offset from entity center (e.g., Vec2(0, -25) for feet)
+    /// Offset from entity center
     pub offset: Vec2,
 }
 
@@ -2959,7 +2958,7 @@ In the next chapter, we'll add interactivity: picking up items and building an i
 <strong>Let's stay connected! Here are some ways</strong>
 <ul>
 <li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
-<li>Join the discussion on <a href="https://www.reddit.com/r/bevy/">Reddit</a></li>
+<li>Join the discussion on <a href="https://www.reddit.com/r/bevy/comments/1po2lfv/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
 <li>Connect with me on <a href="https://www.linkedin.com/in/febinjohnjames">LinkedIn</a> and <a href="https://x.com/heyfebin">X/Twitter</a></li>
 </ul>
 </div>
