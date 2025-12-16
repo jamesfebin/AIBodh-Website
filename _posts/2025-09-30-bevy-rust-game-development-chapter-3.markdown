@@ -1271,14 +1271,15 @@ That's it! Run your game with `cargo run`, and you should see your character on 
 
 
 <div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-<strong>Don't miss Chapter 4!</strong> <br> <a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when the next chapter drops and share your amazing creations with fellow developers.
+<strong>Next up: Chapter 4!</strong> <br> <a href="/posts/bevy-rust-game-development-chapter-4/">Chapter 4: Let There Be Collisions</a> 
+<br><br>
+<a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when new chapters drop and share your amazing creations with fellow developers.
 <br><br>
 <strong>Let's stay connected! Here are some ways</strong>
 <ul>
 <li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
 <li>Join the discussion on <a href="https://www.reddit.com/r/bevy/comments/1p1n2x6/the_impatient_programmers_guide_to_bevy_and_rust/">Reddit</a></li>
-<li>Comment on my <a href="https://www.linkedin.com/posts/febinjohnjames_chapter-3-let-the-data-flow-continuing-activity-7397051447600664576-C3Bd/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAlx1JIBRLKRFr1OsUTf1LYBNPYbgdfxjbc">LinkedIn post</a> and make my network jealous</li>
-<li>Engage with me on <a href="https://x.com/heyfebin">X/Twitter</a></li>
+<li>Connect with me on <a href="https://www.linkedin.com/in/febinjohnjames">LinkedIn</a> and <a href="https://x.com/heyfebin">X/Twitter</a></li>
 </ul>
 </div>
 

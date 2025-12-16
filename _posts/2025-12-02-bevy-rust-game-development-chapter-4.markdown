@@ -4,8 +4,8 @@ title: "The Impatient Programmer's Guide to Bevy and Rust: Chapter 4 - Let There
 date: 2025-12-16 10:00:00 +0000
 category: rust
 excerpt: "Learn to implement collision detection and physics in Bevy. We'll add collision boundaries, handle player-world interactions, and create a robust physics system for your game."
-image: /assets/book_assets/chapter4/chapter4.gif
-og_image: /assets/book_assets/chapter4/chapter4.gif
+image: /assets/book_assets/chapter4/ch4.gif
+og_image: /assets/book_assets/chapter4/ch4.gif
 ---
 
 <style>
@@ -21,7 +21,7 @@ By the end of this tutorial, you'll have implemented collision detection, player
 
 > **Prerequisites**: This is Chapter 4 of our Bevy tutorial series. [Join our community](https://discord.com/invite/cD9qEsSjUH) for updates on new releases. Before starting, complete [Chapter 1: Let There Be a Player](/posts/bevy-rust-game-development-chapter-1/), [Chapter 2: Let There Be a World](/posts/bevy-rust-game-development-chapter-2/), and [Chapter 3: Let The Data Flow](/posts/bevy-rust-game-development-chapter-3/), or clone the Chapter 3 code from [this repository](https://github.com/jamesfebin/ImpatientProgrammerBevyRust) to follow along.
 
-![Collision System Demo]({{ "/assets/book_assets/chapter4/chapter4.gif" | relative_url }})
+![Collision System Demo]({{ "/assets/book_assets/chapter4/ch4.gif" | relative_url }})
 
 <div style="margin: 20px 0; padding: 15px; background-color: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
 <strong>Before We Begin:</strong> <em style="font-size: 14px;">I'm constantly working to improve this tutorial and make your learning journey enjoyable. Your feedback matters - share your frustrations, questions, or suggestions on <a href="https://www.reddit.com/r/bevy/" target="_blank">Reddit</a>/<a target="_blank" href="https://discord.com/invite/cD9qEsSjUH">Discord</a>/<a href="https://www.linkedin.com/in/febinjohnjames" target="_blank">LinkedIn</a>. Loved it? Let me know what worked well for you! Together, we'll make game development with Rust and Bevy more accessible for everyone.</em>
@@ -875,6 +875,11 @@ pub fn animations_playback(
 }
 ```
 
+```comic
+left_guy_smile: With enums, my character can't be walking AND idle!
+right_girl_laugh: Schrödinger's cat would like a word!
+```
+
 ## Completing the State-Based Refactoring
 
 We've updated the animation system to use `CharacterState` instead of boolean flags. But where does `CharacterState` get set? Right now, our `movement.rs` still uses the old approach, it directly modifies `Transform` and sets boolean flags in `AnimationState`. We need to refactor it to work with our new state-based design.
@@ -1311,6 +1316,11 @@ impl TileMarker {
         Self { tile_type }
     }
 }
+```
+
+```comic
+left_guy_anxious: We need markers AND types AND maps for collision??
+right_girl_laugh: Did you think walls just knew they were walls?
 ```
 
 ### The Collision Map
@@ -1798,6 +1808,11 @@ We can now check if a position is valid using `is_circle_clear`. But there's a p
 
 ```
 
+```comic
+left_guy_anxious: My character teleported through the wall!
+right_girl_surprised: That's not a bug, that's speedrunner tech!
+```
+
 We'll be soon working on a feature to visually debug collisions. We need the following helper functions to calculate the collision map. The `#[cfg(debug_assertions)]` attribute means these only exist in debug builds, they're completely removed from release builds:
 
 ```rust
@@ -1998,6 +2013,11 @@ fn convert_water_edges_to_shore(map: &mut CollisionMap) {
 }
 ```
 
+```comic
+left_guy_more_sand: I spent 3 hours on collision detection.
+right_girl_surprised: You mean water edge detection!
+```
+
 ### Debug Visualization
 
 When collision isn't working, you need to see what's happening. Is the player's collider in the right place? Are tiles marked correctly? Visual debugging makes these problems obvious.
@@ -2160,6 +2180,10 @@ This draws:
 - **Yellow rectangle** - which grid cell the player is in
 - **Red X** - appears if the player is somehow on an unwalkable tile
 
+```comic
+left_guy_smile: I added debug visualization!
+right_girl_laugh: Say goodbye to your weekend!
+```
 
 ### Wiring It Together: The Collision Module
 
@@ -2583,6 +2607,11 @@ pub mod map {
 
 These constants define our collision radius (16 pixels) and map dimensions. Having them in one place means you can tweak collision behavior without hunting through multiple files.
 
+```comic
+left_guy_smile: All my magic numbers in one file!
+right_girl_surprised: Now you can break everything from one place!
+```
+
 Add this module to `src/main.rs`:
 
 ```rust
@@ -2884,6 +2913,10 @@ This reduces water generation, making it less likely the player spawns in an ina
 <strong>Spawn Troubleshooting:</strong> There's a small chance the procedural generation places the player on top of a blocking object (tree, rock) at spawn. If you can't move when the game starts, simply restart to generate a new map. This is a quirk of random generation we'll address in future chapters.
 </div>
 
+```comic
+left_guy_sad: My player spawned inside a tree!
+right_girl_laugh: Achievement unlocked: Become one with nature!
+```
 
 Run the game again:
 
@@ -2892,6 +2925,14 @@ cargo run
 ```
 
 Now walk behind a tree. Your character should disappear behind the trunk! Walk back down, and they reappear. The illusion of depth makes the world feel three-dimensional even though it's all 2D sprites.
+
+![Collision System Demo]({{ "/assets/book_assets/chapter4/ch4.gif" | relative_url }})
+
+
+```comic
+left_guy_smile: My 2D game has depth now!
+right_girl_laugh: That's what every indie dev says on Twitter!
+```
 
 ## What We Built
 
@@ -2910,3 +2951,14 @@ Let's take a step back and appreciate what we've accomplished in this chapter:
 Your character can now walk through a procedurally generated world, colliding realistically with obstacles, sliding around corners, and disappearing behind trees. That's a lot of systems working together!
 
 In the next chapter, we'll add interactivity: picking up items and building an inventory system. Until then, experiment with the collision parameters, try different collider sizes, and see how the debug visualization helps you understand what's happening under the hood.
+
+<div style="margin: 20px 0; padding: 15px; background-color: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+<strong>Stay Tuned for Chapter 5!</strong> <br> <a href="https://discord.com/invite/cD9qEsSjUH">Join our community</a> to get notified when the next chapter drops and share your collision system creations with fellow developers.
+<br><br>
+<strong>Let's stay connected! Here are some ways</strong>
+<ul>
+<li>Follow the project on <a href="https://github.com/jamesfebin/ImpatientProgrammerBevyRust">GitHub</a></li>
+<li>Join the discussion on <a href="https://www.reddit.com/r/bevy/">Reddit</a></li>
+<li>Connect with me on <a href="https://www.linkedin.com/in/febinjohnjames">LinkedIn</a> and <a href="https://x.com/heyfebin">X/Twitter</a></li>
+</ul>
+</div>
