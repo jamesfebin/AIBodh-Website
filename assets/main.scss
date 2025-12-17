@@ -14,14 +14,17 @@
   --bulma-background: #ffffff;
 }
 
-/* Night Shift CSS Variables */
+/* Dark Mode CSS Variables */
 :root.night-shift {
-  --bulma-scheme-main: #fef7e6;
-  --bulma-scheme-main-bis: #fef7e6;
-  --bulma-scheme-main-ter: #f4e4bc;
-  --bulma-text: #3d2914;
-  --bulma-text-strong: #2d1a0a;
-  --bulma-background: #fef7e6;
+  --bulma-scheme-main: #1a1b23;
+  --bulma-scheme-main-bis: #1a1b23;
+  --bulma-scheme-main-ter: #252630;
+  --bulma-text: #e2e8f0;
+  --bulma-text-strong: #f7fafc;
+  --bulma-background: #1a1b23;
+  --bulma-border: #363846;
+  --bulma-link: #63b3ed;
+  --bulma-link-hover: #90cdf4;
 }
 
 /* Override Bulma body and main elements */
@@ -59,29 +62,86 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Night Shift Theme Overrides */
+/* Dark Mode Theme Overrides */
 :root.night-shift body {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .section {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 :root.night-shift .content {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
 }
 
-/* Night Shift Navbar Styling */
+:root.night-shift .content h1,
+:root.night-shift .content h2,
+:root.night-shift .content h3,
+:root.night-shift .content h4,
+:root.night-shift .content h5,
+:root.night-shift .content h6 {
+  color: #f7fafc !important;
+}
+
+:root.night-shift .content a {
+  color: #63b3ed !important;
+}
+
+:root.night-shift .content a:hover {
+  color: #90cdf4 !important;
+}
+
+:root.night-shift .content strong {
+  color: #f7fafc !important;
+}
+
+:root.night-shift .content blockquote {
+  background-color: #252630 !important;
+  border-left-color: #4a5568 !important;
+}
+
+:root.night-shift .content code {
+  background-color: #252630 !important;
+  color: #f0abfc !important;
+}
+
+:root.night-shift .content pre {
+  background-color: #252630 !important;
+}
+
+:root.night-shift .content pre code {
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .content hr {
+  background-color: #363846 !important;
+}
+
+:root.night-shift .content table th {
+  background-color: #252630 !important;
+  color: #f7fafc !important;
+  border-color: #363846 !important;
+}
+
+:root.night-shift .content table td {
+  border-color: #363846 !important;
+}
+
+:root.night-shift .content table tr:hover {
+  background-color: #252630 !important;
+}
+
+/* Dark Mode Navbar Styling */
 :root.night-shift .navbar {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
-/* Ensure consistent navbar item styling in night shift */
+/* Ensure consistent navbar item styling in dark mode */
 :root.night-shift .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
   transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
@@ -90,19 +150,20 @@ body {
 
 /* Override Bulma's default navbar background */
 :root.night-shift .navbar.has-shadow {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 :root.night-shift .navbar.is-fixed-top {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 :root.night-shift .navbar.is-fixed-bottom {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 :root.night-shift .navbar-menu {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
@@ -116,67 +177,67 @@ body {
 
 
 :root.night-shift .navbar-item:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
-  color: #3d2914 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
 }
 
 :root.night-shift .navbar-brand .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
 }
 
 :root.night-shift .navbar-brand .navbar-item:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
 }
 
 :root.night-shift .navbar-burger {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
 }
 
 :root.night-shift .navbar-burger:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
 }
 
 :root.night-shift .navbar-burger span {
-  background-color: #3d2914 !important;
+  background-color: #e2e8f0 !important;
 }
 
-/* Additional Bulma navbar overrides for night shift */
+/* Additional Bulma navbar overrides for dark mode */
 :root.night-shift .navbar.is-white {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .navbar.is-light {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .navbar .navbar-brand .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .navbar .navbar-menu .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .navbar .navbar-menu .navbar-item:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
-  color: #3d2914 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
@@ -184,30 +245,30 @@ body {
 
 /* Force navbar background override for all possible Bulma variants */
 :root.night-shift nav.navbar {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 :root.night-shift .navbar.is-transparent {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 :root.night-shift .navbar.is-spaced {
-  background-color: #fef7e6 !important;
+  background-color: #1a1b23 !important;
 }
 
 /* Ultra-specific override to ensure navbar styling */
 html:root.night-shift body nav.navbar {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
 html:root.night-shift body nav.navbar .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
 }
 
 html:root.night-shift body nav.navbar .navbar-item:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
-  color: #3d2914 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
   box-shadow: none !important;
   -webkit-box-shadow: none !important;
   -moz-box-shadow: none !important;
@@ -215,8 +276,8 @@ html:root.night-shift body nav.navbar .navbar-item:hover {
 
 /* Final override - should work no matter what */
 html.night-shift body nav.navbar {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #1a1b23 !important;
+  color: #e2e8f0 !important;
 }
 
 /* Ultra-specific shadow removal for any remaining shadows */
@@ -237,12 +298,12 @@ html.night-shift body nav.navbar .navbar-item::after {
 }
 
 html.night-shift body nav.navbar .navbar-item {
-  color: #3d2914 !important;
+  color: #e2e8f0 !important;
 }
 
 html.night-shift body nav.navbar .navbar-item:hover {
-  background-color: rgba(61, 41, 20, 0.1) !important;
-  color: #3d2914 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
 }
 
 /* Night Shift Toggle Button Styling */
@@ -273,11 +334,11 @@ html.night-shift body nav.navbar .navbar-item:hover {
 }
 
 :root.night-shift .night-shift-toggle {
-  color: #3d2914;
+  color: #e2e8f0;
 }
 
 :root.night-shift .night-shift-toggle:hover {
-  background-color: rgba(61, 41, 20, 0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* D2 Diagram Styling */
@@ -381,25 +442,25 @@ html.night-shift body nav.navbar .navbar-item:hover {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Night Shift D2 Diagram Styling */
+/* Dark Mode D2 Diagram Styling */
 :root.night-shift .d2-svg {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .image-popup-image.d2-svg {
-  background-color: #fef7e6 !important;
-  border: 2px solid #f4e4bc !important;
+  background-color: #252630 !important;
+  border: 2px solid #363846 !important;
 }
 
 :root.night-shift .image-popup-content .d2-svg {
-  background-color: #fef7e6 !important;
-  color: #3d2914 !important;
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
 }
 
 :root.night-shift .image-popup-image[src*="d2_"] {
-  background-color: #fef7e6 !important;
-  border: 2px solid #f4e4bc !important;
+  background-color: #252630 !important;
+  border: 2px solid #363846 !important;
 }
 
 html {
@@ -521,34 +582,772 @@ html {
   border-left-color: #2d3748;
 }
 
-/* Night Shift Table of Contents Styling */
+/* Dark Mode Table of Contents Styling */
 :root.night-shift .post-toc {
-  color: #5a3d1f;
+  color: #a0aec0;
 }
 
 :root.night-shift .post-toc__title {
-  color: #5a3d1f;
+  color: #a0aec0;
 }
 
 :root.night-shift .post-toc__link {
-  color: #5a3d1f;
+  color: #a0aec0;
 }
 
 :root.night-shift .post-toc__link:hover,
 :root.night-shift .post-toc__link:focus {
-  color: #3d2914;
-  border-left-color: #d4a574;
+  color: #e2e8f0;
+  border-left-color: #4a5568;
 }
 
 :root.night-shift .post-toc__link.is-active {
-  color: #3d2914;
-  border-left-color: #3d2914;
+  color: #f7fafc;
+  border-left-color: #63b3ed;
 }
 
 :root.night-shift .post-toc__link.is-active:focus {
-  border-left-color: #3d2914;
+  border-left-color: #63b3ed;
 }
 
 :root.night-shift .post-toc:hover .post-toc__links::-webkit-scrollbar-thumb {
-  background-color: rgba(212, 165, 116, 0.8);
+  background-color: rgba(74, 85, 104, 0.8);
+}
+
+/* Dark Mode Additional Bulma Elements */
+:root.night-shift .title {
+  color: #f7fafc !important;
+}
+
+:root.night-shift .subtitle {
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .box {
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .card {
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .card-header {
+  background-color: #1a1b23 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+:root.night-shift .card-header-title {
+  color: #f7fafc !important;
+}
+
+:root.night-shift .card-content {
+  background-color: #252630 !important;
+}
+
+:root.night-shift .card-footer {
+  background-color: #252630 !important;
+  border-top-color: #363846 !important;
+}
+
+:root.night-shift .card-footer-item {
+  border-right-color: #363846 !important;
+  color: #63b3ed !important;
+}
+
+:root.night-shift .tag {
+  background-color: #363846 !important;
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .tag.is-primary {
+  background-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .tag.is-link {
+  background-color: #4299e1 !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .footer {
+  background-color: #1a1b23 !important;
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .footer a {
+  color: #63b3ed !important;
+}
+
+:root.night-shift .footer a:hover {
+  color: #90cdf4 !important;
+}
+
+:root.night-shift .button {
+  background-color: #363846 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a5568 !important;
+}
+
+:root.night-shift .button:hover {
+  background-color: #4a5568 !important;
+  color: #f7fafc !important;
+}
+
+:root.night-shift .button.is-primary {
+  background-color: #3182ce !important;
+  border-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .button.is-primary:hover {
+  background-color: #2b6cb0 !important;
+}
+
+:root.night-shift .button.is-link {
+  background-color: #4299e1 !important;
+  border-color: #4299e1 !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .input,
+:root.night-shift .textarea,
+:root.night-shift .select select {
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a5568 !important;
+}
+
+:root.night-shift .input::placeholder,
+:root.night-shift .textarea::placeholder {
+  color: #718096 !important;
+}
+
+:root.night-shift .input:focus,
+:root.night-shift .textarea:focus,
+:root.night-shift .select select:focus {
+  border-color: #63b3ed !important;
+  box-shadow: 0 0 0 0.125em rgba(99, 179, 237, 0.25) !important;
+}
+
+:root.night-shift .label {
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .help {
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .menu-label {
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .menu-list a {
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .menu-list a:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
+}
+
+:root.night-shift .menu-list a.is-active {
+  background-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .pagination-link,
+:root.night-shift .pagination-previous,
+:root.night-shift .pagination-next {
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a5568 !important;
+}
+
+:root.night-shift .pagination-link:hover,
+:root.night-shift .pagination-previous:hover,
+:root.night-shift .pagination-next:hover {
+  border-color: #63b3ed !important;
+  color: #63b3ed !important;
+}
+
+:root.night-shift .pagination-link.is-current {
+  background-color: #3182ce !important;
+  border-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift .message {
+  background-color: #252630 !important;
+}
+
+:root.night-shift .message-header {
+  background-color: #363846 !important;
+  color: #f7fafc !important;
+}
+
+:root.night-shift .message-body {
+  border-color: #363846 !important;
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .tabs a {
+  color: #e2e8f0 !important;
+  border-bottom-color: #4a5568 !important;
+}
+
+:root.night-shift .tabs a:hover {
+  color: #f7fafc !important;
+  border-bottom-color: #a0aec0 !important;
+}
+
+:root.night-shift .tabs li.is-active a {
+  color: #63b3ed !important;
+  border-bottom-color: #63b3ed !important;
+}
+
+:root.night-shift .tabs ul {
+  border-bottom-color: #4a5568 !important;
+}
+
+:root.night-shift .breadcrumb a {
+  color: #63b3ed !important;
+}
+
+:root.night-shift .breadcrumb a:hover {
+  color: #90cdf4 !important;
+}
+
+:root.night-shift .breadcrumb li.is-active a {
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .dropdown-content {
+  background-color: #252630 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+:root.night-shift .dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f7fafc !important;
+}
+
+:root.night-shift .dropdown-divider {
+  background-color: #363846 !important;
+}
+
+/* Dark Mode Highlight/Selection */
+:root.night-shift ::selection {
+  background-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+:root.night-shift ::-moz-selection {
+  background-color: #3182ce !important;
+  color: #ffffff !important;
+}
+
+/* Dark Mode Hero Section */
+:root.night-shift .hero {
+  background-color: #1a1b23 !important;
+}
+
+:root.night-shift .hero.is-primary {
+  background-color: #2b6cb0 !important;
+}
+
+:root.night-shift .hero-body {
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .hero .title {
+  color: #f7fafc !important;
+}
+
+:root.night-shift .hero .subtitle {
+  color: #a0aec0 !important;
+}
+
+/* Dark Mode Panel */
+:root.night-shift .panel {
+  background-color: #252630 !important;
+}
+
+:root.night-shift .panel-heading {
+  background-color: #363846 !important;
+  color: #f7fafc !important;
+}
+
+:root.night-shift .panel-block {
+  border-color: #363846 !important;
+  color: #e2e8f0 !important;
+}
+
+:root.night-shift .panel-block:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root.night-shift .panel-block.is-active {
+  border-left-color: #63b3ed !important;
+  color: #63b3ed !important;
+}
+
+:root.night-shift .panel-tabs a {
+  color: #a0aec0 !important;
+}
+
+:root.night-shift .panel-tabs a.is-active {
+  border-bottom-color: #63b3ed !important;
+  color: #63b3ed !important;
+}
+
+/* Dark Mode Progress */
+:root.night-shift .progress {
+  background-color: #363846 !important;
+}
+
+/* Dark Mode Notification */
+:root.night-shift .notification {
+  background-color: #252630 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Dark Mode Level */
+:root.night-shift .level-item .title,
+:root.night-shift .level-item .heading {
+  color: #f7fafc !important;
+}
+
+/* ========================================
+   DARK MODE FIXES - Logo, Text, Alerts, Code
+   ======================================== */
+
+/* Logo Swap - Hide dark logo in light mode, show in dark mode */
+.site-logo-dark {
+  display: none !important;
+}
+
+.site-logo-light {
+  display: block !important;
+}
+
+:root.night-shift .site-logo-dark {
+  display: block !important;
+}
+
+:root.night-shift .site-logo-light {
+  display: none !important;
+}
+
+/* Fix paragraph text color for better contrast in dark mode */
+:root.night-shift p,
+:root.night-shift .content p,
+:root.night-shift article p {
+  color: #f0f0f5 !important;
+}
+
+:root.night-shift li,
+:root.night-shift .content li {
+  color: #f0f0f5 !important;
+}
+
+:root.night-shift em,
+:root.night-shift .content em {
+  color: #d0d0d8 !important;
+}
+
+/* Fix blockquote text in dark mode */
+:root.night-shift blockquote,
+:root.night-shift .content blockquote {
+  color: #f0f0f5 !important;
+  background-color: #252630 !important;
+  border-left-color: #4a5568 !important;
+}
+
+:root.night-shift blockquote p,
+:root.night-shift .content blockquote p {
+  color: #f0f0f5 !important;
+}
+
+/* ========================================
+   Alert/Info Box Fixes - Force dark text on light backgrounds
+   ======================================== */
+
+/* Blue info boxes - light blue background needs dark text */
+:root.night-shift div[style*="background-color: #e3f2fd"],
+:root.night-shift div[style*="background-color:#e3f2fd"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #e3f2fd"] *,
+:root.night-shift div[style*="background-color:#e3f2fd"] * {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #e3f2fd"] a,
+:root.night-shift div[style*="background-color:#e3f2fd"] a {
+  color: #1565c0 !important;
+}
+
+/* Cyan info boxes */
+:root.night-shift div[style*="background-color: #d1ecf1"],
+:root.night-shift div[style*="background-color:#d1ecf1"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #d1ecf1"] *,
+:root.night-shift div[style*="background-color:#d1ecf1"] * {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #d1ecf1"] a,
+:root.night-shift div[style*="background-color:#d1ecf1"] a {
+  color: #0c7c8c !important;
+}
+
+/* Green success boxes - light green background needs dark text */
+:root.night-shift div[style*="background-color: #d4edda"],
+:root.night-shift div[style*="background-color:#d4edda"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #d4edda"] *,
+:root.night-shift div[style*="background-color:#d4edda"] * {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #d4edda"] a,
+:root.night-shift div[style*="background-color:#d4edda"] a {
+  color: #1b7a3d !important;
+}
+
+/* Bright green boxes */
+:root.night-shift div[style*="background-color: #90EE90"],
+:root.night-shift div[style*="background-color:#90EE90"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #90EE90"] *,
+:root.night-shift div[style*="background-color:#90EE90"] * {
+  color: #1a202c !important;
+}
+
+/* Light green spans/badges */
+:root.night-shift span[style*="background-color: #c8e6c9"],
+:root.night-shift span[style*="background-color:#c8e6c9"],
+:root.night-shift div[style*="background-color: #c8e6c9"],
+:root.night-shift div[style*="background-color:#c8e6c9"] {
+  color: #1a202c !important;
+}
+
+/* Yellow/warning boxes */
+:root.night-shift div[style*="background-color: #fff3cd"],
+:root.night-shift div[style*="background-color:#fff3cd"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #fff3cd"] *,
+:root.night-shift div[style*="background-color:#fff3cd"] * {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #fff3cd"] a,
+:root.night-shift div[style*="background-color:#fff3cd"] a {
+  color: #856404 !important;
+}
+
+/* Red/danger boxes and spans */
+:root.night-shift div[style*="background-color: #ffcdd2"],
+:root.night-shift div[style*="background-color:#ffcdd2"],
+:root.night-shift span[style*="background-color: #ffcdd2"],
+:root.night-shift span[style*="background-color:#ffcdd2"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #ffcdd2"] *,
+:root.night-shift div[style*="background-color:#ffcdd2"] * {
+  color: #1a202c !important;
+}
+
+/* Light gray boxes */
+:root.night-shift div[style*="background-color: #f8f9fa"],
+:root.night-shift div[style*="background-color:#f8f9fa"],
+:root.night-shift div[style*="background-color: #f0f0f0"],
+:root.night-shift div[style*="background-color:#f0f0f0"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #f8f9fa"] *,
+:root.night-shift div[style*="background-color:#f8f9fa"] *,
+:root.night-shift div[style*="background-color: #f0f0f0"] *,
+:root.night-shift div[style*="background-color:#f0f0f0"] * {
+  color: #1a202c !important;
+}
+
+/* ========================================
+   Code Syntax Highlighting - Dark Mode
+   ======================================== */
+
+/* Code block background - remove borders and outlines */
+:root.night-shift .highlight,
+:root.night-shift .highlight .w,
+:root.night-shift .highlighter-rouge .highlight {
+  background-color: #1e1e2e !important;
+  color: #cdd6f4 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:root.night-shift pre,
+:root.night-shift .content pre {
+  background-color: #1e1e2e !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+:root.night-shift .highlighter-rouge {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Inline code styling - remove borders */
+:root.night-shift code,
+:root.night-shift .content code,
+:root.night-shift p code,
+:root.night-shift li code,
+html.night-shift code {
+  background-color: #252630 !important;
+  color: #f0abfc !important;
+  border: none !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Code inside pre blocks */
+:root.night-shift pre code,
+:root.night-shift .content pre code,
+:root.night-shift .highlight code,
+html.night-shift pre code {
+  background-color: transparent !important;
+  color: #cdd6f4 !important;
+  border: none !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any selection/highlight effects on code tokens */
+:root.night-shift .highlight span,
+html.night-shift .highlight span,
+:root.night-shift .highlight *,
+html.night-shift .highlight * {
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Ensure highlight container has proper background */
+:root.night-shift .highlight,
+html.night-shift .highlight {
+  background-color: #1e1e2e !important;
+  background: #1e1e2e !important;
+}
+
+/* Force remove border from pre and code in dark mode */
+html.night-shift pre,
+html.night-shift code,
+html.night-shift pre code,
+html.night-shift .highlighter-rouge pre,
+html.night-shift .highlighter-rouge code,
+html.night-shift .highlight pre {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Punctuation, operators, and brackets - make them visible */
+:root.night-shift .highlight .p,
+:root.night-shift .highlight .pi {
+  color: #cdd6f4 !important;
+}
+
+:root.night-shift .highlight .o,
+:root.night-shift .highlight .ow {
+  color: #89dceb !important;
+}
+
+/* Comments */
+:root.night-shift .highlight .c,
+:root.night-shift .highlight .ch,
+:root.night-shift .highlight .cd,
+:root.night-shift .highlight .cm,
+:root.night-shift .highlight .cpf,
+:root.night-shift .highlight .c1,
+:root.night-shift .highlight .cs {
+  color: #6c7086 !important;
+}
+
+/* Keywords */
+:root.night-shift .highlight .k,
+:root.night-shift .highlight .kn,
+:root.night-shift .highlight .kp,
+:root.night-shift .highlight .kr,
+:root.night-shift .highlight .kv,
+:root.night-shift .highlight .kc,
+:root.night-shift .highlight .kd {
+  color: #cba6f7 !important;
+}
+
+/* Keyword types */
+:root.night-shift .highlight .kt {
+  color: #f9e2af !important;
+}
+
+/* Strings */
+:root.night-shift .highlight .s,
+:root.night-shift .highlight .sb,
+:root.night-shift .highlight .sc,
+:root.night-shift .highlight .dl,
+:root.night-shift .highlight .sd,
+:root.night-shift .highlight .s2,
+:root.night-shift .highlight .sh,
+:root.night-shift .highlight .sx,
+:root.night-shift .highlight .s1,
+:root.night-shift .highlight .si,
+:root.night-shift .highlight .sr {
+  color: #a6e3a1 !important;
+}
+
+/* String escapes */
+:root.night-shift .highlight .se {
+  color: #f38ba8 !important;
+}
+
+/* Numbers */
+:root.night-shift .highlight .m,
+:root.night-shift .highlight .mb,
+:root.night-shift .highlight .mf,
+:root.night-shift .highlight .mh,
+:root.night-shift .highlight .mi,
+:root.night-shift .highlight .il,
+:root.night-shift .highlight .mo,
+:root.night-shift .highlight .mx {
+  color: #fab387 !important;
+}
+
+/* Names/identifiers */
+:root.night-shift .highlight .n,
+:root.night-shift .highlight .nv,
+:root.night-shift .highlight .vi,
+:root.night-shift .highlight .vg,
+:root.night-shift .highlight .vc {
+  color: #cdd6f4 !important;
+}
+
+/* Function names */
+:root.night-shift .highlight .nf,
+:root.night-shift .highlight .fm {
+  color: #89b4fa !important;
+}
+
+/* Class names */
+:root.night-shift .highlight .nc,
+:root.night-shift .highlight .nn,
+:root.night-shift .highlight .no {
+  color: #f9e2af !important;
+}
+
+/* Attributes */
+:root.night-shift .highlight .na {
+  color: #89dceb !important;
+}
+
+/* Tags */
+:root.night-shift .highlight .nt {
+  color: #f38ba8 !important;
+}
+
+/* Errors */
+:root.night-shift .highlight .err {
+  color: #f38ba8 !important;
+  background-color: transparent !important;
+}
+
+/* Preprocessor */
+:root.night-shift .highlight .cp {
+  color: #f38ba8 !important;
+}
+
+/* String attributes */
+:root.night-shift .highlight .sa {
+  color: #cba6f7 !important;
+}
+
+/* Symbols */
+:root.night-shift .highlight .ss {
+  color: #f2cdcd !important;
+}
+
+/* Git diff additions/deletions */
+:root.night-shift .highlight .gi {
+  color: #a6e3a1 !important;
+  background-color: rgba(166, 227, 161, 0.1) !important;
+}
+
+:root.night-shift .highlight .gd {
+  color: #f38ba8 !important;
+  background-color: rgba(243, 139, 168, 0.1) !important;
+}
+
+:root.night-shift .highlight .gh {
+  color: #89b4fa !important;
+}
+
+/* ========================================
+   Post Card Fixes - Dark text on white cards
+   ======================================== */
+
+/* Post cards stay white, so titles need to be dark */
+:root.night-shift .post-card {
+  background-color: #ffffff !important;
+}
+
+:root.night-shift .post-card .post-title,
+:root.night-shift .post-card .post-title.title,
+:root.night-shift .post-card .title {
+  color: #1a202c !important;
+}
+
+:root.night-shift .post-card .post-excerpt {
+  color: #4a5568 !important;
+}
+
+:root.night-shift .post-card .post-meta {
+  color: #718096 !important;
+}
+
+:root.night-shift .post-card .post-meta time {
+  color: #718096 !important;
+}
+
+:root.night-shift .post-card .post-category {
+  color: #805ad5 !important;
+}
+
+/* Keep tag styling consistent on white cards */
+:root.night-shift .post-card .tag {
+  background-color: #e2e8f0 !important;
+  color: #2d3748 !important;
 }
