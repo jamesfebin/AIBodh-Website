@@ -1065,12 +1065,25 @@ html {
 :root.night-shift div[style*="background-color: #ffcdd2"],
 :root.night-shift div[style*="background-color:#ffcdd2"],
 :root.night-shift span[style*="background-color: #ffcdd2"],
-:root.night-shift span[style*="background-color:#ffcdd2"] {
+:root.night-shift span[style*="background-color:#ffcdd2"],
+:root.night-shift td[style*="background-color: #ffcdd2"],
+:root.night-shift td[style*="background-color:#ffcdd2"] {
   color: #1a202c !important;
 }
 
 :root.night-shift div[style*="background-color: #ffcdd2"] *,
 :root.night-shift div[style*="background-color:#ffcdd2"] * {
+  color: #1a202c !important;
+}
+
+/* Light red/pink alert boxes (#f8d7da) */
+:root.night-shift div[style*="background-color: #f8d7da"],
+:root.night-shift div[style*="background-color:#f8d7da"] {
+  color: #1a202c !important;
+}
+
+:root.night-shift div[style*="background-color: #f8d7da"] *,
+:root.night-shift div[style*="background-color:#f8d7da"] * {
   color: #1a202c !important;
 }
 
@@ -1350,4 +1363,68 @@ html.night-shift .highlight pre {
 :root.night-shift .post-card .tag {
   background-color: #e2e8f0 !important;
   color: #2d3748 !important;
+}
+
+/* ========================================
+   Author Box - Dark text on white background
+   ======================================== */
+
+:root.night-shift .author-box {
+  background-color: #ffffff !important;
+}
+
+:root.night-shift .author-box,
+:root.night-shift .author-box * {
+  color: #1a202c !important;
+}
+
+:root.night-shift .author-box .author-name {
+  color: #1a202c !important;
+}
+
+:root.night-shift .author-box .author-bio {
+  color: #4a5568 !important;
+}
+
+:root.night-shift .author-box a:not(.button) {
+  color: #2d3748 !important;
+}
+
+:root.night-shift .author-box a:not(.button):hover {
+  color: #805ad5 !important;
+}
+
+/* Author box buttons - force light mode styling */
+:root.night-shift .author-box .button {
+  background-color: #ffffff !important;
+  color: #2d3748 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+:root.night-shift .author-box .button:hover {
+  background-color: #f7fafc !important;
+  color: #1a202c !important;
+  border-color: #cbd5e0 !important;
+}
+
+/* ========================================
+   Dark Mode Toggle Icons (Phosphor)
+   ======================================== */
+
+/* In light mode: show sun, hide moon */
+.night-shift-icon-moon {
+  display: none !important;
+}
+
+.night-shift-icon-sun {
+  display: inline-block !important;
+}
+
+/* In dark mode: show moon, hide sun */
+:root.night-shift .night-shift-icon-moon {
+  display: inline-block !important;
+}
+
+:root.night-shift .night-shift-icon-sun {
+  display: none !important;
 }
